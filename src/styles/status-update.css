@@ -1,0 +1,199 @@
+.main-status-update {
+    width: 99%;
+    margin: 8px;
+    outline: 1px solid #ddd;
+    border-radius: 4px;
+    overflow-x: hidden;
+}
+
+.status-update-table {
+    overflow-x: hidden !important;
+}
+
+.status-heading {
+    font-weight: bold;
+    outline: 1px solid #ddd;
+    padding: 10px;
+    margin: 8px;
+    border-radius: 4px;
+
+    p {
+        font-size: 18px;
+        margin: 0px !important;
+        color: grey;
+    }
+
+    span {
+        font-size: 16px;
+        font-weight: normal;
+    }
+}
+
+.status-toolbar {
+    display: flex;
+    justify-content: space-between;
+    padding: 0px 10px 0px 0px;
+
+    .actions {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        align-items: center;
+    }
+}
+
+.custom-table-cell {
+    color: #fff !important;
+}
+
+.ant-table-tbody>tr.module-header td {
+    background-color: #ddd !important;
+}
+
+.module-header td {
+    background-color: #b0b0b0 !important;
+    font-weight: bold;
+    color: black;
+}
+
+.ant-table-thead>tr>th {
+    background-color: #258790 !important;
+    color: white !important;
+    font-size: 14px;
+    text-align: center;
+    padding: 14px;
+    white-space: nowrap;
+}
+
+.activity-row td {
+    background-color: #ffffff !important;
+    text-align: center;
+}
+
+.ant-table-tbody>tr>td {
+    padding: 12px;
+    text-align: center;
+}
+
+.container-msg {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: calc(100vh - 195px);
+}
+
+.highlighted-field {
+    border: 2px solid #1fc235 !important;
+    background-color: #fff !important;
+    transition: all 0.3s ease-in-out;
+}
+
+.status-select .ant-select-selection-item {
+    font-weight: bold;
+}
+
+.status-select.yetToStart .ant-select-selection-item {
+    color: #B0BEC5;
+    text-transform: uppercase;
+    font-size: 12px !important;
+}
+
+.status-select.inProgress .ant-select-selection-item {
+    color: #FFA500;
+    text-transform: uppercase;
+    font-size: 12px !important;
+}
+
+.status-select.completed .ant-select-selection-item {
+    color: #2E7D32;
+    text-transform: uppercase;
+    font-size: 12px !important;
+}
+
+.flex-item {
+    display: flex;
+    gap: 10px;
+}
+
+.flex-item label {
+    font-weight: bold;
+    margin-top: 3px;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.status-update-header {
+    display: flex;
+    justify-content: space-between;
+}
+
+.action-btn {
+    display: flex;
+    gap: 10px;
+}
+
+.select-item {
+    display: flex;
+    padding: 10px;
+    gap: 10px;
+}
+
+.times-stamps {
+    line-height: 1.1;
+
+    p {
+        font-size: 12px !important;
+    }
+}
+
+.revise {
+    p {
+        margin: 0px;
+    }
+
+    margin-bottom: 15px;
+}
+
+.main-filter-container {
+    display: flex;
+    justify-content: center;
+}
+
+.tabs-container {
+    display: flex;
+    background: #f0f0f0;
+    border-radius: 10px 10px 0 0;
+    overflow: hidden;
+    width: max-content;
+    margin: 5px 0px;
+}
+
+.tab {
+    padding: 5px 15px;
+    cursor: pointer;
+    background: #e0dfdf;
+    color: #000;
+    border-right: 1px solid #ddd;
+    transition: background 0.3s;
+    white-space: nowrap;
+    font-size: 12px;
+}
+
+.tab:last-child {
+    border-right: none;
+}
+
+.tab:hover {
+    background: #e0e0e0;
+}
+
+.tab.active {
+    background: #258790;
+    color: #fff;
+    font-weight: bold;
+}
+
+.project-timeline-table .selected-red-row>td {
+    background-color: #e0e3f2 !important;
+}

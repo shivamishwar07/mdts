@@ -1,0 +1,218 @@
+.carousel {
+    position: relative;
+    width: 100%;
+    min-height: 500px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.carousel-wrapper {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.carousel-wrapper {
+    position: relative;
+    width: 100%;
+    height: 600px;
+    overflow: hidden;
+}
+
+.carousel-slide {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+}
+
+.carousel-slide.active {
+    opacity: 1;
+    z-index: 1;
+}
+
+.carousel-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+@keyframes gradientFade {
+    0% {
+        opacity: 0;
+    }
+
+    100% {
+        opacity: 1;
+    }
+}
+
+@keyframes gradientDrop {
+    0% {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.carousel-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    text-align: center;
+    font-size: 2rem;
+    font-weight: bold;
+    opacity: 0;
+    animation: fadeInText 1s ease forwards;
+}
+
+@keyframes fadeInText {
+    0% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.8);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+.carousel-button {
+    margin-top: 20px;
+    padding: 12px 24px;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    background-color: transparent;
+    font-weight: bold;
+    outline: 2px solid #fff;
+    border-radius: 5px;
+    font-weight: bold;
+    transition: background-color 0.3s, transform 0.3s;
+}
+
+.carousel-button:hover {
+    background-color: #258790 !important;
+    outline: none !important;
+}
+
+.gradient-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(45deg,
+            rgba(255, 0, 0, 0.3) 25%,
+            rgba(0, 0, 0, 0.5) 50%,
+            rgba(255, 0, 0, 0.2) 75%);
+    opacity: 1.5;
+    pointer-events: none;
+}
+
+.animated-text-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+}
+
+.left-aligned {
+    left: 5%;
+    transform: translate(0, -50%);
+    text-align: left;
+}
+
+.small-title {
+    font-size: 1.2rem;
+    font-weight: bold;
+    position: relative;
+    display: inline-block;
+    animation: fadeIn 1s ease-out forwards;
+}
+
+.small-title span {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: #258790;
+    margin-top: 4px;
+}
+
+.main-heading,
+.minus-heading {
+    font-size: 8rem;
+    font-weight: bold;
+    opacity: 0;
+    animation: fadeInScale 1.2s ease-in forwards;
+    white-space: nowrap;
+    max-width: 100%;
+}
+
+.third-line {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    justify-content: center;
+    margin-top: 10px;
+    opacity: 0;
+    animation: fadeInMove 1.5s ease-in forwards;
+}
+
+.left-aligned .carousel-button {
+    display: none;
+}
+
+.least-text {
+    font-size: 1rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.8);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes fadeInMove {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

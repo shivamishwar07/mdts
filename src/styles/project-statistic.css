@@ -1,0 +1,26 @@
+.project-statistics {
+    .top-heading-stats {
+        border: .75px solid #ddd;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+
+        .main-header {
+            font-weight: bold;
+            font-size: 18px;
+        }
+
+        p {
+            margin: 0px !important;
+        }
+
+    }
+
+    .graph-title {
+        background-color: #258790;
+        color: #fff;
+        padding: 10px;
+        font-weight: bold;
+    }
+}

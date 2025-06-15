@@ -1,0 +1,231 @@
+.main-profile {
+    display: flex;
+}
+
+.sidebar-menu {
+    margin: 10px;
+    width: 20%;
+}
+
+.basic-info {
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    background-color: #f4f4f4;
+    margin-right: 0px !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+
+    .profile-image {
+        width: 55px;
+        height: 55px;
+    }
+}
+
+.change-password-container {
+    font-size: 14px;
+    font-weight: bold;
+    margin-right: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: end;
+    padding-top: 5px;
+    padding-right: 25px;
+
+    a {
+        color: #258790 !important;
+        cursor: pointer;
+    }
+
+    & :hover {
+        text-decoration: underline !important;
+    }
+}
+
+.company-registration-form {
+    height: calc(100vh - 270px);
+    overflow-y: auto;
+    margin: 20px 0px 20px 10px;
+    padding-right: 8px;
+    padding-bottom: 10px;
+    overflow-x: hidden;
+}
+
+.items {
+    margin-top: 10px;
+    border-radius: 5px;
+    padding: 10px;
+    cursor: pointer;
+    background-color: #f4f4f4;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.items:hover {
+    border-bottom: 4px solid #258790;
+}
+
+.items-details {
+    width: 78%;
+    margin: 0px 0px 8px 0px;
+    border-radius: 5px;
+}
+
+.progress-warning {
+    background-color: bisque;
+}
+
+.form-row {
+    margin-bottom: 8px !important;
+}
+
+.registration-height-with-warning {
+    height: calc(100vh - 290px);
+}
+
+.registration-height-without-warning {
+    height: calc(100vh - 240px);
+}
+
+.eployee-professional-form {
+    margin-top: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px;
+    padding-bottom: 0px;
+
+    .form-row {
+        margin-bottom: 16px;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+
+    label {
+        display: block;
+        margin-top: 5px;
+        margin-bottom: 8px;
+        font-weight: 500;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .ant-select,
+    .ant-input,
+    .ant-date-picker {
+        width: 100%;
+    }
+
+    .button-group {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        float: right !important;
+    }
+
+    .cancel-button {
+        background-color: #f0f0f0;
+
+        &:hover {
+            background-color: #e0e0e0;
+        }
+    }
+
+    .uploaded-photo {
+        margin-top: 10px;
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 5px;
+    }
+
+    .ant-btn-primary {
+        background-color: #004d99;
+        border-color: #004d99;
+
+        &:hover {
+            background-color: #003366;
+            border-color: #003366;
+        }
+    }
+}
+
+.active-tab {
+    background-color: #258790;
+    color: #fff;
+    font-weight: bold;
+}
+
+.profile-item {
+    position: relative;
+    width: 80px;
+    height: 80px;
+}
+
+.profile-image-container {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.profile-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 2px solid #fff;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.profile-image-container:hover .overlay {
+    opacity: 1;
+}
+
+.upload-icon {
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.modal-container.ant-modal .ant-modal-content {
+    padding: 0px !important;
+}
+
+.modal-container .ant-modal-header {
+    background-color: #257180 !important;
+    font-weight: bold;
+    padding: 10px;
+}
+
+.modal-container.ant-modal .ant-modal-title {
+    color: #fff !important;
+}
+
+.modal-container.ant-modal .ant-modal-close {
+    top: 7px !important;
+    color: #fff !important;
+}
+
+.ant-form-horizontal .ant-form-item-control {
+    margin-bottom: 10px !important;
+}

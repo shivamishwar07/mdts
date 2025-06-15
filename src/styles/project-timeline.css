@@ -1,0 +1,397 @@
+.timeline-main {
+
+    .status-toolbar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0 10px;
+
+        .select-item {
+            display: flex;
+            padding: 10px;
+            gap: 10px;
+
+            .flex-item {
+                display: flex;
+                gap: 10px;
+
+                label {
+                    font-weight: bold;
+                    margin-top: 3px;
+                    width: 100%;
+                    white-space: nowrap;
+                    overflow: hidden;
+                }
+            }
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+
+            .styled-button {
+                background-color: grey !important;
+                border: none;
+                transition: 0.3s;
+
+                &:hover {
+                    background-color: rgb(157, 155, 155) !important;
+                }
+
+                &:disabled {
+                    background-color: #cccc !important;
+                    cursor: not-allowed;
+                }
+            }
+        }
+    }
+
+    .main-filter-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        .tabs-container {
+            display: flex;
+            background: #f0f0f0;
+            border-radius: 10px 10px 0 0;
+            overflow: hidden;
+            margin: 5px 0;
+
+            .tab {
+                padding: 5px 15px;
+                background: #e0dfdf;
+                cursor: pointer;
+                border-right: 1px solid #ddd;
+                transition: background 0.3s;
+                white-space: nowrap;
+                font-size: 12px;
+
+                &:hover {
+                    background: #e0e0e0;
+                }
+
+                &.active {
+                    background: #258790;
+                    color: #fff;
+                    font-weight: bold;
+                }
+
+                &:last-child {
+                    border-right: none;
+                }
+            }
+        }
+    }
+
+    .status-update-item {
+        .table-container {
+            .project-timeline-table {
+                .ant-table-thead>tr>th {
+                    background-color: #258790 !important;
+                    color: white !important;
+                    font-size: 14px;
+                    text-align: center;
+                    padding: 14px;
+                    white-space: nowrap;
+                }
+
+                .ant-table-tbody>tr {
+                    &.module-header td {
+                        background-color: #b0b0b0 !important;
+                        font-weight: bold;
+                        color: black;
+                    }
+
+                    td {
+                        padding: 12px;
+                        text-align: center;
+                    }
+                }
+
+                .activity-row td {
+                    background-color: #ffffff !important;
+                }
+
+                .ant-table-cell:first-child {
+                    width: 10px !important;
+                    padding: 0 4px !important;
+                }
+            }
+        }
+    }
+
+    .container-msg {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: calc(100vh - 195px);
+
+        .no-project-message {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+    }
+
+    .status-heading {
+        font-weight: bold;
+        outline: 1px solid #ddd;
+        padding: 10px;
+        margin: 8px;
+        border-radius: 4px;
+
+        p {
+            font-size: 18px;
+            color: grey;
+            margin: 0;
+        }
+
+        span {
+            font-size: 16px;
+        }
+    }
+
+    .custom-tooltip {
+        background: white !important;
+        color: black !important;
+        padding: 12px;
+        border-radius: 8px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+        max-width: 350px;
+    }
+
+    .times-stamps {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+
+        p {
+            font-size: 12px !important;
+            margin: 0;
+        }
+    }
+
+    .time-row {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+    }
+
+    .time-label {
+        color: #6c757d;
+        font-weight: 700;
+        min-width: 100px;
+    }
+
+    .time-value {
+        font-weight: bold;
+        color: #007bff;
+    }
+
+    .status-select {
+        .ant-select-selection-item {
+            font-weight: bold;
+        }
+
+        &.yetToStart .ant-select-selection-item {
+            color: #b0bec5;
+        }
+
+        &.inProgress .ant-select-selection-item {
+            color: #ffa500;
+        }
+
+        &.completed .ant-select-selection-item {
+            color: #2e7d32;
+        }
+    }
+
+    .status-update-header {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .action-btn {
+        display: flex;
+        gap: 10px;
+    }
+
+    .dropdown-item {
+        padding: 8px 12px;
+        cursor: pointer;
+    }
+
+    .dropdown-item.active {
+        background-color: #e6f4ff;
+        border-radius: 4px;
+        font-weight: 600;
+    }
+
+}
+
+.custom-dropdown {
+    background: #fff;
+    width: 320px;
+    max-height: 800px;
+    overflow-y: auto;
+    padding: 16px;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 0;
+
+    p {
+        margin: 0 0 5px 0;
+    }
+
+    .main-filter-containers {
+        margin-bottom: 10px;
+    }
+}
+
+.dropdown-search {
+    margin-bottom: 12px;
+}
+
+.dropdown-section {
+    margin-bottom: 16px;
+}
+
+.dropdown-title {
+    font-weight: 500;
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.full-width-select {
+    width: 100%;
+}
+
+.full-width-range {
+    width: 100%;
+}
+
+.modal-container {
+    .ant-modal-content {
+        border-radius: 12px;
+        background: #ffffff;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .ant-typography {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1f1f1f;
+    }
+
+    .ant-btn-primary {
+        background-color: #004d99;
+        border: none;
+        font-weight: 600;
+        border-radius: 6px;
+        height: 36px;
+        padding: 0 16px;
+
+        &:hover {
+            background-color: #0066cc;
+        }
+
+        &:disabled {
+            background: #d9d9d9;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+    }
+
+    textarea.ant-input {
+        border-radius: 8px;
+        padding: 8px 12px;
+        font-size: 14px;
+        background-color: #fafafa;
+        border: 1px solid #d9d9d9;
+
+        &:focus {
+            border-color: #1890ff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+    }
+
+    .ant-list-header {
+        font-size: 16px;
+        font-weight: 600;
+        color: #333;
+        margin: 16px 0 8px;
+    }
+
+    .ant-list-item {
+        background: #f5f5f5;
+        border-radius: 8px;
+        padding: 12px 16px !important;
+        margin-bottom: 12px;
+        transition: all 0.2s ease;
+
+        &:hover {
+            background: #e6f7ff;
+        }
+
+        .ant-list-item-meta-title {
+            margin-bottom: 4px;
+
+            .note-meta {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+
+                .note-author {
+                    color: #004d99;
+                    font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                    font-size: 14px;
+                }
+
+                .note-timestamp {
+                    font-size: 13px;
+                    color: #666;
+                    display: flex;
+                    align-items: center;
+                    gap: 4px;
+                }
+
+                svg {
+                    font-size: 14px;
+                }
+            }
+        }
+
+        .ant-list-item-meta-description {
+            color: #333;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .ant-list-item-action {
+            display: flex;
+            gap: 12px;
+
+            a {
+                color: #1a73e8;
+                font-size: 13px;
+
+                &:hover {
+                    text-decoration: underline;
+                }
+            }
+        }
+    }
+}

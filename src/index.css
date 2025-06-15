@@ -1,0 +1,125 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700&display=swap');
+
+* {
+    /* font-family: 'Syne', Arial, Helvetica, sans-serif !important; */
+    font-family: sans-serif !important;
+}
+
+.text-tertiary {
+    color: #6c757d !important;
+}
+
+.text-approved {
+    color: #4cd137;
+}
+
+.text-danger {
+    color: #EA2027;
+}
+
+.text-warning {
+    color: #F79F1F;
+}
+
+.bg-secondary {
+    background-color: #257180 !important;
+    color: white !important;
+    transition: background-color 0.3s ease !important;
+}
+
+.bg-secondary:hover {
+    background-color: #1e5a65 !important;
+}
+
+.bg-secondary:disabled {
+    background-color: #1b4f58 !important;
+    color: #d3d3d3 !important;
+    cursor: not-allowed !important;
+}
+
+.bg-tertiary {
+    background-color: #6c757d !important;
+    color: white !important;
+    transition: background-color 0.3s ease !important;
+}
+
+.bg-tertiary:hover {
+    background-color: #565d64 !important;
+}
+
+.bg-tertiary:disabled {
+    background-color: #4a5056 !important;
+    color: #d3d3d3 !important;
+    cursor: not-allowed !important;
+}
+
+.ant-form-item {
+    margin-bottom: 0px !important;
+}
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+* {
+    -ms-overflow-style: none;
+}
+
+body::-webkit-scrollbar {
+    width: 6px;
+}
+
+body {
+    background-color: #f2f4f7;
+}
+
+.top-heading {
+    font-size: 18px;
+    margin: 8px;
+    padding: 8px;
+    border-radius: 4px;
+    color: #fff;
+    font-weight: bold;
+    background-color: #258790;
+}
+
+hr {
+    margin: 0 !important;
+}
+
+.modal-body-item-padding {
+    padding: 10px 10px 0px 10px;
+}
+
+.modal-body-items {
+    padding: 10px;
+}
+
+
+.image-container {
+    margin-top: 10px;
+}
+
+.text-replanned {
+    color: #6f42c1;
+}

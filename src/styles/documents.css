@@ -1,0 +1,107 @@
+.main-doc-container {
+    display: flex;
+    width: 100%;
+}
+
+.left-create-document {
+    width: 100%;
+    margin: 10px 0px 8px 8px;
+    margin-right: 0px;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.left-create-document-item {
+    padding: 10px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+.main-create-doc-container {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.create-doc-heading {
+    font-size: 16px !important;
+    font-weight: bold !important;
+    padding-left: 10px !important;
+}
+
+.right-images {
+    flex: 0 0 30%;
+    margin-left: 0px;
+    height: calc(100vh - 95px);
+    overflow-y: scroll;
+    overflow-x: hidden;
+    margin-left: 5px;
+}
+
+.action-buttons {
+    margin-bottom: 0px !important;
+    padding-bottom: 0px !important;
+    padding: 0px 10px;
+}
+
+.document-table-container {
+    width: 98.7%;
+    margin: 10px 0px 8px 8px;
+    margin-right: 0px;
+    border: 1px solid gray;
+    border-radius: 4px;
+    height: calc(100vh - 95px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-bottom: 0px;
+}
+
+
+.table-title {
+    font-size: 17px;
+    font-weight: bold;
+    margin-bottom: 0px;
+    color: grey;
+}
+
+.custom-table .ant-table-thead>tr>th {
+    background-color: #257180 !important;
+    color: #ffffff !important;
+    text-align: center;
+    font-size: 16px;
+    padding: 10px;
+    border-radius: 0px !important;
+}
+
+.custom-table .ant-table-tbody>tr>td {
+    padding: 8px;
+    font-size: 14px;
+    text-align: center;
+    color: #333;
+}
+
+.download-btn {
+    background-color: #257180 !important;
+    color: white !important;
+    border-radius: 5px;
+    font-weight: 600;
+}
+
+.download-btn:hover {
+    background-color: #0f6a7c !important;
+}
+
+.delete-btn {
+    background-color: #dc3545 !important;
+    color: white !important;
+    border-radius: 5px;
+    font-weight: 600;
+}
+
+.delete-btn:hover {
+    background-color: #c82333 !important;
+}
+
+.custom-table .ant-table-bordered .ant-table-container {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}

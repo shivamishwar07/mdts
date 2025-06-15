@@ -1,0 +1,16 @@
+1] actual start and Expected duration will be editable in case of InProgress 
+        default setting
+                 actual start
+                 case1-> if no prerequisite => keep as per planned
+                 case2-> if prerequisite => Actual finish date of prerequisite of the last one + 1
+        Default Setting->Expected duration
+                 will be planned duration or (today date - actual start) date which ever is maximum. expected duration can not go below (today date - actual start date) in case of below then take planned duration.
+                 If actual start exceeds the today date then actual/expected duration will be actual start - todays date and based on 
+        default settings->actual finish
+                 Will be the actual start+ actual/expected duratio      n.
+                 if actual start date is already passed then we need to do calculation (todays date - actual start) and duration which is bigger that will be the actual/expected duration and actual finish will be actual start+ newly generated actual/expected duration.
+                 
+2] actual start and actual finish and expected duration in case of completed.
+          Default Setting
+                  If it was already in inprogress then aactual start will be same and based on expected duration actual finish will be calculated
+                  we can always update the actual start and actual finish if they dont have any child activity if there is child activit then they should be in yet to start mode.

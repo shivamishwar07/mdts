@@ -1,0 +1,279 @@
+.time-builder-page {
+    border-radius: 4px;
+    margin: 8px;
+    width: 99%;
+    outline: 1px solid #ddd !important;
+}
+
+.timeline-items {
+    height: calc(100vh - 250px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 0px 10px !important;
+}
+
+.first-column-red {
+    background-color: #f0f8ff !important;
+    color: white !important;
+}
+
+.ant-table-cell.first-column-red {
+    background-color: #f0f8ff !important;
+    color: white !important;
+}
+
+
+.module-heading .ant-table-cell {
+    background-color: #ddd !important;
+    font-weight: bold;
+    text-align: left;
+}
+
+.table-header {
+    font-weight: bold;
+    font-size: 16px;
+    color: #004d99;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+
+.title-and-filter {
+    margin: 8px 8px 0px 8px;
+    display: flex;
+    gap: 20px;
+
+    .heading {
+        font-size: 18px;
+        font-weight: bold;
+        color: grey;
+        margin-bottom: 6px;
+    }
+}
+
+.timeline-steps {
+    padding: 10px 10px;
+    border-radius: 4px;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+    margin-bottom: 10px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
+}
+
+.filters {
+    margin: 0px 8px 8px 8px;
+    border-radius: 4px;
+    display: flex;
+    gap: 20px;
+}
+
+.action-buttons {
+    margin: 5px 0px !important;
+    display: flex;
+    justify-content: space-between;
+
+    button {
+        padding: 14px 20px !important;
+    }
+}
+
+.ant-table-thead>tr>th {
+    background-color: #258790 !important;
+    padding: 10px !important;
+    color: #fff !important;
+    position: sticky !important;
+    z-index: 10;
+}
+
+.project-timeline-table .ant-table-thead>tr>th {
+    background-color: grey !important;
+}
+
+
+.ant-table-tbody>tr>td {
+    background-color: #fafafa !important;
+    padding: 10px !important;
+}
+
+.float-right {
+    float: right;
+}
+
+.ant-steps-item-icon,
+.ant-steps-item-tail {
+    display: none !important;
+}
+
+.ant-steps {
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+}
+
+.ant-steps-item {
+    position: relative;
+    text-align: center;
+    cursor: pointer;
+    margin-right: 1px;
+    padding: 2px 5px !important;
+    color: gray;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.ant-steps-item-finish {
+    background-color: #166a75;
+    color: #fff !important;
+    border-radius: 4px;
+    border-radius: 0px !important;
+
+    .ant-steps-item-title {
+        color: #fff !important;
+    }
+}
+
+.ant-steps-item-active {
+    color: #000;
+    font-weight: bold;
+    padding: 0px 10px !important;
+    border-bottom: 4px solid #166a75;
+}
+
+.ant-steps-item-wait {
+    color: gray;
+}
+
+.ant-steps-item .ant-steps-item-title {
+    font-size: 16px;
+    text-transform: capitalize;
+}
+
+.custom-table-heading.ant-table-thead>tr>th {
+    padding: 5px !important;
+    border-radius: 0px !important;
+}
+
+.project-timeline-table {
+    width: 100%;
+
+    .ant-table {
+        border-collapse: separate;
+        border-spacing: 0;
+        table-layout: fixed;
+    }
+
+    .ant-table-thead>tr>th {
+        background: #666;
+        color: white;
+        font-weight: bold;
+        padding: 10px;
+        border-bottom: 2px solid #ddd;
+    }
+
+    .ant-table-tbody>tr>td {
+        padding: 10px;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .module-heading {
+        font-weight: bold;
+        background: #eee;
+    }
+}
+
+.container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: calc(100vh - 138px);
+}
+
+.time-building-container {
+    padding: 20px;
+    border-radius: 8px;
+    background-color: #ffffff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    min-width: 550px;
+}
+
+.no-project-message {
+    text-align: center;
+    padding: 20px;
+    background-color: #fff;
+    color: grey;
+    font-weight: bold;
+    border-radius: 8px;
+    width: 550px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.no-project-message i {
+    font-size: 3rem;
+    color: grey;
+    margin-bottom: 10px;
+}
+
+.no-project-message h3 {
+    margin: 10px 0;
+}
+
+.no-project-message p {
+    font-size: 0.9rem;
+    color: grey;
+    margin-bottom: 15px;
+}
+
+.no-project-message button {
+    background-color: #258790;
+    color: white;
+    border: none;
+    padding: 10px 25px;
+    font-size: 1rem;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background 0.3s;
+}
+
+.no-project-message button:hover {
+    background-color: #3a8c94;
+}
+
+.holiday-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    box-shadow: 0px 1px 0px 0px rgba(9, 30, 66, .25);
+}
+
+
+.st-sun-field {
+    padding: 10px;
+}
+
+.saturday-sunday-checkbox {
+    margin-right: 16px;
+}
+
+.add-new-holiday {
+    padding-right: 10px;
+}
+
+.ant-steps-item-finish>.ant-steps-item-container>.ant-steps-item-content>.ant-steps-item-title::after {
+    background-color: transparent !important;
+}
+
+.ant-steps-item-title {
+    font-size: 14px !important;
+}
+
+.highlighted-select .ant-select-selector,
+.highlighted-input .ant-input,
+.highlighted-datepicker .ant-picker {
+    border: 2px solid rgb(17, 205, 83) !important;
+    box-shadow: 0 0 5px rgba(7, 125, 13, 0.5);
+}

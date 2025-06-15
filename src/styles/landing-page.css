@@ -1,0 +1,45 @@
+.logo-sections {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 5px;
+    background: #258790;
+    border-radius: 10px;
+}
+
+.logo-image {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    border: 3px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    object-fit: contain;
+    background-color: white;
+}
+
+
+.heading-title {
+    font-size: 22px;
+    font-weight: 700;
+    padding-top: 10px;
+    color: #fff;
+    margin-top: 8px;
+    padding-left: 10px;
+    font-family: 'Syne', sans-serif;
+    text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+    transition: color 0.3s ease-in-out;
+    text-shadow: 3px 3px 10px rgba(236, 125, 125, 0.5);
+}
+
+
+.navbar-div {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    transition: top 0.3s ease;
+}
+
+.main-content {
+    transition: margin-top 0.3s ease;
+}

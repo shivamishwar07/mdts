@@ -1,0 +1,130 @@
+.main-container-div-items {
+    display: flex;
+}
+
+.employee-registration {
+    margin: 8px;
+    border-radius: 4px;
+    width: 100%;
+}
+
+.card-header {
+    margin-bottom: 8px;
+    border-radius: 4px !important;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.card-body {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0px !important;
+}
+
+.professional-form {
+    height: calc(100vh - 190px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 10px;
+
+    .form-row {
+        margin-bottom: 16px;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+
+    label {
+        display: block;
+        margin-top: 5px;
+        margin-bottom: 8px;
+        font-weight: 500;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .ant-select,
+    .ant-input,
+    .ant-date-picker {
+        width: 100%;
+    }
+
+    .button-group {
+        display: flex;
+        justify-content: flex-end;
+        gap: 12px;
+        float: right !important;
+    }
+
+    .cancel-button {
+        background-color: #f0f0f0;
+
+        &:hover {
+            background-color: #e0e0e0;
+        }
+    }
+
+    .uploaded-photo {
+        margin-top: 10px;
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 5px;
+    }
+
+    .ant-btn-primary {
+        background-color: #004d99;
+        border-color: #004d99;
+
+        &:hover {
+            background-color: #003366;
+            border-color: #003366;
+        }
+    }
+}
+
+.save-btn {
+    margin-right: 10px !important;
+    margin-top: 5px !important;
+    margin-bottom: 5px !important
+}
+
+.upload-section {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px;
+    border: 2px dashed #004d99;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    justify-content: center;
+    text-align: center;
+}
+
+.upload-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #fff;
+    background-color: #004d99;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.upload-btn:hover {
+    background-color: #003366;
+}
+
+.upload-preview {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    border: 2px solid #004d99;
+}

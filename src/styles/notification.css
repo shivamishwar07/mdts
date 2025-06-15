@@ -1,0 +1,28 @@
+.main-notification-page {
+    margin: 8px;
+}
+
+.notification-heading {
+    font-size: 18px;
+    font-weight: bold;
+    color: grey;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
+    border: 1px solid #ddd;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
+}
+
+.notification-items {
+    border: 1px solid #ddd;
+    border-radius: 10px 10px 5px 5px;
+}
+
+.notification-table {
+    height: calc(100vh - 205px);
+}
+
+.notification-action-btns {
+    text-align: right;
+    margin: 10px;
+}

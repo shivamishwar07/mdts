@@ -1,0 +1,117 @@
+.capex-container {
+    padding: 15px;
+    background-color: #fff;
+}
+
+.title-and-filter {
+    display: flex;
+    justify-content: space-between;
+}
+
+.ant-card-head {
+    background-color: #01a3a4 !important;
+    color: #fff !important;
+    font-size: 18px !important;
+    margin-bottom: 10px !important;
+}
+
+.ant-card-body {
+    padding-top: 0px !important;
+
+    h5 {
+        margin-bottom: 15px;
+        font-size: 18px;
+        color: grey;
+    }
+}
+
+.capex-title {
+    font-weight: bold;
+    font-size: 18px !important;
+    color: grey !important;
+}
+
+
+
+.capex-cards-flex {
+    margin: 20px 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: nowrap;
+
+}
+
+.capex-card-wrapper {
+    flex: 1;
+    max-width: calc(20% - 13px);
+}
+
+.capex-card {
+    background-color: #f5e4f7;
+    font-weight: 600;
+    text-align: center;
+    height: 80px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 6px;
+}
+
+.capex-date-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.capex-datepicker {
+    width: 120px;
+}
+
+.capex-period {
+    font-weight: 500;
+}
+
+.capex-default {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.capex-table .ant-table-thead>tr>th {
+    background-color: #5c2163;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+}
+
+.capex-table .ant-table-cell {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.capex-table-wrapper {
+    width: calc(100vw - 385px);
+    overflow-x: auto;
+}
+
+
+@media (max-width: 768px) {
+    .capex-date-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .capex-cards {
+        flex-direction: column;
+    }
+}
+
+.capex-pie-charts {
+    margin-top: 30px;
+}
+
+.capex-chart-title {
+    font-weight: 600;
+}
