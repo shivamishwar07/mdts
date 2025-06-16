@@ -1796,6 +1796,7 @@ export const StatusUpdate = () => {
                         handleChangeVersionTimeline(value);
                         setSelectedActivityKey(null);
                       }}
+                      disabled={replaneMode}
                       popupMatchSelectWidth={false}
                       style={{ width: '100%' }}
                       labelInValue
