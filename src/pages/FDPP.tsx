@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { db } from "../Utils/dataStorege.ts";
 import { Card, Col, Form, Input, Row, Timeline, Typography } from "antd";
 import dayjs from "dayjs";
-import '../styles/CAPEX-performance.css'
+import '../styles/fdpp.css'
 
 const { Title } = Typography;
 
@@ -46,7 +46,6 @@ const EDPP = (project: any) => {
 
   return (
     <div className="edpp-main-cont">
-      {/* Project Details */}
       <Card title="Project Details" style={{ marginBottom: 20 }}>
         <Form layout="horizontal" labelCol={{ span: 8, style: { textAlign: 'left' } }} wrapperCol={{ span: 16 }}>
           <Row gutter={16}>
@@ -65,7 +64,6 @@ const EDPP = (project: any) => {
         </Form>
       </Card>
 
-      {/* Location Details */}
       <Card title="Location Details" style={{ marginBottom: 20 }}>
         <Form layout="horizontal" labelCol={{ span: 8, style: { textAlign: 'left' } }} wrapperCol={{ span: 16 }}>
           <Row gutter={16}>
@@ -84,7 +82,6 @@ const EDPP = (project: any) => {
         </Form>
       </Card>
 
-      {/* Contractual Details */}
       <Card title="Contractual Details" style={{ marginBottom: 20 }}>
         <Form layout="horizontal" labelCol={{ span: 8, style: { textAlign: 'left' } }} wrapperCol={{ span: 16 }}>
           <Row gutter={16}>
@@ -103,7 +100,6 @@ const EDPP = (project: any) => {
         </Form>
       </Card>
 
-      {/* Initial Status - Activities */}
       <Card title="Initial Status - Activities" style={{ marginBottom: 20 }}>
         {projectDetails?.initialStatus?.library && (
           <Title level={5}>{formatValue(projectDetails.initialStatus.library)}</Title>

@@ -1,0 +1,12 @@
+.edpp-main-cont .ant-card {
+    padding: 16px;
+}
+
+.edpp-main-cont .ant-form-item {
+    margin-bottom: 16px;
+}
+
+.edpp-main-cont .ant-input[readonly] {
+    border: none;
+    padding: 8px;
+}

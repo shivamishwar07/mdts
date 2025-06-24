@@ -63,7 +63,6 @@ export const StatusUpdate = () => {
   const [openCostCalcModal, setOpenCostCalcModal] = useState(false);
   const [form] = Form.useForm();
   const [_formValid, setFormValid] = useState(false);
-  const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
   const [replaneMode, setIsReplanMode] = useState(false);
   const [discardReplaneMode, setIsDiscardReplanMode] = useState(false);
   const [confirmReplan, setConfirmReplan] = useState(false);
@@ -79,18 +78,8 @@ export const StatusUpdate = () => {
     { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
     { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
   ];
-
   const [openResponsibilityModal, setOpenResponsibilityModal] = useState(false);
   const [raciForm] = Form.useForm();
-
-  const showModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleCancel = () => {
-    setIsModalOpen(false);
-    setEmail("");
-  };
 
   useEffect(() => {
     defaultSetup();
@@ -140,36 +129,50 @@ export const StatusUpdate = () => {
     }
   }, [openResponsibilityModal, selectedActivityKey]);
 
-  // const getProjectTimeline = async (project: any) => {
-  //   if (Array.isArray(project?.projectTimeline)) {
-  //     try {
-  //       const latestVersionId = localStorage.getItem("latestProjectVersion");
+  useEffect(() => {
+    if (replaneMode) {
+      const updated = dataSource.map((item: any) => {
+        const recursiveUpdate = (activity: any): any => {
+          if (activity.fin_status === 'yetToStart') {
+            if (activity.actualStart) {
+              activity.plannedStart = activity.actualStart;
+            }
+            if (activity.actualFinish) {
+              activity.plannedFinish = activity.actualFinish;
+            }
+            if (activity.expectedDuration) {
+              activity.duration = activity.expectedDuration;
+            }
+          }
 
-  //       const foundTimeline = project.projectTimeline.filter(
-  //         (item: any) => item.version == latestVersionId
-  //       );
+          if (activity.children) {
+            activity.children = activity.children.map((child: any) =>
+              recursiveUpdate(child)
+            );
+          }
 
-  //       const timelineId = !latestVersionId || foundTimeline.length === 0
-  //         ? project.projectTimeline[0].timelineId
-  //         : foundTimeline[0].timelineId;
+          return activity;
+        };
 
-  //       const timeline = await db.getProjectTimelineById(timelineId);
-  //       const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
-  //       return finTimeline;
-  //     } catch (err) {
-  //       console.error("Error fetching timeline:", err);
-  //       return [];
-  //     }
-  //   }
+        return recursiveUpdate(item);
+      });
 
-  //   if (Array.isArray(project?.initialStatus?.items)) {
-  //     return project.initialStatus.items.filter(
-  //       (item: any) => item?.status?.toLowerCase() !== "completed"
-  //     );
-  //   }
+      setDataSource(updated);
+    }
 
-  //   return [];
-  // };
+  }, [replaneMode]);
+
+  const showModal = () => {
+    setIsModalOpen(true);
+  };
+
+  const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
+
+  const handleCancel = () => {
+    setIsModalOpen(false);
+    setEmail("");
+  };
+
   const getProjectTimeline = async (project: any) => {
     if (Array.isArray(project?.projectTimeline)) {
       try {
@@ -533,7 +536,6 @@ export const StatusUpdate = () => {
   const rePlanTimeline = () => {
     eventBus.emit("updateTab", "/create/timeline-builder");
     setIsReplanMode(true);
-    // navigate("/create/timeline-builder", { state: { selectedProject: selectedProject, selectedTimeline: selectedProjectTimeline, rePlanTimeline: true } });
   };
 
   const getAllActivities = (data: any[]): any[] => {
@@ -1014,6 +1016,19 @@ export const StatusUpdate = () => {
             if (fieldName === 'activityStatus') {
               if (value === 'inProgress' || value === 'completed') {
                 if (['inProgress', 'completed'].includes(subItem.fin_status)) {
+                  const actualStart = parseDate(subItem.actualStart);
+                  const actualFinish = parseDate(subItem.actualFinish);
+
+                  if (actualStart && actualStart.isAfter(today, 'day')) {
+                    notify.error(`Cannot mark as '${value}' because actual start date exceeds today's date.`);
+                    return subItem;
+                  }
+
+                  if (actualFinish && actualFinish.isAfter(today, 'day')) {
+                    notify.error(`Cannot mark as '${value}' because actual finish date exceeds today's date.`);
+                    return subItem;
+                  }
+
                   subItem.activityStatus = value;
                   updatedCodes.add(subItem.Code);
                   return subItem;
@@ -1255,7 +1270,7 @@ export const StatusUpdate = () => {
           //   errorMessage = `Activity ${activity.keyActivity} is Yet To Start but ${actualStart ? "Actual Start" : "Actual Finish"} is filled incorrectly.`;
           //   isValid = false;
           //   return true;
-          // }
+          // }  
 
           return false;
         });
@@ -1586,39 +1601,6 @@ export const StatusUpdate = () => {
       console.error("Validation Failed:", error);
     }
   };
-
-  useEffect(() => {
-    if (replaneMode) {
-      const updated = dataSource.map((item: any) => {
-        const recursiveUpdate = (activity: any): any => {
-          if (activity.fin_status === 'yetToStart') {
-            if (activity.actualStart) {
-              activity.plannedStart = activity.actualStart;
-            }
-            if (activity.actualFinish) {
-              activity.plannedFinish = activity.actualFinish;
-            }
-            if (activity.expectedDuration) {
-              activity.duration = activity.expectedDuration;
-            }
-          }
-
-          if (activity.children) {
-            activity.children = activity.children.map((child: any) =>
-              recursiveUpdate(child)
-            );
-          }
-
-          return activity;
-        };
-
-        return recursiveUpdate(item);
-      });
-
-      setDataSource(updated);
-    }
-
-  }, [replaneMode]);
 
   const handlesaveReplan = async () => {
     try {
