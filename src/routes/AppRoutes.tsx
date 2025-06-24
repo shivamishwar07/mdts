@@ -69,7 +69,7 @@ const AppRoutes = () => {
                     <Route path="/create/timeline-builder" element={<TimelineBuilder />} />
                     <Route path="/data-master" element={<DataMaster />} />
                     <Route path="/about" element={<About />} />
-                    <Route path="/projects-details" element={<Projects />} />
+                    <Route path="/dashboard" element={<Projects />} />
                     <Route path="/modules" element={<Module />} />
                     <Route path="/knowledge-center" element={<KnowledgeCenter />} />
                     <Route path="/document" element={<Document />} />

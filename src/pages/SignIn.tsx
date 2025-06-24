@@ -22,7 +22,7 @@ const SignInSignUp: React.FC = () => {
             user.email &&
             user.whatsapp &&
             user.profilePhoto &&
-            user.password
+            user.Password
         );
     };
 
@@ -37,7 +37,7 @@ const SignInSignUp: React.FC = () => {
                     message.success("Login Successful!");
                     const isProfileComplete = isProfileCompleted(user);
                     setTimeout(() => {
-                        navigate(isProfileComplete ? "/landing-page" : "/profile");
+                        navigate(isProfileComplete ? "/dashboard" : "/profile");
                     }, 1000);
                 } else {
                     message.error("Invalid Email or Password");
@@ -91,126 +91,6 @@ const SignInSignUp: React.FC = () => {
 
 
     return (
-        // <div
-        //     style={{
-        //         height: "100vh",
-        //         display: "flex",
-        //         alignItems: "center",
-        //     }}
-        // >
-        //     <div
-        //         style={{
-        //             width: "100%",
-        //             height: "100vh",
-        //             borderRadius: 0,
-        //             alignItems: "center",
-        //             display: "flex",
-        //             flexDirection: "column",
-        //             justifyContent: "center",
-        //             margin: 0,
-        //             background: "linear-gradient(135deg, #257180 10%, #4C585B 60%, #92C7CF 80%)",
-        //             color: "#e0e0e0",
-        //             padding: "20px"
-        //         }}
-        //     >
-        //         <div style={{ display: "flex", flexDirection: "column", justifyContent: "center" }}>
-        //             <Title level={3} style={{ color: "#fff", marginBottom: 24, fontSize: "30px" }}>
-        //                 Mine Development Tracking System
-        //             </Title>
-        //             {!isSignUp ? (
-        //                 <>
-        //                     <Title level={4} style={{ color: "#fff", marginBottom: 16 }}>
-        //                         Sign in to your account
-        //                     </Title>
-
-        //                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        //                         <Input placeholder="Enter your email address" value={email} onChange={(e) => setEmail(e.target.value)} />
-        //                         <Input.Password placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
-
-        //                         <Text style={{ color: "#e0e0e0" }}>
-        //                             By signing in, you agree to our <span style={{ color: "#e33b28", cursor: "pointer", textDecoration: "none", transition: "text-decoration 0.3s ease", fontWeight: "bold" }}
-        //                                 onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"} onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}>Terms & Conditions</span> and
-        //                             <span style={{ color: "#e33b28", cursor: "pointer", textDecoration: "none", transition: "text-decoration 0.3s ease", fontWeight: "bold" }}
-        //                                 onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"} onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}> Privacy Policy</span>
-        //                         </Text>
-
-        //                         <Button type="primary" onClick={handleLogin} style={{ backgroundColor: "#258790", color: '#fff', borderRadius: "8px", fontWeight: "bold" }}>
-        //                             Login
-        //                         </Button>
-
-        //                         <Text style={{ color: "#e0e0e0", cursor: "pointer", textDecoration: "none" }}
-        //                             onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"}
-        //                             onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}>
-        //                             Forgot Password?
-        //                         </Text>
-
-        //                         <Text style={{ color: "#e0e0e0", cursor: "pointer", textDecoration: "none" }}
-        //                             onClick={() => setIsSignUp(true)}
-        //                             onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"}
-        //                             onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}>
-        //                             New here? Sign up
-        //                         </Text>
-        //                     </div>
-
-        //                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 16 }}>
-        //                         <div style={{ flex: 1, borderBottom: '1px solid #fff', marginRight: 16 }} />
-        //                         <Text style={{ color: "#fff" }}>OR</Text>
-        //                         <div style={{ flex: 1, borderBottom: '1px solid #fff', marginLeft: 16 }} />
-        //                     </div>
-        //                     <div className="button-container">
-        //                         <Button type="default" block icon={<GoogleOutlined />} className="auth-button google-btn">
-        //                             Google
-        //                         </Button>
-        //                         <Button type="default" block icon={<WindowsOutlined />} className="auth-button microsoft-btn">
-        //                             Microsoft
-        //                         </Button>
-        //                         <Button type="default" block icon={<KeyOutlined />} className="auth-button otp-btn">
-        //                             OTP
-        //                         </Button>
-        //                     </div>
-        //                 </>
-        //             ) : (
-        //                 <>
-        //                     <Title level={4} style={{ color: "#fff", marginBottom: 16 }}>
-        //                         Sign up for an account
-        //                     </Title>
-
-        //                     <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-        //                         <Input placeholder="Enter your work email" value={workEmail} onChange={(e) => setWorkEmail(e.target.value)} />
-        //                         <Button type="primary" onClick={handleSignUp} style={{ backgroundColor: "#258790", borderRadius: "8px", fontWeight: "bold" }}>
-        //                             Sign Up
-        //                         </Button>
-
-        //                         <Text style={{ color: "#e0e0e0", cursor: "pointer", textDecoration: "none" }}
-        //                             onClick={() => setIsSignUp(false)}
-        //                             onMouseOver={(e) => e.currentTarget.style.textDecoration = "underline"}
-        //                             onMouseOut={(e) => e.currentTarget.style.textDecoration = "none"}>
-        //                             Already have an account? Sign in
-        //                         </Text>
-        //                     </div>
-
-        //                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 16 }}>
-        //                         <div style={{ flex: 1, borderBottom: '1px solid #fff', marginRight: 16 }} />
-        //                         <Text style={{ color: "#fff" }}>OR</Text>
-        //                         <div style={{ flex: 1, borderBottom: '1px solid #fff', marginLeft: 16 }} />
-        //                     </div>
-        // <div className="button-container">
-        //     <Button type="default" block icon={<GoogleOutlined />} className="auth-button google-btn">
-        //         Google
-        //     </Button>
-        //     <Button type="default" block icon={<WindowsOutlined />} className="auth-button microsoft-btn">
-        //         Microsoft
-        //     </Button>
-        //     <Button type="default" block icon={<KeyOutlined />} className="auth-button otp-btn">
-        //         OTP
-        //     </Button>
-        // </div>
-        //                 </>
-        //             )}
-        //         </div>
-        //     </div>
-        // </div>
-
         <div className="auth-container">
             <div className="auth-card">
                 <div className="auth-header">

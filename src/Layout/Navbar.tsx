@@ -15,8 +15,8 @@ interface NavItem {
 }
 
 const initialNavLinks: any = [
-    { label: "About", action: "/about" },
-    { label: "Dashboard", action: "/projects-details" },
+    // { label: "About", action: "/about" },
+    { label: "Dashboard", action: "/dashboard" },
     { label: "Documents", action: "/document" },
     { label: "Knowledge Center", action: "/knowledge-center" },
     {
