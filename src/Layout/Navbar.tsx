@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Menu, Dropdown, Button, Typography, Divider, Modal, Badge, Input } from "antd";
 import { BellOutlined, DownOutlined, LogoutOutlined, QuestionCircleOutlined, SearchOutlined, SettingOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
+import { userStore } from "../Utils/UserStore";
 const { Title } = Typography;
 interface NavItem {
     label: string;
@@ -29,8 +30,8 @@ const initialNavLinks: any = [
     {
         label: "Create",
         subItems: [
-            { label: "Register New Project", action: "/create/register-new-project" },
             { label: "Modules", action: "/modules" },
+            { label: "Register New Project", action: "/create/register-new-project" },
             { label: "Timeline Builder", action: "/create/timeline-builder" },
             { label: "Project Timeline", action: "/create/project-timeline" },
             { label: "Non-working Days", action: "/create/non-working-days" },
@@ -46,13 +47,13 @@ const Navbar: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [navLinks, setNavLinks] = useState<NavItem[]>(initialNavLinks);
-    const [user, setUser] = useState<any>(null);
+    // const [user, setUser] = useState<any>(null);
     const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
     const handlePopupOpen = (name: string) => setOpenPopup(name);
     const isActive = (action: string) => location.pathname.startsWith(action);
     const [selectedDropdownKeys, setSelectedDropdownKeys] = useState<{ [key: string]: string }>({});
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
-
+    const [user, setUser] = useState<any>(userStore.getUser());
     const showLogoutModal = () => {
         setIsLogoutModalVisible(true);
     };
@@ -91,6 +92,15 @@ const Navbar: React.FC = () => {
             }));
         }
     }, [location.pathname, navLinks]);
+
+    useEffect(() => {
+        const unsubscribe = userStore.subscribe(() => {
+            const latestUser = userStore.getUser();
+            setUser(latestUser);
+        });
+        return () => unsubscribe();
+    }, []);
+
 
     const handleLogout = () => {
         setLoading(true);

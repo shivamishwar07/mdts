@@ -4,9 +4,11 @@ import { getCurrentUser } from "../Utils/moduleStorage";
 import { useNavigate } from "react-router-dom";
 import "../styles/user-management.css";
 import { Notifications, DeleteOutlined } from "@mui/icons-material";
-import { Button, Col, Form, Input, message, Modal, Row, Select, Table } from "antd";
+import { Button, Col, Form, Input, Modal, Row, Select, Table } from "antd";
 import { ExclamationCircleOutlined, ReloadOutlined } from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
 
 const { Option } = Select;
 interface Module {
@@ -68,7 +70,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     text: true,
   });
   const [form] = Form.useForm();
-  // const [selectedEmails, setSelectedEmails] = useState<any>([]);
   const [currentUser, setCurrentUser] = useState<any>({});
 
   useEffect(() => {
@@ -164,33 +165,18 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       : parts[0][0]?.toUpperCase() || "";
   }
 
-  // const invitationSuggestions = [
-  //   { name: 'sudhindra rao', role: 'Founder & COO', email: 'sudhindra@simpro.co.in' },
-  //   { name: 'amit tiwari', role: 'Manager-Business', email: 'amit.tiwari@simpro.co.in' }
-  // ];
-
-  // const handleAddEmail = (email: any) => {
-  //   if (!selectedEmails.includes(email)) {
-  //     setSelectedEmails([...selectedEmails, email]);
-  //   }
-  // };
-
   const handleSendInvites = async () => {
     try {
       const values = await form.validateFields();
 
-      const { employeeFullName, permissionProfile, emails } = values;
-
-      if (!employeeFullName || !permissionProfile || !emails) {
-        return message.error("Please fill all required fields");
-      }
+      const { employeeFullName, permissionProfile, emails, mobile, designation } = values;
 
       const users = await db.getUsers();
       const emailExists = users.some((user) => user.email === emails);
       const currentUser = getCurrentUser();
 
       if (emailExists) {
-        return message.error("Email already registered");
+        return notify.error("Email already registered");
       }
 
       const password = emails.slice(0, 6);
@@ -198,8 +184,8 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
         id: Date.now(),
         name: employeeFullName,
         company: currentUser.company,
-        designation: "",
-        mobile: "",
+        designation: designation || "N/A",
+        mobile: mobile || "N/A",
         email: emails,
         whatsapp: "",
         registeredOn: new Date().toISOString(),
@@ -211,17 +197,19 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
 
       await db.addUsers(newUser);
 
-      message.success("Member added successfully!");
+      notify.success("Member added successfully!");
       form.resetFields();
       setAddMemberModalVisible(false);
       handleClose();
+
       const allUsers = await db.getUsers();
       setUsers(allUsers);
     } catch (error: any) {
       console.error(error);
-      message.error(error.message || "Error adding member!");
+      notify.error(error.message || "Error adding member!");
     }
   };
+
 
   const handleClose = () => {
     setAddMemberModalVisible(false);
@@ -249,7 +237,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       const updatedUser = { ...selectedUser, role: newRole };
 
       await db.updateUsers(userId, updatedUser);
-      message.success("Role updated successfully.");
+      notify.success("Role updated successfully.");
 
       setDataSource((prev: any) =>
         prev.map((user: any) =>
@@ -258,16 +246,14 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       );
     } catch (error) {
       console.error(error);
-      message.error("Failed to update role.");
+      notify.error("Failed to update role.");
     }
   };
 
-  const handleRefresh = async() => {
+  const handleRefresh = async () => {
     const allUsers = await db.getUsers();
     setUsers(allUsers);
   };
-
-
 
   const columns: any = [
     {
@@ -329,7 +315,12 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       dataIndex: "whatsapp",
       key: "whatsapp",
       align: "center",
-    },
+      render: (_: any, record: any) => {
+        return (record.whatsapp && record.whatsapp !== "N/A")
+          ? record.whatsapp
+          : (record.mobile && record.mobile !== "N/A" ? record.mobile : "N/A");
+      },
+    }
   ];
 
   return (
@@ -604,29 +595,17 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       </Modal>
 
       <Modal
+        title="Add Member"
         visible={addMemberModalVisible}
         onCancel={handleClose}
         onOk={handleSendInvites}
         okText="Save"
         okButtonProps={{ className: "bg-secondary" }}
         cancelButtonProps={{ className: "bg-tertiary" }}
-        closable={false}
         width={"50%"}
         className="modal-container"
       >
-        <div className="modal-body" style={{ padding: "20px" }}>
-          {/* <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <Text strong style={{ fontSize: "16px" }}>Invite your Team</Text>
-            <Button
-              size="small"
-              className="bg-secondary"
-              style={{ fontSize: "0.75rem", padding: "2px 8px", minWidth: "auto", textTransform: "none" }}
-              onClick={() => navigate("/employee-registration")}
-            >
-              Create Member Manually
-            </Button>
-          </div> */}
-
+        <div className="modal-body" style={{ padding: "0px 10px" }}>
           <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
             <Form.Item
               name="employeeFullName"
@@ -637,9 +616,31 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
             </Form.Item>
 
             <Form.Item
+              name="designation"
+              label="Designation"
+              rules={[{ required: true, message: "Please select designation" }]}
+            >
+              <Select placeholder="Select Designation">
+                <Option value="Mining Engineer">Mining Engineer</Option>
+                <Option value="Geologist">Geologist</Option>
+                <Option value="Operations Manager">Operations Manager</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="mobile"
+              label="Mobile Number"
+              rules={[
+                { required: true, message: 'Please enter mobile number!' },
+                { pattern: /^[6-9]\d{9}$/, message: 'Enter a valid 10-digit mobile number' },
+              ]}
+            >
+              <Input placeholder="Enter mobile number" />
+            </Form.Item>
+
+            <Form.Item
               name="permissionProfile"
               label="Set permission profile"
-              className="mt-2"
               rules={[{ required: true, message: 'Please select a permission profile!' }]}
             >
               <Select placeholder="Select...">
@@ -649,27 +650,21 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
               </Select>
             </Form.Item>
 
-            <Form.Item name="emails" className="mt-2" label="Enter email addresses">
+            <Form.Item
+              name="emails"
+              label="Email Address"
+              rules={[
+                { required: true, message: "Email is required" },
+                {
+                  pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                  message: "Enter a valid email address",
+                },
+              ]}
+            >
               <Input placeholder="Enter email address" />
             </Form.Item>
-          </Form>
 
-          {/* <div style={{ marginTop: 24 }}>
-            <Text strong>Invitation Suggestions</Text>
-            <List
-              dataSource={invitationSuggestions}
-              renderItem={item => (
-                <List.Item
-                  actions={[<Button onClick={() => handleAddEmail(item.email)}>Add</Button>]}
-                >
-                  <List.Item.Meta
-                    title={item.name}
-                    description={`${item.role} | ${item.email}`}
-                  />
-                </List.Item>
-              )}
-            />
-          </div> */}
+          </Form>
         </div>
       </Modal>
 
@@ -692,7 +687,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
           </p>
         </div>
       </Modal >
-
+      <ToastContainer />
     </div >
   );
 };

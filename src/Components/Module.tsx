@@ -23,6 +23,7 @@ const Module = () => {
     const moduleCode = state?.moduleCode ?? null;
     const [openModal, setOpenModal] = useState<boolean>(false);
     const [selectedRow, setSelectedRow] = useState<any>(null);
+    const [selectedActivityRow, setSelectedActivityRow] = useState<any>(null);
     const [open, setOpen] = useState<boolean>(false);
     const [openPopup, setOpenPopup] = useState<boolean>(false);
     const [openCancelUpdateModulePopup, setOpenCancelUpdateModulePopup] = useState<boolean>(false);
@@ -77,6 +78,7 @@ const Module = () => {
         { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
         { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
     ];
+
     const pushToUndoStack = (currentState: any) => {
         setUndoStack((prevStack) => {
             const newStack = [...prevStack, currentState];
@@ -133,6 +135,52 @@ const Module = () => {
         }
         handleSortModule(sortOrder);
     }, [sortOrder]);
+
+    useEffect(() => {
+        if (openResponsibilityModal && selectedRow?.code) {
+            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            if (activity?.raci) {
+                raciForm.setFieldsValue(activity.raci);
+            }
+        }
+    }, [openResponsibilityModal, selectedRow]);
+
+    useEffect(() => {
+        if (openCostCalcModal && selectedRow?.code) {
+            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            if (activity?.cost) {
+                form.setFieldsValue({
+                    projectCost: activity.cost.projectCost,
+                    opCost: activity.cost.opCost
+                });
+            } else {
+                form.resetFields();
+            }
+        }
+    }, [openCostCalcModal, selectedRow]);
+
+    useEffect(() => {
+        if (openNotificationModal && selectedRow?.code) {
+            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            if (activity?.notifications) {
+                notificationForm.setFieldsValue(activity.notifications);
+            } else {
+                notificationForm.resetFields();
+            }
+        }
+    }, [openNotificationModal, selectedRow]);
+
+    useEffect(() => {
+        if (openDocumentModal && selectedRow?.code) {
+            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            if (activity?.documents) {
+                documentForm.setFieldsValue({ documents: activity.documents });
+            } else {
+                documentForm.resetFields();
+            }
+        }
+    }, [openDocumentModal, selectedRow]);
+
 
     const handleSaveModuleAndActivity = async () => {
         try {
@@ -590,28 +638,6 @@ const Module = () => {
         });
     };
 
-    // const handleAssignRACI = () => {
-    //     console.log(selectedRow);
-
-    //     if (!selectedRow) {
-    //         notification.warning({
-    //             message: "Please select a row to assign RACI.",
-    //             duration: 3,
-    //         });
-    //         return;
-    //     }
-
-    //     const filteredData = {
-    //         ...moduleData,
-    //         activities: moduleData.activities.filter(
-    //             (activity: any) => activity.code === selectedRow.code
-    //         ),
-    //     };
-    //     setFilteredModuleData(filteredData);
-
-    //     setOpenModal(true);
-    // };
-
     const handleCancelUpdateModule = () => {
         setOpenCancelUpdateModulePopup(false);
 
@@ -687,15 +713,6 @@ const Module = () => {
         setOpenCostCalcModal(false);
         form.resetFields();
         setFormValid(false);
-    };
-
-    const handleValuesChange = async () => {
-        try {
-            await form.validateFields();
-            setFormValid(true);
-        } catch {
-            setFormValid(false);
-        }
     };
 
     const showNotificationModal = () => setOpenNotificationModal(true);
@@ -858,50 +875,6 @@ const Module = () => {
             console.error("Validation Failed:", err);
         }
     };
-    useEffect(() => {
-        if (openResponsibilityModal && selectedRow?.code) {
-            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
-            if (activity?.raci) {
-                raciForm.setFieldsValue(activity.raci);
-            }
-        }
-    }, [openResponsibilityModal, selectedRow]);
-
-    useEffect(() => {
-        if (openCostCalcModal && selectedRow?.code) {
-            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
-            if (activity?.cost) {
-                form.setFieldsValue({
-                    projectCost: activity.cost.projectCost,
-                    opCost: activity.cost.opCost
-                });
-            } else {
-                form.resetFields();
-            }
-        }
-    }, [openCostCalcModal, selectedRow]);
-
-    useEffect(() => {
-        if (openNotificationModal && selectedRow?.code) {
-            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
-            if (activity?.notifications) {
-                notificationForm.setFieldsValue(activity.notifications);
-            } else {
-                notificationForm.resetFields();
-            }
-        }
-    }, [openNotificationModal, selectedRow]);
-    useEffect(() => {
-        if (openDocumentModal && selectedRow?.code) {
-            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
-            if (activity?.documents) {
-                documentForm.setFieldsValue({ documents: activity.documents });
-            } else {
-                documentForm.resetFields();
-            }
-        }
-    }, [openDocumentModal, selectedRow]);
-
 
     return (
         <div>
@@ -936,7 +909,7 @@ const Module = () => {
                                                 icon={<FileTextOutlined style={{ color: '#7f8c8d' }} />}
                                                 className="icon-button"
                                                 onClick={showDocumentModal}
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -946,7 +919,7 @@ const Module = () => {
                                                 icon={<DollarOutlined style={{ color: '#52c41a' }} />}
                                                 className="icon-button"
                                                 onClick={handleOpenCostCalcModal}
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -956,7 +929,7 @@ const Module = () => {
                                                 icon={<ArrowDownOutlined />}
                                                 className="icon-button orange"
                                                 onClick={decreaseLevel}
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -966,7 +939,7 @@ const Module = () => {
                                                 icon={<ArrowUpOutlined />}
                                                 className="icon-button orange"
                                                 onClick={increaseLevel}
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -977,7 +950,7 @@ const Module = () => {
                                                 icon={<DeleteOutlined />}
                                                 className="icon-button red"
                                                 onClick={() => setIsDeleteModalVisible(true)}
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -1003,7 +976,7 @@ const Module = () => {
                                                 icon={<UserOutlined />}
                                                 onClick={showResponsibilityModal}
                                                 className="icon-button blue"
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                         <Modal
@@ -1027,7 +1000,7 @@ const Module = () => {
                                                 icon={<BellOutlined />}
                                                 onClick={showNotificationModal}
                                                 className="icon-button blue"
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                         <Modal
@@ -1105,9 +1078,17 @@ const Module = () => {
                                     <TableRow
                                         hover
                                         selected={selectedRow === moduleData}
-                                        onClick={() => setSelectedRow(moduleData)}
-                                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                        onClick={() => {
+                                            if (moduleData.activities.length === 0 && moduleData.moduleName) {
+                                                setSelectedRow(moduleData);
+                                            }
+                                        }}
+                                        sx={{
+                                            '&:last-child td, &:last-child th': { border: 0 },
+                                            cursor: moduleData.activities.length === 0 ? 'pointer' : 'none',
+                                        }}
                                     >
+
                                         <TableCell
                                             suppressContentEditableWarning
                                             onBlur={(e) => handleEdit('parentModuleCode', e.target.innerText)}
@@ -1120,21 +1101,9 @@ const Module = () => {
                                         >
                                             {moduleData.moduleName}
                                         </TableCell>
-                                        {/* <TableCell
-                                            contentEditable
-                                            suppressContentEditableWarning
-                                            onBlur={(e) => handleEdit('duration', e.target.innerText)}
-                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
-                                        >{moduleData.duration}
-                                        </TableCell> */}
                                         <TableCell sx={{ padding: '10px', color: '#808080' }}>
                                             {moduleData.duration}
                                         </TableCell>
-                                        {/* <TableCell contentEditable
-                                            suppressContentEditableWarning
-                                            onBlur={(e) => handleEdit('', e.target.innerText)}
-                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}></TableCell> */}
-
                                         <TableCell sx={{ padding: '10px', color: '#808080' }}>
                                             {moduleData.prerequisite || ''}
                                         </TableCell>
@@ -1142,13 +1111,15 @@ const Module = () => {
                                         <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{moduleData.level}</TableCell>
                                     </TableRow>
                                     {moduleData.activities
-                                        // .sort((a: any, b: any) => a.code.localeCompare(b.code))
-                                        .map((activity: any, index: any, sortedActivities: any) => (
+                                        .map((activity: any, index: any, _sortedActivities: any) => (
                                             <TableRow
                                                 hover
                                                 key={activity.code}
                                                 selected={selectedRow?.code === activity.code}
-                                                onClick={() => setSelectedRow(activity)}
+                                                onClick={() => {
+                                                    setSelectedRow(activity);
+                                                    setSelectedActivityRow(activity);
+                                                }}
                                                 sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                                             >
                                                 <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{activity.code}</TableCell>
@@ -1170,13 +1141,16 @@ const Module = () => {
                                                 </TableCell>
                                                 <TableCell sx={{ padding: '10px' }}>
                                                     <AutoComplete
-                                                        value={activity.prerequisite || (index === 0 && activity.level === 'L2' ? "" : (sortedActivities[index - 1]?.code || ""))}
-                                                        options={getAllPrerequisites().map((code: string) => ({ value: code }))}
+                                                        value={activity.prerequisite || ""}
+                                                        options={getAllPrerequisites()
+                                                            .filter((code: any) => code !== activity.code)
+                                                            .map((code: string) => ({ value: code }))}
                                                         onChange={(value) => handlePrerequisiteChange(activity.code, value)}
                                                         filterOption={filterPrerequisites}
                                                         placeholder="Select Prerequisite"
                                                         style={{ width: '100%' }}
                                                         allowClear
+                                                        disabled={index === 0 && activity.level === 'L2'}
                                                     />
                                                 </TableCell>
 
@@ -1338,50 +1312,54 @@ const Module = () => {
                     title="Define Cost for Delay (₹ / Day)"
                     open={openCostCalcModal}
                     onCancel={handleClose}
-                    onOk={handleCostConfirm}
-                    destroyOnClose
+                    okText="Save"
+                    onOk={() => {
+                        form
+                            .validateFields()
+                            .then((_values) => {
+                                handleCostConfirm();
+                            })
+                            .catch((_err) => {
+                            });
+                    }}
+                    destroyOnClose={false}
                     className="modal-container"
                 >
                     <Form
                         form={form}
                         layout="vertical"
-                        onValuesChange={handleValuesChange}
-                        style={{ padding: "0px 10px", display: 'flex', flexDirection: 'column', gap: '10px' }}
+                        validateTrigger="onChange"
+                        style={{
+                            padding: "0px 10px",
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px',
+                        }}
                     >
-                        <Form.Item
-                            label=""
-                            style={{ marginBottom: 16 }}
-                        >
-                            <Row align="middle" gutter={8}>
-                                <Col flex="150px">Project Cost</Col>
-                                <Col flex="auto">
-                                    <Form.Item
-                                        name="projectCost"
-                                        noStyle
-                                        rules={[{ required: true, message: 'Please enter Project Cost' }]}
-                                    >
-                                        <Input type="number" min={0} placeholder="Enter Project Cost" />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-                        </Form.Item>
+                        <Row align="middle" gutter={8}>
+                            <Col flex="150px">Project Cost</Col>
+                            <Col flex="auto">
+                                <Form.Item
+                                    name="projectCost"
+                                    rules={[{ required: true, message: 'Please enter Project Cost' }]}
+                                >
+                                    <Input type="number" min={0} placeholder="Enter Project Cost" />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
-                        <Form.Item label="" style={{ marginBottom: 24 }}>
-                            <Row align="middle" gutter={8}>
-                                <Col flex="150px">Opportunity Cost</Col>
-                                <Col flex="auto">
-                                    <Form.Item
-                                        name="opCost"
-                                        noStyle
-                                        rules={[{ required: true, message: 'Please enter OP Cost' }]}
-                                    >
-                                        <Input type="number" min={0} placeholder="Enter OP Cost" />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-                        </Form.Item>
+                        <Row align="middle" gutter={8}>
+                            <Col flex="150px">Opportunity Cost</Col>
+                            <Col flex="auto">
+                                <Form.Item
+                                    name="opCost"
+                                    rules={[{ required: true, message: 'Please enter OP Cost' }]}
+                                >
+                                    <Input type="number" min={0} placeholder="Enter OP Cost" />
+                                </Form.Item>
+                            </Col>
+                        </Row>
                     </Form>
-
                 </Modal>
 
                 <Modal
@@ -1557,6 +1535,7 @@ const Module = () => {
                     maskClosable={false}
                     keyboard={false}
                     destroyOnClose
+                    okText="Save"
                     className="modal-container"
                 >
                     <Form

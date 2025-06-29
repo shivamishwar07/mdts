@@ -3,8 +3,8 @@ import "../styles/hero.css";
 const Hero = () => {
     const [currentIndex, setCurrentIndex] = useState(1);
     const images = [
-        '../public/images/carousels/m1.jpg',
-        '../public/images/carousels/m3.jpg',
+        '/images/carousels/m1.jpg',
+        '/images/carousels/m3.jpg',
     ];
 
     useEffect(() => {

@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import "../styles/sign-in.css";
-import { Button, message } from "antd";
+import { Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
 import { GoogleOutlined, WindowsOutlined, KeyOutlined } from '@ant-design/icons';
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
 // const { Title, Text } = Typography;
 
 const SignInSignUp: React.FC = () => {
@@ -25,70 +27,77 @@ const SignInSignUp: React.FC = () => {
             user.Password
         );
     };
-
     const handleLogin = async () => {
-        const users = await db.getUsers();
-        if (users) {
-            const user = users.find((user: any) => user.email === email && (user.password === password || user.Password === password));
+        try {
+            validateEmail(email);
 
-            try {
-                if (user) {
-                    localStorage.setItem("user", JSON.stringify(user));
-                    message.success("Login Successful!");
-                    const isProfileComplete = isProfileCompleted(user);
-                    setTimeout(() => {
-                        navigate(isProfileComplete ? "/dashboard" : "/profile");
-                    }, 1000);
-                } else {
-                    message.error("Invalid Email or Password");
-                }
-            } catch (error: any) {
-                message.error(error);
+            const users = await db.getUsers();
+            const user = users.find(
+                (user: any) => user.email === email && (user.password === password || user.Password === password)
+            );
+
+            if (!user) {
+                return notify.error("Invalid email or password. Please try again.");
             }
-        } else {
-            message.error("Error retrieving users");
+
+            localStorage.setItem("user", JSON.stringify(user));
+            notify.success("Login Successful!");
+
+            const isProfileComplete = isProfileCompleted(user);
+            setTimeout(() => {
+                navigate(isProfileComplete ? "/dashboard" : "/profile");
+            }, 1000);
+        } catch (error: any) {
+            if (error.message === "Invalid email format") {
+                notify.error("Please enter a valid email address.");
+            } else {
+                notify.error("An unexpected error occurred during login.");
+                console.error(error);
+            }
         }
     };
 
 
     const handleSignUp = async () => {
-        if (!workEmail) {
-            return message.error("Please fill all required fields");
-        }
-        const users = await db.getUsers();
-        const emailExists = users.some((user: any) => user.email === workEmail);
-
-        if (emailExists) {
-            return message.error("Email already registered");
-        }
-
-        const password = workEmail.slice(0, 6);
-        const newUser = {
-            id: Date.now(),
-            name: "",
-            company: "",
-            designation: "",
-            mobile: "",
-            email: workEmail,
-            whatsapp: "",
-            registeredOn: new Date().toISOString(),
-            profilePhoto: "",
-            password: password,
-            isTempPassword: true,
-            role: "Admin"
-        };
-
-        users.push(newUser);
         try {
+            validateEmail(workEmail);
+
+            const users = await db.getUsers();
+            const emailExists = users.some((user: any) => user.email === workEmail);
+            if (emailExists) throw new Error("Email already registered");
+
+            const password = workEmail.slice(0, 6);
+            const newUser = {
+                id: Date.now(),
+                name: "",
+                company: "",
+                designation: "",
+                mobile: "",
+                email: workEmail,
+                whatsapp: "",
+                registeredOn: new Date().toISOString(),
+                profilePhoto: "",
+                password: password,
+                isTempPassword: true,
+                role: "Admin"
+            };
+
             await db.addUsers(newUser);
+            localStorage.setItem("user", JSON.stringify(newUser));
+            notify.success("Sign-up successful! Invite link sent. Please verify your account.");
+            setTimeout(() => navigate("/profile"), 1000);
         } catch (error: any) {
-            message.error(error)
+            notify.error(error.message);
         }
-        localStorage.setItem("user", JSON.stringify(newUser));
-        message.success("Sign-up successful! Invite link sent. Please verify your account.");
-        setTimeout(() => navigate("/profile"), 1000);
     };
 
+
+    const validateEmail = (email: string) => {
+        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!emailRegex.test(email)) {
+            throw new Error("Invalid email format");
+        }
+    };
 
     return (
         <div className="auth-container">
@@ -124,7 +133,7 @@ const SignInSignUp: React.FC = () => {
                     </div>
 
                     <div className="divider"><span>or continue with</span></div>
-                    
+
                     <div className="social-buttons">
                         <Button type="default" block icon={<GoogleOutlined />} className="google">
                             Google
@@ -138,8 +147,8 @@ const SignInSignUp: React.FC = () => {
                     </div>
                 </div>
             </div>
+            <ToastContainer />
         </div>
-
     );
 };
 

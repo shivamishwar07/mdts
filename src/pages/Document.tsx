@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Table, Button, Space, notification, Modal, Form, Input, Select, List, message } from "antd";
+import { Table, Button, Space, notification, Modal, Form, Input, Select, List } from "antd";
 import { DeleteOutlined, ExclamationCircleOutlined, PlusOutlined, UploadOutlined, CloseCircleOutlined, EyeOutlined } from "@ant-design/icons";
 import "../styles/documents.css";
 import { getAllDocuments, getModules } from "../Utils/moduleStorage";
@@ -8,6 +8,8 @@ import { Typography } from "antd";
 import "../styles/documents.css";
 import { db } from "../Utils/dataStorege.ts";
 import { v4 as uuidv4 } from 'uuid';
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
 const { Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
@@ -72,7 +74,7 @@ const Document: React.FC = () => {
                 setPreviewContent(fileData);
                 setPreviewVisible(true);
             } else {
-                message.error("File not found in IndexedDB.");
+                notify.error("File not found in IndexedDB.");
             }
         }
     };
@@ -170,7 +172,7 @@ const Document: React.FC = () => {
 
     const handleSave = async () => {
         if (!milestone || files.length === 0 || !linkedActivity) {
-            message.error("Please fill all fields and upload files.");
+            notify.error("Please fill all fields and upload files.");
             return;
         }
 
@@ -192,7 +194,7 @@ const Document: React.FC = () => {
             const user = userRaw ? JSON.parse(userRaw) : null;
 
             if (!user) {
-                message.error("User information is missing in local storage.");
+                notify.error("User information is missing in local storage.");
                 return;
             }
 
@@ -215,13 +217,13 @@ const Document: React.FC = () => {
             };
 
             await db.documents.add(newDocumentEntry);
-            message.success("Document saved successfully!");
+            notify.success("Document saved successfully!");
             const updatedDocs = await db.getAllDocuments();
             setDocuments(updatedDocs);
             setIsAddModalVisible(false);
             resetForm();
         } catch (error) {
-            message.error("Failed to save document.");
+            notify.error("Failed to save document.");
             console.error(error);
         }
     };
@@ -488,7 +490,7 @@ const Document: React.FC = () => {
                     )}
                 </div>
             </Modal>
-
+            <ToastContainer />
         </>
     );
 };

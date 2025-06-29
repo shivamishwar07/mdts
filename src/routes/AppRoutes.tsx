@@ -23,6 +23,10 @@ import ViewDocumentPage from "../Components/ViewDocumentPage";
 import ViewUser from "../Components/ViewUser";
 import CreateNotification from "../Components/CreateNotification";
 import LandingPage from "../pages/LandingPage";
+import Pricing from "../pages/Pricing";
+import Services from "../pages/Services";
+import Hero from "../pages/Hero";
+import Contact from "../pages/Contact";
 
 const AppRoutes = () => {
     const isAuthenticated = !!localStorage.getItem('user');
@@ -34,15 +38,20 @@ const AppRoutes = () => {
                     path="/home"
                     element={
                         isAuthenticated
-                            ? <Navigate to="/landing-page" replace />
+                            ? <Navigate to="/dashboard" replace />
                             : <Home />
                     }
-                />
+                >
+                    <Route index element={<Hero />} />
+                    <Route path="services" element={<Services />} />
+                    <Route path="pricing" element={<Pricing />} />
+                    <Route path="contacts" element={<Contact />} />
+                </Route>
                 <Route
                     path="/"
                     element={
                         isAuthenticated
-                            ? <Navigate to="/landing-page" replace />
+                            ? <Navigate to="/dashboard" replace />
                             : <Navigate to="/home" replace />
                     }
                 />

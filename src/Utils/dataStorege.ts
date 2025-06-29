@@ -338,7 +338,7 @@ export class DataStorage extends Dexie {
       message.warning(`Document with ID ${id} not found.`);
     }
   }
-
+  
   //disk storage
   async addDiskEntry(path: string, content: string): Promise<void> {
     await this.diskStorage.add({ path, content });

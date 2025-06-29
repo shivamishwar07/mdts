@@ -1,13 +1,17 @@
 import { useEffect, useState } from "react";
 import "../styles/profile.css";
-import { Form, Input, Button, Row, Col, Select, message, Modal } from "antd";
+import { Form, Input, Button, Row, Col, Select, Modal } from "antd";
 import { ArrowRightOutlined } from "@ant-design/icons";
 import ManageUser from "../Components/ManageUser";
 import { CameraOutlined } from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser, getCurrentUserId } from '../Utils/moduleStorage';
+import { userStore } from "../Utils/UserStore.ts";
 const { Option } = Select;
-
+import { Tooltip } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
 const Profile = () => {
 
     const [formData, setFormData] = useState<any>({
@@ -46,6 +50,7 @@ const Profile = () => {
     const [image, setImage] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [form] = Form.useForm();
+    const [password, setPassword] = useState("");
 
     useEffect(() => {
         fillUsersData();
@@ -120,7 +125,7 @@ const Profile = () => {
             const currentUser = getCurrentUser();
 
             if (!currentUser?.email) {
-                message.error("No user found. Please log in again.");
+                notify.error("No user found. Please log in again.");
                 return;
             }
 
@@ -131,17 +136,17 @@ const Profile = () => {
             if (currentUser.id) {
                 const updatedUser = { ...users[currentUser.id], ...formData, isTempPassword: false };
                 await db.updateUsers(updatedUser.id, updatedUser);
-                localStorage.setItem("user", JSON.stringify(updatedUser));
+                userStore.setUser(updatedUser);
 
                 if (!formData.isTempPassword) {
-                    message.success("Profile information updated successfully!");
+                    notify.success("Profile information updated successfully!");
                 }
             } else {
-                message.error("User not found in database.");
+                notify.error("User not found in database.");
             }
         } catch (error) {
             console.error("Error updating user profile:", error);
-            message.error("An error occurred while updating profile. Please try again.");
+            notify.error("An error occurred while updating profile. Please try again.");
         }
     };
 
@@ -157,14 +162,14 @@ const Profile = () => {
         try {
             const file = event.target.files?.[0];
             if (!file) {
-                message.error("No file selected.");
+                notify.error("No file selected.");
                 return;
             }
 
             const reader = new FileReader();
             reader.onload = async (e) => {
                 if (!e.target?.result) {
-                    message.error("Error reading file.");
+                    notify.error("Error reading file.");
                     return;
                 }
 
@@ -174,7 +179,7 @@ const Profile = () => {
                 const currentUserId = getCurrentUserId();
                 const activeUser = await db.getUserById(currentUserId);
                 if (!activeUser) {
-                    message.error("User not found.");
+                    notify.error("User not found.");
                     return;
                 }
 
@@ -182,9 +187,11 @@ const Profile = () => {
                 await db.updateUsers(currentUserId, updatedUser);
 
                 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-                localStorage.setItem("user", JSON.stringify({ ...currentUser, profilePhoto: base64Image }));
+                const updatedLocalUser = { ...currentUser, profilePhoto: base64Image };
+                localStorage.setItem("user", JSON.stringify(updatedLocalUser));
+                userStore.setUser(updatedLocalUser);
 
-                message.success("Profile photo updated successfully!");
+                notify.success("Profile photo updated successfully!");
                 setIsModalOpen(false);
                 fillUsersData();
             };
@@ -192,7 +199,7 @@ const Profile = () => {
             reader.readAsDataURL(file);
         } catch (error) {
             console.error("Error updating profile photo:", error);
-            message.error("Something went wrong. Please try again.");
+            notify.error("Something went wrong. Please try again.");
         }
     };
 
@@ -216,14 +223,14 @@ const Profile = () => {
 
             localStorage.setItem("user", JSON.stringify({ ...currentUser, password: values.newPassword, isTempPassword: false }));
 
-            message.success(formData.isTempPassword ? "Profile updated successfully!" : "Password updated successfully!");
+            notify.success(formData.isTempPassword ? "Profile updated successfully!" : "Password updated successfully!");
             setIsModalOpen(false);
             setTimeout(() => {
                 fillUsersData();
             }, 1000)
         }
         else {
-            message.error("Current password is incorrect");
+            notify.error("Current password is incorrect");
         }
 
     };
@@ -507,6 +514,31 @@ const Profile = () => {
         }
     };
 
+    const getPasswordStrength = (password: string) => {
+        if (!password) return "";
+        let score = 0;
+        if (password.length >= 8) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[a-z]/.test(password)) score++;
+        if (/\d/.test(password)) score++;
+        if (/[\W_]/.test(password)) score++;
+
+        if (score <= 2) return "Weak";
+        if (score === 3 || score === 4) return "Medium";
+        return "Strong";
+    };
+
+    const getPasswordValidationStatus = (pwd: any) => {
+        return {
+            length: pwd.length >= 8,
+            uppercase: /[A-Z]/.test(pwd),
+            lowercase: /[a-z]/.test(pwd),
+            number: /\d/.test(pwd),
+            specialChar: /[\W_]/.test(pwd),
+        };
+    };
+
+
     return (
         <>
             <div className="main-profile">
@@ -581,16 +613,67 @@ const Profile = () => {
                         )}
                         {formData.isTempPassword}
                         <Form.Item
-                            label="New Password"
+                            label={
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    New Password
+                                    <Tooltip
+                                        title={
+                                            (() => {
+                                                const status = getPasswordValidationStatus(password);
+                                                const getStyle = (pass: any) => ({
+                                                    color: pass ? "green" : "red",
+                                                    fontWeight: "bold",
+                                                });
+
+                                                return (
+                                                    <div style={{ lineHeight: 1.6 }}>
+                                                        <div style={getStyle(status.length)}>• At least 8 characters</div>
+                                                        <div style={getStyle(status.uppercase)}>• One uppercase letter</div>
+                                                        <div style={getStyle(status.lowercase)}>• One lowercase letter</div>
+                                                        <div style={getStyle(status.number)}>• One number</div>
+                                                        <div style={getStyle(status.specialChar)}>• One special character</div>
+                                                    </div>
+                                                );
+                                            })()
+                                        }
+                                        placement="right"
+                                        overlayInnerStyle={{
+                                            backgroundColor: "#f9f9f9",
+                                            color: "#333",
+                                            padding: "10px",
+                                            borderRadius: 6,
+                                            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                                        }}
+                                    >
+                                        <InfoCircleOutlined style={{ color: "#888", cursor: "pointer" }} />
+                                    </Tooltip>
+
+                                </div>
+                            }
                             name="newPassword"
                             labelCol={{ span: 8, style: { textAlign: "left" } }}
                             wrapperCol={{ span: 16 }}
                             rules={[
                                 { required: true, message: "Please enter a new password!" },
-                                { min: 6, message: "Password must be at least 6 characters!" }
+                                {
+                                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/,
+                                    message:
+                                        "Password must contain uppercase, lowercase, number, special char, and be at least 8 characters."
+                                }
                             ]}
                         >
-                            <Input.Password placeholder="Enter new password" />
+                            <Input.Password placeholder="Enter new password" onChange={(e) => setPassword(e.target.value)} />
+                        </Form.Item>
+
+                        <Form.Item noStyle shouldUpdate={(prev, curr) => prev.newPassword !== curr.newPassword}>
+                            {({ getFieldValue }) => {
+                                const strength = getPasswordStrength(getFieldValue("newPassword"));
+                                return strength ? (
+                                    <div className="strength-pill-wrapper">
+                                        <span className={`strength-pill ${strength.toLowerCase()}`}>{strength}</span>
+                                    </div>
+                                ) : null;
+                            }}
                         </Form.Item>
 
                         <Form.Item
@@ -620,10 +703,9 @@ const Profile = () => {
                             </Button>
                         </Form.Item>
                     </Form>
-
-
                 </Modal>
             </div>
+            <ToastContainer />
         </>
     );
 };
