@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, message, Result, notification, Progress } from "antd";
+import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, Result, notification, Progress } from "antd";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import "../styles/time-builder.css";
 import type { ColumnsType } from "antd/es/table";
@@ -11,6 +11,8 @@ import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, CloseOutlin
 import { useLocation } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
 
 interface Activity {
   [x: string]: string;
@@ -617,7 +619,7 @@ const TimeBuilder = () => {
     );
 
     if (hasCompletedActivities) {
-      message.warning("Cannot delete module with completed activities");
+      notify.warning("Cannot delete module with completed activities");
       return;
     }
 
@@ -893,13 +895,13 @@ const TimeBuilder = () => {
       }
 
       setTimeout(() => navigate(".", { replace: true }), 0);
-      message.success(isUpdateMode ? "Project timeline updated successfully!" : "Project timeline saved successfully!");
+      notify.success(isUpdateMode ? "Project timeline updated successfully!" : "Project timeline saved successfully!");
 
       localStorage.setItem("selectedProjectId", selectedProjectId);
       resetProjectState();
     } catch (error) {
       console.error("Error saving project timeline:", error);
-      message.error("Failed to save project timeline. Please try again.");
+      notify.error("Failed to save project timeline. Please try again.");
     }
   };
 
@@ -1037,7 +1039,7 @@ const TimeBuilder = () => {
       holidays: updatedHolidays
     };
     await db.updateProject(selectedProjectId, updatedProjectWithHoliday);
-    message.success(isUpdateMode
+    notify.success(isUpdateMode
       ? "Project timeline updated successfully!"
       : "Project timeline saved successfully!"
     );
@@ -1585,13 +1587,13 @@ const TimeBuilder = () => {
         await db.addProjectTimeline(updatedProjectWithTimeline.projectTimeline);
         localStorage.setItem('selectedProjectId', selectedProject.id);
 
-        setTimeout(() => message.success("Project timeline linked successfully!"), 0);
+        setTimeout(() => notify.success("Project timeline linked successfully!"), 0);
         navigate("/create/project-timeline");
       } else {
-        setTimeout(() => message.error("Selected project and existing project do not match library and mine type!"), 0);
+        setTimeout(() => notify.error("Selected project and existing project do not match library and mine type!"), 0);
       }
     } catch (error: any) {
-      setTimeout(() => message.warning(error.message || "An error occurred"), 0);
+      setTimeout(() => notify.warning(error.message || "An error occurred"), 0);
     }
   };
 
@@ -2116,6 +2118,7 @@ const TimeBuilder = () => {
         </div>
         <hr />
       </Modal>
+      <ToastContainer />
     </>
   );
 };

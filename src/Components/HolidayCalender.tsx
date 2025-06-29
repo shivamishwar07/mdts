@@ -6,11 +6,12 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "../styles/holiday.css"
-import { Button, DatePicker, Input, message, Modal, Select, Tooltip } from "antd";
+import { Button, DatePicker, Input, Modal, Select, Tooltip } from "antd";
 import { SaveOutlined, DeleteOutlined, EditOutlined } from "@mui/icons-material";
 const moduleOptions = ["Land Acquisition", "Forest Clearance", "Budget Planning"];
 import { db } from "../Utils/dataStorege.ts";
 import dayjs from "dayjs";
+import { notify } from "../Utils/ToastNotify.tsx";
 
 
 export const HolidayCalender = () => {
@@ -172,7 +173,7 @@ export const HolidayCalender = () => {
       const row: any = rows[index];
 
       if (!row.from || !row.to || !row.holiday.trim() || row.module.length === 0) {
-        message.error("Please fill all required fields before saving.");
+        notify.error("Please fill all required fields before saving.");
         return;
       }
 
@@ -185,7 +186,7 @@ export const HolidayCalender = () => {
       setRows(updatedRows);
       !editMode ? await db.addHolidays(row) : await db.updateHolidays(rowdata.id, rowdata);
     } catch (error) {
-      message.error("Failed to save holiday. Please try again.");
+      notify.error("Failed to save holiday. Please try again.");
     }
   };
 

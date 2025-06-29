@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 import "../styles/module.css"
-import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, message, Form, Switch } from 'antd';
+import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, Form, Switch } from 'antd';
 import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined, DollarOutlined, MinusCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import CreateNotification from "./CreateNotification.tsx";
@@ -13,6 +13,7 @@ import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUserId } from '../Utils/moduleStorage';
 import { RollbackOutlined } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
+import { notify } from "../Utils/ToastNotify.tsx";
 
 const Module = () => {
     const { state } = useLocation();
@@ -325,9 +326,9 @@ const Module = () => {
                 try {
                     await db.deleteModule(selectedRow.id);
                     setTimeout(() => navigate(".", { replace: true }), 0);
-                    message.success("Module removed successfully!");
+                    notify.success("Module removed successfully!");
                 } catch (error: any) {
-                    message.error(error);
+                    notify.error(error);
                 }
             }
             else if (selectedRow.parentModuleCode && selectedRow.id) {

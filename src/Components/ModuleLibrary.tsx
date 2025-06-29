@@ -2,13 +2,15 @@ import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
 import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, IconButton, TablePagination } from "@mui/material";
 import { FilterList } from "@mui/icons-material";
-import { Select, Input, Button, Typography, message, Modal } from "antd";
+import { Select, Input, Button, Typography, Modal } from "antd";
 import { SearchOutlined, DeleteOutlined, RobotOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
 import "../styles/module-library.css";
 import { Link } from "react-router-dom";
 import { getCurrentUser } from '../Utils/moduleStorage';
 const { Option } = Select;
 import { db } from "../Utils/dataStorege.ts";
+import { notify } from "../Utils/ToastNotify.tsx";
+import { ToastContainer } from "react-toastify";
 
 interface Activity {
   code: string;
@@ -90,10 +92,10 @@ const ModuleLibrary = () => {
   useEffect(() => {
     db.getModules().then(setModulesData);
     setTimeout(() => {
-      
+
       console.log(modulesData);
     }, 2000);
-    
+
   }, []);
 
   const fetchAllProjects = async () => {
@@ -138,13 +140,13 @@ const ModuleLibrary = () => {
     const data = e.dataTransfer.getData("application/json");
     const moduleData: Module = JSON.parse(data);
     if (moduleData.mineType !== selectedLibrary.mineType) {
-      message.error(
+      notify.error(
         `Module Mine Type (${moduleData.mineType}) does not match library Mine Type (${selectedLibrary.mineType}).`
       );
       return;
     }
     if (selectedLibrary.items.some(item => item.moduleName === moduleData.moduleName)) {
-      message.info("Module already exists in this library.");
+      notify.info("Module already exists in this library.");
       return;
     }
     const updatedLibrary = { ...selectedLibrary, items: [...selectedLibrary.items, moduleData] };
@@ -185,14 +187,14 @@ const ModuleLibrary = () => {
       await db.deleteModule(selectedModuleId);
       db.getModules().then(setModulesData);
     } catch (error) {
-      message.error("Error deleting module.");
+      notify.error("Error deleting module.");
     }
     setIsDeleteModuleModalVisible(false);
   };
 
   const handleCreateLibrary = () => {
-    if (!newLibraryName.trim() || !newLibraryMineType.trim()) return message.error("Library name and Mine Type are mandatory.");
-    if (!currentUser) return message.error("User not found.");
+    if (!newLibraryName.trim() || !newLibraryMineType.trim()) return notify.error("Library name and Mine Type are mandatory.");
+    if (!currentUser) return notify.error("User not found.");
     if (selectedLibrary) handleSaveLibrary();
 
     const newLibrary: Library = {
@@ -235,15 +237,15 @@ const ModuleLibrary = () => {
 
       if (existingLibrary) {
         await updateLibraryData(selectedLibrary);
-        message.success("Library updated successfully!");
+        notify.success("Library updated successfully!");
       } else {
         await db.addLibrary(selectedLibrary);
-        message.success("Library created successfully!");
+        notify.success("Library created successfully!");
       }
       const updatedLibraries = await db.getAllLibraries();
       setLibraries(updatedLibraries);
     } catch (error) {
-      message.error(error instanceof Error ? error.message : "Error saving library.");
+      notify.error(error instanceof Error ? error.message : "Error saving library.");
     } finally {
       setSelectedLibrary(null);
     }
@@ -505,7 +507,7 @@ const ModuleLibrary = () => {
                     background: selectedLibrary && selectedLibrary.id === library.id ? "#d0ebff" : "#eee",
                   }}
                 >
-                  <Typography.Text style={{cursor:"pointer"}} onClick={() => setSelectedLibrary(library)}>
+                  <Typography.Text style={{ cursor: "pointer" }} onClick={() => setSelectedLibrary(library)}>
                     {library.name} ({library.mineType})
                   </Typography.Text>
                   <DeleteOutlined
@@ -559,6 +561,8 @@ const ModuleLibrary = () => {
           </p>
         </div>
       </Modal >
+
+      <ToastContainer />
     </>
   );
 };

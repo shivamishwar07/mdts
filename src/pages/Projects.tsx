@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "../styles/projects.css";
-import { Input, Button, Modal, Select, Dropdown, Menu, message, Checkbox } from 'antd';
+import { Input, Button, Modal, Select, Dropdown, Menu, Checkbox } from 'antd';
 import { Link } from "react-router-dom";
 import { SearchOutlined } from "@mui/icons-material";
 import { MoreOutlined, RobotOutlined } from "@ant-design/icons";
@@ -14,6 +14,8 @@ import CSR from "./CSR.tsx";
 import ProjectTimeline from "./ProjectTimeline.tsx";
 import ProjectDocs from "./ProjectDocs";
 import ProjectStatistics from "./ProjectStatistics.tsx";
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
 interface LocationDetails {
     state: string;
     district: string;
@@ -190,9 +192,9 @@ const Projects = () => {
             setAllProjects(updatedProjects);
             setProjectDetails(updatedProjects.length > 0 ? updatedProjects[0] : null);
             setSelectedProjectName(updatedProjects.length > 0 ? updatedProjects[0]?.projectParameters?.projectName || "" : "");
-            message.success("Project removed successfully");
+            notify.success("Project removed successfully");
         } catch (error: any) {
-            message.error("Error deleting project:", error);
+            notify.error("Error deleting project:", error);
         } finally {
             setIsDeleteModalOpen(false);
         }
@@ -219,7 +221,7 @@ const Projects = () => {
     const shareProject = (project: ProjectData) => {
         const shareableLink = `https://yourapp.com/project/${project}`;
         navigator.clipboard.writeText(shareableLink);
-        message.success("Project link copied to clipboard!");
+        notify.success("Project link copied to clipboard!");
     };
 
     const menu = (project: ProjectData) => (
@@ -267,7 +269,7 @@ const Projects = () => {
         <>
             <div className="project-container">
                 <div className="all-project-details">
-                    <div style={{ display: "flex", justifyContent: "space-between",alignItems:'center' }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: 'center' }}>
                         <span
                             className={`project-heading ${isProjectFocused ? "focused" : ""}`}
                             onClick={() => {
@@ -403,7 +405,7 @@ const Projects = () => {
             >
                 <p>Are you sure you want to delete this project?</p>
             </Modal>
-
+            <ToastContainer />
         </>
     );
 };

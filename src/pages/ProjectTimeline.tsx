@@ -6,7 +6,7 @@ import { FolderOpenOutlined } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip, Space, List } from "antd";
+import { Button, Select, Modal, Input, Table, DatePicker, Tooltip, Space, List } from "antd";
 import { ClockCircleOutlined, DownloadOutlined, DownOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined, UserOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
@@ -40,6 +40,7 @@ interface Module {
 import { Dropdown } from 'antd';
 import { FilterOutlined } from '@ant-design/icons';
 import { notify } from "../Utils/ToastNotify.tsx";
+import { ToastContainer } from "react-toastify";
 
 const tabs = [
     "All",
@@ -321,10 +322,10 @@ const ProjectTimeline = (project: any) => {
 
     const handleShare = () => {
         if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-            message.error("Please enter a valid email address.");
+            notify.error("Please enter a valid email address.");
             return;
         }
-        message.success(`Shared to ${email}`);
+        notify.success(`Shared to ${email}`);
         setIsModalOpen(false);
         setEmail("");
     };
@@ -1214,7 +1215,7 @@ const ProjectTimeline = (project: any) => {
                                 <div className="raci-row">
                                     <span className="raci-label">Consulted:</span>
                                     <span className="raci-value">
-                                        {selectedActivity.raci.consulted?.map((id:any) => (
+                                        {selectedActivity.raci.consulted?.map((id: any) => (
                                             <span key={id} className="raci-tag">{userMap[id]}</span>
                                         ))}
                                     </span>
@@ -1222,7 +1223,7 @@ const ProjectTimeline = (project: any) => {
                                 <div className="raci-row">
                                     <span className="raci-label">Informed:</span>
                                     <span className="raci-value">
-                                        {selectedActivity.raci.informed?.map((id:any) => (
+                                        {selectedActivity.raci.informed?.map((id: any) => (
                                             <span key={id} className="raci-tag">{userMap[id]}</span>
                                         ))}
                                     </span>
@@ -1236,7 +1237,7 @@ const ProjectTimeline = (project: any) => {
 
                 </Tabs>
             </Modal>
-
+            <ToastContainer />
         </>
     )
 }

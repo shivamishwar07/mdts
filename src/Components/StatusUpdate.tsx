@@ -6,7 +6,7 @@ import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, message } from "antd";
+import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col } from "antd";
 import { ClockCircleOutlined, CloseCircleOutlined, DollarOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
@@ -1664,7 +1664,7 @@ export const StatusUpdate = () => {
       };
 
       await db.updateProject(selectedProject.id, updatedProjectWithTimeline);
-      message.success("Replanned timeline saved successfully!");
+      notify.success("Replanned timeline saved successfully!");
       navigate(".", { replace: true });
       setIsReplanMode(false);
       setConfirmReplan(false);
@@ -1672,7 +1672,7 @@ export const StatusUpdate = () => {
 
     } catch (error) {
       console.error("Error saving replanned timeline:", error);
-      message.error("Failed to save replanned timeline. Please try again.");
+      notify.error("Failed to save replanned timeline. Please try again.");
     }
   };
 
