@@ -1,9 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, Dropdown, Button, Typography, Divider, Modal, Badge, Input } from "antd";
+import { Menu, Dropdown, Button, Typography, Divider, Modal, Badge, Input, InputRef } from "antd";
 import { BellOutlined, DownOutlined, LogoutOutlined, QuestionCircleOutlined, SearchOutlined, SettingOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
-import { userStore } from "../Utils/UserStore";
 const { Title } = Typography;
 interface NavItem {
     label: string;
@@ -30,8 +29,8 @@ const initialNavLinks: any = [
     {
         label: "Create",
         subItems: [
-            { label: "Modules", action: "/modules" },
             { label: "Register New Project", action: "/create/register-new-project" },
+            { label: "Modules", action: "/modules" },
             { label: "Timeline Builder", action: "/create/timeline-builder" },
             { label: "Project Timeline", action: "/create/project-timeline" },
             { label: "Non-working Days", action: "/create/non-working-days" },
@@ -47,13 +46,14 @@ const Navbar: React.FC = () => {
     const location = useLocation();
     const navigate = useNavigate();
     const [navLinks, setNavLinks] = useState<NavItem[]>(initialNavLinks);
-    // const [user, setUser] = useState<any>(null);
+    const [user, setUser] = useState<any>(null);
     const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
     const handlePopupOpen = (name: string) => setOpenPopup(name);
     const isActive = (action: string) => location.pathname.startsWith(action);
     const [selectedDropdownKeys, setSelectedDropdownKeys] = useState<{ [key: string]: string }>({});
     const [recentSearches, setRecentSearches] = useState<string[]>([]);
-    const [user, setUser] = useState<any>(userStore.getUser());
+    const [isSearchVisible, setIsSearchVisible] = useState(false);
+    const searchInputRef = useRef<InputRef>(null);
     const showLogoutModal = () => {
         setIsLogoutModalVisible(true);
     };
@@ -92,15 +92,6 @@ const Navbar: React.FC = () => {
             }));
         }
     }, [location.pathname, navLinks]);
-
-    useEffect(() => {
-        const unsubscribe = userStore.subscribe(() => {
-            const latestUser = userStore.getUser();
-            setUser(latestUser);
-        });
-        return () => unsubscribe();
-    }, []);
-
 
     const handleLogout = () => {
         setLoading(true);
@@ -239,9 +230,19 @@ const Navbar: React.FC = () => {
                     <div className="search-dropdown-wrapper">
                         <Dropdown
                             trigger={['click']}
+                            visible={isSearchVisible}
+                            onVisibleChange={(visible) => {
+                                setIsSearchVisible(visible);
+                                if (visible) {
+                                    setTimeout(() => {
+                                        searchInputRef.current?.focus?.();
+                                    }, 100);
+                                }
+                            }}
                             overlay={
                                 <div className="search-dropdown-content">
                                     <Input.Search
+                                        ref={searchInputRef}
                                         placeholder="Search MDTS..."
                                         onSearch={(value) => {
                                             if (value) {
@@ -265,6 +266,7 @@ const Navbar: React.FC = () => {
                         >
                             <SearchOutlined className="search-trigger-icon" />
                         </Dropdown>
+
 
                     </div>
                     <span className="notification-icon-wrapper">
