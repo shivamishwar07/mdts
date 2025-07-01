@@ -100,9 +100,7 @@ const Pricing = () => {
     return (
         <div className="pricing-section">
             <h1 className="title">Plans and Pricing</h1>
-            <p className="subtitle">
-                Receive unlimited credits when you pay yearly, and save on your plan.
-            </p>
+            <p className="subtitle"> Maximize the value of your monitoring solution by selecting annual billing and benefit from significant savings. Whether you’re an individual professional, an expanding team, or a large-scale enterprise, we offer plans precisely tailored to your needs. Every plan encompasses indispensable features designed to ensure seamless operational continuity. Optimize your resources, enhance productivity, and scale with confidence through our flexible and strategically crafted pricing options. </p>
             <div className="toggle-section">
                 <button
                     className={`toggle-btn ${activePlan === "monthly" ? "active" : ""}`}

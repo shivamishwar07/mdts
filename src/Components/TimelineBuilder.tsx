@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, Result, notification, Progress } from "antd";
+import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, Result, notification, Progress, Typography } from "antd";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import "../styles/time-builder.css";
 import type { ColumnsType } from "antd/es/table";
@@ -13,6 +13,7 @@ import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
+import { Box } from "@mui/material";
 
 interface Activity {
   [x: string]: string;
@@ -98,31 +99,39 @@ const TimeBuilder = () => {
     { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
     { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" }
   ];
+  const [isReviewModalVisible, setIsReviewModalVisible] = useState(false);
+  const [selectedReviewerId, setSelectedReviewerId] = useState<any>(null);
+  const moduleOptions = ["Land Acquisition", "Forest Clearance", "Budget Planning"];
+  const [isAddHolidayModalVisible, setAddHolidayModalVisible] = useState(false);
+  const [newHoliday, setNewHoliday] = useState({
+    from: null,
+    to: null,
+    holiday: "",
+    module: [],
+    impact: {},
+  });
+
+  const [_rows, setRows] = useState([
+    {
+      from: null, to: null, holiday: "", module: [], impact: {}, editing: true
+    },
+  ]);
+
+  const userOptions = [
+    { id: '6fa84f42-81e4-49fd-b9fc-1cbced2f1d90', name: 'Amit Sharma' },
+    { id: '2de753d4-1be2-4230-a1ee-ec828ef10f6a', name: 'Priya Verma' },
+    { id: '12fcb989-f9ae-4904-bdcf-9c9d8b63e8cd', name: 'Rahul Mehta' },
+    { id: '9d8f16ee-e21c-4c58-9000-dc3d51f25f2e', name: 'Sneha Reddy' },
+    { id: 'c5c07f70-dbb6-4b02-9cf2-8f9e2d6b3c5f', name: 'Vikram Iyer' },
+    { id: 'a95f34d0-3cf9-4c58-9a70-dcc68a0c32a4', name: 'Neha Kapoor' },
+    { id: 'b4ac3f1b-0591-4435-aabb-b7a7fc5c3456', name: 'Ankit Jaiswal' },
+    { id: 'e7a54111-0a0c-4f91-849c-6816f74e7b12', name: 'Divya Narayan' },
+    { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
+    { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
+  ];
 
   useEffect(() => {
     defaultSetup();
-  }, []);
-
-  useEffect(() => {
-    const fetchHolidays = async () => {
-      try {
-        const holidays = await db.getAllHolidays();
-        if (holidays) {
-          const updatedData: HolidayData[] = holidays.map((item: any, index: number) => ({
-            ...item,
-            from: item.from?.$d ? item.from.$d : item.from,
-            to: item.to?.$d ? item.to.$d : item.to,
-            key: String(index + 1),
-          }));
-
-          setHolidayData(updatedData);
-          setFinalHolidays(updatedData);
-          setSelected(Object.fromEntries(updatedData.map((item) => [item.key, true])));
-        }
-      } catch (error) {
-        console.error("Error fetching holidays:", error);
-      }
-    };
     fetchHolidays();
   }, []);
 
@@ -248,8 +257,6 @@ const TimeBuilder = () => {
       const timelineId = selectedTimeline.versionId || selectedTimeline.timelineId;
       setSelectedTimelineId(timelineId);
       getProjectTimeline(timelineId);
-      console.log(timelineId);
-
       setIsUpdateMode(true);
       setSelectedProjectName(projectParameters?.projectName || "");
       setSelectedProjectId(id || "");
@@ -272,6 +279,26 @@ const TimeBuilder = () => {
     fetchData();
   }, [location.state]);
 
+  const fetchHolidays = async () => {
+    try {
+      const holidays = await db.getAllHolidays();
+      if (holidays) {
+        const updatedData: HolidayData[] = holidays.map((item: any, index: number) => ({
+          ...item,
+          from: item.from?.$d ? item.from.$d : item.from,
+          to: item.to?.$d ? item.to.$d : item.to,
+          key: String(index + 1),
+        }));
+
+        setHolidayData(updatedData);
+        setFinalHolidays(updatedData);
+        setSelected(Object.fromEntries(updatedData.map((item) => [item.key, true])));
+      }
+    } catch (error) {
+      console.error("Error fetching holidays:", error);
+    }
+  };
+
   const getProjectTimeline = async (timelineId: any) => {
     if (timelineId) {
       try {
@@ -282,7 +309,6 @@ const TimeBuilder = () => {
         } else {
           handleLibraryChange([]);
         }
-        console.log(finTimeline);
 
         return finTimeline;
       } catch (err) {
@@ -853,16 +879,25 @@ const TimeBuilder = () => {
 
       const createTimelineEntry = (
         timelineId: string,
-        version: string
-      ) => ({
-        timelineId,
-        status: "pending",
-        version,
-        addedBy: currentUser.name,
-        addedUserEmail: currentUser.email,
-        createdAt: currentTimestamp,
-        updatedAt: currentTimestamp,
-      });
+        version: string,
+        reviewerId: string
+      ) => {
+        const reviewer = userOptions.find((u) => u.id === reviewerId);
+
+        return {
+          timelineId,
+          status: "pending",
+          version,
+          addedBy: currentUser.name,
+          addedUserEmail: currentUser.email,
+          approver: {
+            id: reviewer?.id,
+            Name: reviewer?.name,
+          },
+          createdAt: currentTimestamp,
+          updatedAt: currentTimestamp,
+        };
+      };
 
       if (!isUpdateMode || isReplanMode) {
         const createdTimeLineId: any = await db.addProjectTimeline(sequencedModules);
@@ -880,11 +915,13 @@ const TimeBuilder = () => {
           };
         }
 
+        const newEntry = createTimelineEntry(createdTimeLineId, newVersion, selectedReviewerId);
+
         const updatedProjectWithTimeline = {
           ...selectedProject,
           projectTimeline: [
             ...updatedTimeline,
-            createTimelineEntry(createdTimeLineId, newVersion),
+            newEntry,
           ],
           processedTimelineData: sequencedModules,
         };
@@ -945,11 +982,13 @@ const TimeBuilder = () => {
       width: "25%",
       render: (modules: any) => (
         <div>
-          {modules.map((module: any, index: any) => (
-            <div key={index}>{module}</div>
-          ))}
+          {Array.isArray(modules) &&
+            modules.map((module: any, index: number) => (
+              <div key={index}>{module}</div>
+            ))}
         </div>
       ),
+
     },
     {
       title: "Impact",
@@ -1310,62 +1349,6 @@ const TimeBuilder = () => {
       mod.activities?.some((act: any) => !!act.actualFinish)
     );
 
-    // if (hasStatus && step != 1) {
-    //   baseColumns.push({
-    //     title: "Status",
-    //     dataIndex: "activityStatus",
-    //     key: "activityStatus",
-    //     render: (text: string) => {
-    //       const status = text?.toLowerCase();
-
-    //       let color = "";
-    //       let label = "";
-
-    //       switch (status) {
-    //         case "completed":
-    //           color = "green";
-    //           label = "COMPLETED";
-    //           break;
-    //         case "inprogress":
-    //           color = "#faad14";
-    //           label = "IN PROGRESS";
-    //           break;
-    //         case "yettostart":
-    //           color = "#8c8c8c";
-    //           label = "YET TO START";
-    //           break;
-    //         default:
-    //           color = "#000000";
-    //           label = status?.toUpperCase() || "";
-    //       }
-
-    //       return (
-    //         <span style={{ fontWeight: 'bold', color }}>
-    //           {label}
-    //         </span>
-    //       );
-    //     },
-    //   });
-    // }
-
-    // if (hasActualStart && step != 1) {
-    //   baseColumns.push({
-    //     title: "Actual Start",
-    //     dataIndex: "actualStart",
-    //     key: "actualStart",
-    //     render: (text: any) => <span style={{ fontWeight: 'bold' }}>{text}</span>,
-    //   });
-    // }
-
-    // if (hasActualFinish && step != 1) {
-    //   baseColumns.push({
-    //     title: "Actual Finish",
-    //     dataIndex: "actualFinish",
-    //     key: "actualFinish",
-    //     render: (text: any) => <span style={{ fontWeight: 'bold' }}>{text}</span>,
-    //   });
-    // }
-
     if (hasStatus && step != 1) {
       baseColumns.push({
         title: "Status",
@@ -1480,7 +1463,6 @@ const TimeBuilder = () => {
       });
     }
 
-    // Check if any activity in any module has these fields
     const hasStatus = sequencedModules.some((mod: any) =>
       mod.activities?.some((act: any) => !!act.activityStatus)
     );
@@ -1491,7 +1473,6 @@ const TimeBuilder = () => {
       mod.activities?.some((act: any) => !!act.actualFinish)
     );
 
-    // Append status-related columns at the end
     if (hasStatus && step != 1) {
       columns.push({
         title: "Status",
@@ -1516,7 +1497,6 @@ const TimeBuilder = () => {
       });
     }
 
-    // Add actions column only in step 1, and keep it at the very end
     if (step === 1) {
       columns.push({
         title: (
@@ -1754,6 +1734,55 @@ const TimeBuilder = () => {
     });
   };
 
+  const handleModalChange = (field: string, value: any) => {
+    const updatedHoliday = { ...newHoliday, [field]: value };
+
+    if (field === "module") {
+      let selectedModules = value;
+      const impact: Record<string, string> = {};
+      if (selectedModules.includes("all")) {
+        impact["all"] = "100";
+      } else if (selectedModules.length > 0) {
+        selectedModules.forEach((module: any) => {
+          impact[module] = "100";
+        });
+      }
+      updatedHoliday.impact = impact;
+    }
+
+    setNewHoliday(updatedHoliday);
+  };
+
+  const handleModalSave = async () => {
+    const { from, to, holiday, module } = newHoliday;
+
+    if (!from || !to || !holiday.trim() || module.length === 0) {
+      notify.error("Please fill all required fields before saving.");
+      return;
+    }
+
+    try {
+      const holidayEntry = {
+        ...newHoliday,
+        id: Date.now().toString(),
+      };
+
+      await db.addHolidays(holidayEntry);
+      setRows((prev: any) => [...prev, { ...holidayEntry, editing: false }]);
+      setAddHolidayModalVisible(false);
+      setNewHoliday({ from: null, to: null, holiday: "", module: [], impact: {} });
+      fetchHolidays();
+      notify.success("Holiday added successfully");
+    } catch (err) {
+      notify.error("Failed to save holiday. Try again.");
+    }
+  };
+
+  const handleModalImpactChange = (module: string, value: string) => {
+    const updatedImpact = { ...newHoliday.impact, [module]: value };
+    setNewHoliday({ ...newHoliday, impact: updatedImpact });
+  };
+
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -1867,11 +1896,13 @@ const TimeBuilder = () => {
                           Sunday Working
                         </Checkbox>
                       </div>
-                      <div className="add-new-holiday">
-                        <Button type="primary" className="bg-secondary" size="small" onClick={() => navigate("/create/non-working-days")}>
-                          Manage Holiday
-                        </Button>
-                      </div>
+                      {holidayData.length > 0 && (
+                        <div className="add-new-holiday">
+                          <Button type="primary" className="bg-secondary" size="small" onClick={() => setAddHolidayModalVisible(true)}>
+                            Add New Holiday
+                          </Button>
+                        </div>
+                      )}
                     </div>
                     {holidayData.length > 0 ? (
                       <>
@@ -1890,7 +1921,7 @@ const TimeBuilder = () => {
                           title="No Holiday Records Found"
                           subTitle="You haven't added any holidays yet. Click below to add one."
                           extra={
-                            <Button type="primary" className="bg-secondary" size="large" onClick={() => navigate("/create/non-working-days")}>
+                            <Button type="primary" className="bg-secondary" size="large" onClick={() => setAddHolidayModalVisible(true)}>
                               Add Holiday
                             </Button>
                           }
@@ -1972,7 +2003,13 @@ const TimeBuilder = () => {
                 <Button
                   disabled={selectedProjectId == null || !isNextStepAllowed()}
                   className="bg-secondary"
-                  onClick={handleNext}
+                  onClick={() => {
+                    if (currentStep === 6) {
+                      setIsReviewModalVisible(true);
+                    } else {
+                      handleNext();
+                    }
+                  }}
                   type="primary"
                   size="small"
                 >
@@ -1984,7 +2021,6 @@ const TimeBuilder = () => {
                       ? "Send For Review"
                       : "Next"}
                 </Button>
-
               </div>
             </div>
           ) : <div className="container">
@@ -2118,6 +2154,101 @@ const TimeBuilder = () => {
         </div>
         <hr />
       </Modal>
+
+      <Modal
+        title="Add New Holiday"
+        visible={isAddHolidayModalVisible}
+        onCancel={() => setAddHolidayModalVisible(false)}
+        onOk={handleModalSave}
+        okText="Save"
+        cancelText="Cancel"
+        className="modal-container"
+        maskClosable={false}
+        keyboard={false}
+      >
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "10px" }}>
+          <DatePicker
+            value={newHoliday.from}
+            onChange={(date) => handleModalChange("from", date)}
+            placeholder="From Date"
+            style={{ width: "100%" }}
+          />
+          <DatePicker
+            value={newHoliday.to}
+            onChange={(date) => handleModalChange("to", date)}
+            placeholder="To Date"
+            style={{ width: "100%" }}
+          />
+          <Input
+            value={newHoliday.holiday}
+            onChange={(e) => handleModalChange("holiday", e.target.value)}
+            placeholder="Holiday Name"
+          />
+          <Select
+            mode="multiple"
+            value={newHoliday.module}
+            onChange={(value) => handleModalChange("module", value)}
+            placeholder="Select Modules"
+            style={{ width: "100%" }}
+          >
+            <Select.Option key="all" value="all">
+              Select All
+            </Select.Option>
+            {moduleOptions.map((module) => (
+              <Select.Option key={module} value={module}>
+                {module}
+              </Select.Option>
+            ))}
+          </Select>
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+            {Object.entries(newHoliday.impact).map(([module, impact]) => (
+              <Box key={module} sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Typography>{module}</Typography>
+                <Input
+                  value={impact as any}
+                  onChange={(e) => handleModalImpactChange(module, e.target.value)}
+                  style={{ width: "60px" }}
+                />
+              </Box>
+            ))}
+          </Box>
+        </div>
+      </Modal>
+
+      <Modal
+        title="Select Reviewer"
+        visible={isReviewModalVisible}
+        onOk={() => {
+          if (selectedReviewerId) {
+            setIsReviewModalVisible(false);
+            handleNext();
+          } else {
+            notify.warning("Please select a reviewer.");
+          }
+        }}
+        onCancel={() => setIsReviewModalVisible(false)}
+        okText="Send"
+        cancelText="Cancel"
+      >
+        <Select
+          showSearch
+          placeholder="Select a reviewer"
+          value={selectedReviewerId}
+          onChange={(value) => setSelectedReviewerId(value)}
+          style={{ width: "100%" }}
+          optionFilterProp="children"
+          filterOption={(input: any, option: any) =>
+            option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+          }
+        >
+          {userOptions.map((user) => (
+            <Option key={user.id} value={user.id}>
+              {user.name}
+            </Option>
+          ))}
+        </Select>
+      </Modal>
+
       <ToastContainer />
     </>
   );

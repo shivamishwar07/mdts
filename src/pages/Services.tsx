@@ -1,12 +1,54 @@
 import { motion } from "framer-motion";
 import "antd/dist/reset.css";
 import "../styles/services.css";
-
+import { useEffect, useState } from "react";
 export default function Services() {
+    const slogans = [
+        "Orchestrating Complex Mining Projects with Precision",
+        "Unlock Real-Time Insights Across Your Mining Operations",
+        "Transforming Data into Actionable Decisions for Mine Success",
+        "Empowering Project Teams with Smart Mining Workflows",
+        "Minimize Risks, Maximize Yields — Your Digital Mining Partner",
+    ];
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const [displayedText, setDisplayedText] = useState("");
+    useEffect(() => {
+        let text = slogans[currentIndex];
+        let charIndex = 0;
+        setDisplayedText("");
+
+        const interval = setInterval(() => {
+            setDisplayedText((prev) => prev + text.charAt(charIndex));
+            charIndex++;
+            if (charIndex > text.length) {
+                clearInterval(interval);
+                setTimeout(() => {
+                    setCurrentIndex((prev) => (prev + 1) % slogans.length);
+                }, 2000);
+            }
+        }, 80);
+
+        return () => clearInterval(interval);
+    }, [currentIndex]);
     return (
         <div className="services-container">
             <div className="service-block">
-                <img src="/banner.jpg" alt="banner" className="service-full-image" />
+                <img
+                    src="/banner2.jpg"
+                    alt="banner"
+                    className="service-full-image"
+                />
+
+                <motion.div
+                    className="banner-text-overlay"
+                    key={currentIndex}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.5 }}
+                >
+                    <h1 className="banner-heading">{displayedText}</h1>
+                </motion.div>
             </div>
 
             <div className="services-header">

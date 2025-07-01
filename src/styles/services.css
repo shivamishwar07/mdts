@@ -20,8 +20,38 @@ body {
     }
 
     .service-block {
-        margin-bottom: 10px;
         position: relative;
+        overflow: hidden;
+    }
+
+    .service-full-image {
+        width: 100%;
+        height: auto;
+        display: block;
+    }
+
+    .banner-text-overlay {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: #fff;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 20px 40px;
+        border-radius: 10px;
+        max-width: 90%;
+    }
+
+    .banner-heading {
+        font-size: 2.8rem;
+        font-weight: 700;
+        margin: 0;
+        color: #f37921;
+        text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+        letter-spacing: 1px;
+        white-space: nowrap;
+        overflow: hidden;
     }
 
     .service-full-image {
@@ -33,13 +63,17 @@ body {
 
     .services-header {
         text-align: center;
-        margin: 2rem 0 1.5rem;
+
+        h2 {
+
+            margin-bottom: 0 !important;
+        }
     }
 
     .services-title {
         font-size: 2.2rem;
         font-weight: 700;
-        color: #0f172a;
+        color: #f37921;
         opacity: 0;
         animation: fadeInSlideDown 0.8s ease-out forwards;
     }

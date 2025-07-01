@@ -13,7 +13,6 @@ import { db } from "../Utils/dataStorege.ts";
 import dayjs from "dayjs";
 import { notify } from "../Utils/ToastNotify.tsx";
 
-
 export const HolidayCalender = () => {
   const [rows, setRows] = useState([
     {
