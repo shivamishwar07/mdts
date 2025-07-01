@@ -259,10 +259,11 @@ const Profile = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="change-password-container">
-                                <a onClick={showModal}>Change Password</a>
-                            </div>
-
+                            {!formData.isTempPassword && (
+                                <div className="change-password-container">
+                                    <a onClick={showModal}>Change Password</a>
+                                </div>
+                            )}
                             <div className="company-registration-form">
                                 <Form
                                     className={`employee-professional-form ${isProfileCompleted()

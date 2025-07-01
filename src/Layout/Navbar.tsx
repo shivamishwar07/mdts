@@ -280,8 +280,9 @@ const Navbar: React.FC = () => {
                 okText={loading ? 'Logging out...' : 'Logout'}
                 cancelText="Cancel"
                 okButtonProps={{ danger: true }}
+                className="modal-container"
             >
-                <p>Are you sure you want to logout?</p>
+                <p style={{padding:'10px'}}>Are you sure you want to logout?</p>
             </Modal>
         </>
     );
