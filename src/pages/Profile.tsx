@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import "../styles/profile.css";
 import { Form, Input, Button, Row, Col, Select, Modal } from "antd";
-import { ArrowRightOutlined } from "@ant-design/icons";
 import ManageUser from "../Components/ManageUser";
 import { CameraOutlined } from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
@@ -495,11 +494,10 @@ const Profile = () => {
                             <div className="button-group">
                                 <Button
                                     className="bg-secondary save-btn"
-                                    icon={<ArrowRightOutlined />}
                                     onClick={handleSave}
                                     style={{ float: "right" }}
                                 >
-                                    Save
+                                    {formData.isTempPassword ? 'Save' : 'Update'}
                                 </Button>
                             </div>
                         </div>
@@ -537,7 +535,6 @@ const Profile = () => {
             specialChar: /[\W_]/.test(pwd),
         };
     };
-
 
     return (
         <>
@@ -705,6 +702,7 @@ const Profile = () => {
                     </Form>
                 </Modal>
             </div>
+
             <ToastContainer />
         </>
     );

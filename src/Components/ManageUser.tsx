@@ -58,7 +58,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [openAlertModal, setOpenAlertModal] = useState<boolean>(false);
   const [openRACIModal, setOpenRACIModal] = useState<boolean>(false);
-  const [_isRACIValid, _setIsRACIValid] = useState<boolean>(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [_isEditModalVisible, setEditIsModalVisible] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
@@ -71,7 +70,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   });
   const [form] = Form.useForm();
   const [currentUser, setCurrentUser] = useState<any>({});
-
+  const [dataSource, setDataSource] = useState<any>([]);
   useEffect(() => {
     const fetchData = async () => {
       const allUsers = await db.getUsers();
@@ -100,6 +99,14 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     saveModulesData();
     getAllUsersData();
   }, [])
+
+  useEffect(() => {
+    setDataSource(users.map((user: any, index: any) => ({
+      ...user,
+      key: user.id,
+      serialNumber: index + 1,
+    })));
+  }, [users]);
 
   const saveModulesData = async () => {
     const savedModules: Module[] = await db.getModules();
@@ -210,7 +217,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     }
   };
 
-
   const handleClose = () => {
     setAddMemberModalVisible(false);
     setEditIsModalVisible(false);
@@ -219,17 +225,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   const handleRemoveUser = () => {
     setIsDeleteModalVisible(true);
   }
-
-  const [dataSource, setDataSource] = useState<any>([]);
-
-  useEffect(() => {
-    setDataSource(users.map((user: any, index: any) => ({
-      ...user,
-      key: user.id,
-      serialNumber: index + 1,
-    })));
-  }, [users]);
-
 
   const handleRoleChange = async (userId: any, newRole: any) => {
     try {
@@ -687,6 +682,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
           </p>
         </div>
       </Modal >
+
       <ToastContainer />
     </div >
   );
