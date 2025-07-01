@@ -4,23 +4,24 @@ import "../styles/services.css";
 import { useEffect, useState } from "react";
 export default function Services() {
     const slogans = [
-        "Orchestrating Complex Mining Projects with Precision",
-        "Unlock Real-Time Insights Across Your Mining Operations",
-        "Transforming Data into Actionable Decisions for Mine Success",
-        "Empowering Project Teams with Smart Mining Workflows",
-        "Minimize Risks, Maximize Yields — Your Digital Mining Partner",
+        "Unlock Real-Time Insights Across Your Mining Operations.",
+        "Orchestrating Complex Mining Projects with Precision.",
+        "Transforming Data into Actionable Decisions for Mine Success.",
+        "Empowering Project Teams with Smart Mining Workflows.",
+        "Minimize Risks, Maximize Yields — Your Digital Mining Partner.",
     ];
     const [currentIndex, setCurrentIndex] = useState(0);
     const [displayedText, setDisplayedText] = useState("");
     useEffect(() => {
         let text = slogans[currentIndex];
-        let charIndex = 0;
+        let charIndex = -1;
         setDisplayedText("");
 
         const interval = setInterval(() => {
-            setDisplayedText((prev) => prev + text.charAt(charIndex));
-            charIndex++;
-            if (charIndex > text.length) {
+            if (charIndex < text.length) {
+                setDisplayedText((prev) => prev + text.charAt(charIndex));
+                charIndex++;
+            } else {
                 clearInterval(interval);
                 setTimeout(() => {
                     setCurrentIndex((prev) => (prev + 1) % slogans.length);
@@ -30,6 +31,7 @@ export default function Services() {
 
         return () => clearInterval(interval);
     }, [currentIndex]);
+
     return (
         <div className="services-container">
             <div className="service-block">
