@@ -509,8 +509,10 @@ const ProjectStatistics = (_project: any) => {
                                 type="number"
                                 dataKey="y"
                                 domain={selectedGraph === GRAPH_TYPES.DELAY ? [0, 'auto'] : ['auto', 'auto']}
-                                tickFormatter={selectedGraph === GRAPH_TYPES.DELAY ? (tick) => `${tick}d` : (tick) => dayjs(tick).format("DD MMM YY")}
-                                label={{ value: selectedGraph === GRAPH_TYPES.DELAY ? "Delay (Days)" : "Actual Date", angle: -90, position: "insideLeft", offset: -20 }}
+                                tickFormatter={selectedGraph === GRAPH_TYPES.DELAY
+                                    ? (tick) => `${tick}d`
+                                    : (tick) => dayjs(tick).format("DD-MMM-YY")}
+                                label={{ value: selectedGraph === GRAPH_TYPES.DELAY ? "Delay (Days)" : "Actual Date", angle: -90, position: "insideLeft", offset: -30 }}
                             />
                             <Tooltip
                                 content={({ active, payload }) => {
