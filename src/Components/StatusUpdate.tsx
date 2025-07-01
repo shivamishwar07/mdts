@@ -1020,12 +1020,12 @@ export const StatusUpdate = () => {
                   const actualFinish = parseDate(subItem.actualFinish);
 
                   if (actualStart && actualStart.isAfter(today, 'day')) {
-                    notify.error(`Cannot mark as '${value}' because actual start date exceeds today's date.`);
+                    notify.error(`Cannot mark as '${value}' because actual start date has not reached today's date.`);
                     return subItem;
                   }
 
                   if (actualFinish && actualFinish.isAfter(today, 'day')) {
-                    notify.error(`Cannot mark as '${value}' because actual finish date exceeds today's date.`);
+                    notify.error(`Cannot mark as '${value}' because actual finish date has not reached today's date.`);
                     return subItem;
                   }
 
