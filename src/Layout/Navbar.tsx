@@ -162,7 +162,7 @@ const Navbar: React.FC = () => {
                 <hr />
                 <Button onClick={handleSeeAllProfiles} type="text" className="see-profiles-btn">See all profiles</Button>
             </div>
-            <Menu.Item key="/settings" icon={<SettingOutlined />}>
+            <Menu.Item key="/settings" onClick={() => navigate("/settings")} icon={<SettingOutlined />}>
                 Settings & privacy
             </Menu.Item>
             <Menu.Item key="/support" icon={<QuestionCircleOutlined />}>
@@ -282,7 +282,7 @@ const Navbar: React.FC = () => {
                 okButtonProps={{ danger: true }}
                 className="modal-container"
             >
-                <p style={{padding:'10px'}}>Are you sure you want to logout?</p>
+                <p style={{ padding: '10px' }}>Are you sure you want to logout?</p>
             </Modal>
         </>
     );

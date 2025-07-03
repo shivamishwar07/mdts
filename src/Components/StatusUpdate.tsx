@@ -66,18 +66,7 @@ export const StatusUpdate = () => {
   const [replaneMode, setIsReplanMode] = useState(false);
   const [discardReplaneMode, setIsDiscardReplanMode] = useState(false);
   const [confirmReplan, setConfirmReplan] = useState(false);
-  const userOptions = [
-    { id: '6fa84f42-81e4-49fd-b9fc-1cbced2f1d90', name: 'Amit Sharma' },
-    { id: '2de753d4-1be2-4230-a1ee-ec828ef10f6a', name: 'Priya Verma' },
-    { id: '12fcb989-f9ae-4904-bdcf-9c9d8b63e8cd', name: 'Rahul Mehta' },
-    { id: '9d8f16ee-e21c-4c58-9000-dc3d51f25f2e', name: 'Sneha Reddy' },
-    { id: 'c5c07f70-dbb6-4b02-9cf2-8f9e2d6b3c5f', name: 'Vikram Iyer' },
-    { id: 'a95f34d0-3cf9-4c58-9a70-dcc68a0c32a4', name: 'Neha Kapoor' },
-    { id: 'b4ac3f1b-0591-4435-aabb-b7a7fc5c3456', name: 'Ankit Jaiswal' },
-    { id: 'e7a54111-0a0c-4f91-849c-6816f74e7b12', name: 'Divya Narayan' },
-    { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
-    { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
-  ];
+  const [userOptions, setUserOptions] = useState<any>([]);
   const [openResponsibilityModal, setOpenResponsibilityModal] = useState(false);
   const [raciForm] = Form.useForm();
 
@@ -215,6 +204,9 @@ export const StatusUpdate = () => {
       const storedData = (await db.getProjects()).filter((p) => p.projectTimeline);
       setAllProjects(storedData);
 
+      const allUsers = await db.getUsers();
+      setUserOptions(allUsers);
+      
       let selectedProject = null;
       const lastVisitedProjectId = localStorage.getItem("selectedProjectId");
 
@@ -2225,7 +2217,7 @@ export const StatusUpdate = () => {
                   rules={[{ required: true, message: 'Please select a Responsible person' }]}
                 >
                   <Select placeholder="Select Responsible">
-                    {userOptions.map(user => (
+                    {userOptions.map((user:any) => (
                       <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                     ))}
                   </Select>
@@ -2244,7 +2236,7 @@ export const StatusUpdate = () => {
                   rules={[{ required: true, message: 'Please select an Accountable person' }]}
                 >
                   <Select placeholder="Select Accountable">
-                    {userOptions.map(user => (
+                    {userOptions.map((user:any) => (
                       <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                     ))}
                   </Select>
@@ -2262,7 +2254,7 @@ export const StatusUpdate = () => {
                   noStyle
                 >
                   <Select mode="multiple" placeholder="Select Consulted">
-                    {userOptions.map(user => (
+                    {userOptions.map((user:any) => (
                       <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                     ))}
                   </Select>
@@ -2280,7 +2272,7 @@ export const StatusUpdate = () => {
                   noStyle
                 >
                   <Select mode="multiple" placeholder="Select Informed">
-                    {userOptions.map(user => (
+                    {userOptions.map((user:any) => (
                       <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                     ))}
                   </Select>

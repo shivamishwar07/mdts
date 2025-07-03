@@ -605,9 +605,10 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
             <Form.Item
               name="employeeFullName"
               label="Full Name"
+              className="form-item"
               rules={[{ required: true, message: 'Please enter the employee full name!' }]}
             >
-              <Input placeholder="Enter full name" />
+              <Input className="form-item" placeholder="Enter full name" />
             </Form.Item>
 
             <Form.Item

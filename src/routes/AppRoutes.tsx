@@ -27,6 +27,8 @@ import Pricing from "../pages/Pricing";
 import Services from "../pages/Services";
 import Hero from "../pages/Hero";
 import Contact from "../pages/Contact";
+import SettingsAndPrivacy from "../pages/SettingsAndPrivacy";
+import HelpAndSupport from "../pages/HelpAndSupport";
 
 const AppRoutes = () => {
     const isAuthenticated = !!localStorage.getItem('user');
@@ -63,6 +65,8 @@ const AppRoutes = () => {
                     }
                 >
                     <Route path="/landing-page" element={<LandingPage />} />
+                    <Route path="/settings" element={<SettingsAndPrivacy />} />
+                    <Route path="/helps" element={<HelpAndSupport />} />
                     <Route path="/not-found" element={<NotFound />} />
                     <Route path="/create/register-new-project" element={<RegisterNewProject />} />
                     <Route path="/employee-registration" element={<EmployeeRegistration />} />
