@@ -1815,7 +1815,7 @@ export const StatusUpdate = () => {
                     cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
                   }}
                 >
-                  RASI
+                  RACI
                 </Button>
 
                 <Button

@@ -193,7 +193,15 @@ const Navbar: React.FC = () => {
                             <p>Tracking System</p>
                         </div>
                     </div>
+                    <div className="search-bar-wrapper" style={{ marginRight: "20px", width: "250px" }}>
+                        <Input.Search
+                            placeholder="Search MDTS..."
+                            allowClear
+                            enterButton
+                        />
+                    </div>
                 </div>
+                <div className="user-data">
                 <div className="nav-tab-items">
                     <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
                     {navLinks.map((link, index) => (
@@ -239,15 +247,6 @@ const Navbar: React.FC = () => {
                         </div>
                     ))}
                 </div>
-                <div className="user-data">
-                    <div className="search-bar-wrapper" style={{ marginRight: "20px", width: "250px" }}>
-                        <Input.Search
-                            placeholder="Search MDTS..."
-                            allowClear
-                            enterButton
-                        />
-                    </div>
-
                     <span className="notification-icon-wrapper">
                         <Badge count={5} size="small" offset={[-2, 4]}>
                             <BellOutlined className="bell-icon" />
