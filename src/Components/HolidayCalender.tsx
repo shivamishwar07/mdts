@@ -167,7 +167,7 @@ export const HolidayCalender = () => {
     }
   };
 
-  const saveChanges = async (rowdata: any,index:number) => {
+  const saveChanges = async (rowdata: any, index: number) => {
     try {
       const row: any = rows[index];
 
@@ -302,11 +302,15 @@ export const HolidayCalender = () => {
                         </Select>
                       ) : (
                         <Box>
-                          {row.module?.map((module) => (
-                            <Typography key={module} variant="body2">
-                              {module}
-                            </Typography>
-                          ))}
+                          {Array.isArray(row.module) ? (
+                            row.module.map((module) => (
+                              <Typography key={module} variant="body2">
+                                {module}
+                              </Typography>
+                            ))
+                          ) : (
+                            <Typography variant="body2">{row.module}</Typography>
+                          )}
                         </Box>
                       )}
                     </TableCell>
@@ -337,7 +341,7 @@ export const HolidayCalender = () => {
                             <Button type="primary" danger shape="circle" icon={<DeleteOutlined />} onClick={() => showDeleteModal(index)} />
                           </Tooltip>
                           <Tooltip title="Save">
-                            <Button type="primary" shape="circle" icon={<SaveOutlined />} onClick={() => saveChanges(row,index)} />
+                            <Button type="primary" shape="circle" icon={<SaveOutlined />} onClick={() => saveChanges(row, index)} />
                           </Tooltip>
                         </>
                       ) : (
