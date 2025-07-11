@@ -110,6 +110,7 @@ const TimeBuilder = () => {
     module: [],
     impact: {},
   });
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   const [_rows, setRows] = useState([
     {
@@ -281,7 +282,8 @@ const TimeBuilder = () => {
 
   const fetchHolidays = async () => {
     try {
-      const holidays = await db.getAllHolidays();
+      const holidays = (await db.getAllHolidays())
+        .filter((h: any) => h.orgId === currentUser.orgId);
       if (holidays) {
         const updatedData: HolidayData[] = holidays.map((item: any, index: number) => ({
           ...item,
@@ -303,6 +305,7 @@ const TimeBuilder = () => {
     if (timelineId) {
       try {
         const timeline = await db.getProjectTimelineById(timelineId);
+        if (timeline?.orgId !== currentUser.orgId) return;
         const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
         if (Array.isArray(finTimeline)) {
           handleLibraryChange(finTimeline);
@@ -320,8 +323,10 @@ const TimeBuilder = () => {
   };
 
   const defaultSetup = async () => {
+    setCurrentUser(getCurrentUser());
     try {
-      const allProjects = await db.getProjects();
+      const allProjects = (await db.getProjects())
+        .filter((p: any) => p.orgId == currentUser.orgId);
       const frestTimelineProject = allProjects.filter((item: any) => item.projectTimeline == undefined);
       setAllProjectsTimelines(allProjects.filter((item: any) => item.projectTimeline != undefined))
       if (!Array.isArray(frestTimelineProject) || frestTimelineProject.length === 0) {
@@ -896,6 +901,9 @@ const TimeBuilder = () => {
           },
           createdAt: currentTimestamp,
           updatedAt: currentTimestamp,
+          guiId: uuidv4(),
+          userGuiId: currentUser?.guiId,
+          orgId: currentUser?.orgId,
         };
       };
 
@@ -1538,14 +1546,16 @@ const TimeBuilder = () => {
 
   const handleExistingProjectChange = async (projectId: any) => {
     setSelectedExistingProjectId(projectId);
-    const storedAllProjects = await db.getProjects();
+    const storedAllProjects = (await db.getProjects())
+      .filter((p: any) => p.orgId == currentUser.orgId);
     const selectedExProject = storedAllProjects.find((p: any) => p.id === selectedExistingProjectId);
     setSelectedExistigProject(selectedExProject);
   };
 
   const handleLinkProjectTimeline = async () => {
     try {
-      const storedAllProjects = await db.getProjects();
+      const storedAllProjects = (await db.getProjects())
+        .filter((p: any) => p.orgId == currentUser.orgId);
       const selectedExProject = storedAllProjects.find((p: any) => p.id == selectedExistingProjectId);
 
       if (!selectedExistingProjectId) return;
@@ -2255,3 +2265,7 @@ const TimeBuilder = () => {
 };
 
 export default TimeBuilder;
+
+function uuidv4() {
+  throw new Error("Function not implemented.");
+}

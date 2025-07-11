@@ -5,7 +5,7 @@ import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/ma
 import { useNavigate } from 'react-router-dom';
 import "../styles/module.css"
 import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, Form, Switch } from 'antd';
-import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined, DollarOutlined, MinusCircleOutlined, FileTextOutlined } from '@ant-design/icons';
+import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, PlusOutlined, CloseCircleOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined, DollarOutlined, MinusCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import CreateNotification from "./CreateNotification.tsx";
 import UserRolesPage from "./AssignRACI";
@@ -14,7 +14,7 @@ import { getCurrentUserId } from '../Utils/moduleStorage';
 import { RollbackOutlined } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
 import { notify } from "../Utils/ToastNotify.tsx";
-
+import { getCurrentUser } from "../Utils/moduleStorage";
 const Module = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
@@ -28,6 +28,7 @@ const Module = () => {
     const [open, setOpen] = useState<boolean>(false);
     const [openPopup, setOpenPopup] = useState<boolean>(false);
     const [openCancelUpdateModulePopup, setOpenCancelUpdateModulePopup] = useState<boolean>(false);
+    const [openCancelModuleCreation, setOpenCancelModuleCreation] = useState<boolean>(false);
     const [newModelName, setNewModelName] = useState<string>("");
     const [selectedOption, setSelectedOption] = useState<string>("");
     const [options, setOptions] = useState<string[]>([]);
@@ -173,7 +174,6 @@ const Module = () => {
         }
     }, [openDocumentModal, selectedRow]);
 
-
     const handleSaveModuleAndActivity = async () => {
         try {
             const userId = getCurrentUserId();
@@ -222,7 +222,6 @@ const Module = () => {
                 }
             } else {
                 await db.addModule({ ...moduleData, userId });
-                console.log(moduleData);
                 notification.success({
                     message: "Module saved successfully!",
                     duration: 3,
@@ -543,6 +542,7 @@ const Module = () => {
         if (newModelName && selectedOption) {
             if (newModelName.trim()) {
                 const generatedId = uuidv4();
+                let currentUser = getCurrentUser();
                 setModuleData({
                     guiId: generatedId,
                     parentModuleCode: moduleCodeName
@@ -551,7 +551,10 @@ const Module = () => {
                     moduleName: newModelName,
                     level: "L1",
                     mineType: selectedOption,
-                    activities: []
+                    activities: [],
+                    userGuiId: currentUser?.guiId,
+                    orgId: currentUser?.orgId,
+                    createdAt: new Date().toISOString()
                 })
                 setNewModelName("");
                 setSelectedOption("");
@@ -648,6 +651,18 @@ const Module = () => {
             isEditing = false;
             setTimeout(() => navigate(".", { replace: true }), 0);
         }
+    }
+
+    const handleCancelModuleCreation = () => {
+        setOpenCancelModuleCreation(false);
+        setModuleData({
+            parentModuleCode: parentModuleCode,
+            moduleName: moduleName,
+            level: "",
+            mineType: mineType,
+            duration: '',
+            activities: state?.activities || []
+        })
     }
 
     const handleCreateNewModule = () => {
@@ -1019,18 +1034,20 @@ const Module = () => {
                                         </Tooltip>
                                     </Col>
 
-                                    <Col>
-                                        <Tooltip title="Create New Module">
-                                            <Button
-                                                type="primary"
-                                                onClick={() => handleCreateNewModule()}
-                                                className="add-module-button"
-                                                style={{ height: "30px", fontSize: "14px" }}
-                                            >
-                                                Create New Module
-                                            </Button>
-                                        </Tooltip>
-                                    </Col>
+                                    {!moduleData.parentModuleCode && (
+                                        <Col>
+                                            <Tooltip title="Create New Module">
+                                                <Button
+                                                    type="primary"
+                                                    onClick={() => handleCreateNewModule()}
+                                                    className="add-module-button"
+                                                    style={{ height: "30px", fontSize: "14px" }}
+                                                >
+                                                    Create New Module
+                                                </Button>
+                                            </Tooltip>
+                                        </Col>
+                                    )}
 
                                     {isEditing && (
                                         <Col>
@@ -1155,6 +1172,15 @@ const Module = () => {
                         </Paper>
                     </div>
                     <div className="save-button-container">
+                        <Button
+                            type="primary"
+                            disabled={!moduleData.parentModuleCode}
+                            icon={<CloseCircleOutlined />}
+                            onClick={() => setOpenCancelModuleCreation(true)}
+                            style={{ backgroundColor: "#e74c3c", borderColor: "#e74c3c", marginRight: '20px' }}
+                        >
+                            Discard
+                        </Button>
                         <Button
                             type="primary"
                             className="save-button"
@@ -1301,6 +1327,23 @@ const Module = () => {
                 </Modal >
 
                 <Modal
+                    title="Confirm DIscrad"
+                    visible={openCancelModuleCreation}
+                    onOk={handleCancelModuleCreation}
+                    onCancel={() => setOpenCancelModuleCreation(false)}
+                    okText="Yes Discard"
+                    cancelText="Cancel"
+                    okType="danger"
+                    className="modal-container"
+                >
+                    <div style={{ padding: "0px 10px" }}>
+                        <p>
+                            Are you sure you want to discard the entire module creation process?
+                        </p>
+                    </div>
+                </Modal >
+
+                <Modal
                     title="Define Cost for Delay (₹ / Day)"
                     open={openCostCalcModal}
                     onCancel={handleClose}
@@ -1381,7 +1424,7 @@ const Module = () => {
                                         rules={[{ required: true, message: 'Please select a Responsible person' }]}
                                     >
                                         <Select placeholder="Select Responsible">
-                                            {userOptions.map((user:any) => (
+                                            {userOptions.map((user: any) => (
                                                 <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                                             ))}
                                         </Select>
@@ -1400,7 +1443,7 @@ const Module = () => {
                                         rules={[{ required: true, message: 'Please select an Accountable person' }]}
                                     >
                                         <Select placeholder="Select Accountable">
-                                            {userOptions.map((user:any) => (
+                                            {userOptions.map((user: any) => (
                                                 <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                                             ))}
                                         </Select>
@@ -1418,7 +1461,7 @@ const Module = () => {
                                         noStyle
                                     >
                                         <Select mode="multiple" placeholder="Select Consulted">
-                                            {userOptions.map((user:any) => (
+                                            {userOptions.map((user: any) => (
                                                 <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                                             ))}
                                         </Select>
@@ -1436,7 +1479,7 @@ const Module = () => {
                                         noStyle
                                     >
                                         <Select mode="multiple" placeholder="Select Informed">
-                                            {userOptions.map((user:any) => (
+                                            {userOptions.map((user: any) => (
                                                 <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                                             ))}
                                         </Select>

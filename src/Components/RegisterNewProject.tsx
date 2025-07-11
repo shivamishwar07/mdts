@@ -140,13 +140,17 @@ export const RegisterNewProject: React.FC = () => {
     }
     const finalData = Array.isArray(formStepsData) ? [...formStepsData] : [];
     finalData[currentStep - 1] = { ...formData };
+    let currentUser = getCurrentUser();
     const newProject = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       projectParameters: finalData[0] || {},
       locations: finalData[1] || {},
       contractualDetails: finalData[2] || {},
       initialStatus: initialDataVal || {},
-      documents: contractualDocuments
+      documents: contractualDocuments,
+      userGuiId: currentUser?.guiId,
+      orgId: currentUser?.orgId,
+      createdAt: new Date().toISOString()
     };
     try {
       await db.addProject(newProject);

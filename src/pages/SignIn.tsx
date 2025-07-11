@@ -6,6 +6,7 @@ import { db } from "../Utils/dataStorege.ts";
 import { GoogleOutlined, WindowsOutlined, KeyOutlined } from '@ant-design/icons';
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
+import { v4 as uuidv4 } from 'uuid';
 // const { Title, Text } = Typography;
 
 const SignInSignUp: React.FC = () => {
@@ -69,6 +70,7 @@ const SignInSignUp: React.FC = () => {
             const password = workEmail.slice(0, 6);
             const newUser = {
                 id: Date.now(),
+                guiId: uuidv4(),
                 name: "",
                 company: "",
                 designation: "",

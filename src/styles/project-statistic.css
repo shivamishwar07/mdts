@@ -20,7 +20,7 @@
     .graph-title {
         background-color: #258790;
         color: #fff;
-        padding: 18px 10px;
+        padding: 10px;
         font-weight: bold;
     }
 
@@ -32,4 +32,35 @@
         margin-top: 13px;
         margin-right: 35px;
     }
+}
+
+.ant-select-item-selected-custom {
+    background-color: #e6f7ff !important;
+    font-weight: bold;
+}
+
+.range-buttons {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.range-btn {
+    padding: 6px 12px;
+    border: 1px solid #d9d9d9;
+    border-radius: 4px;
+    background: white;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.2s ease-in-out;
+}
+
+.range-btn:hover {
+    background-color: #f0f0f0;
+}
+
+.range-btn.active {
+    background-color: #1677ff;
+    color: white;
+    border-color: #1677ff;
 }

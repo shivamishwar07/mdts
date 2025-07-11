@@ -12,6 +12,7 @@ const moduleOptions = ["Land Acquisition", "Forest Clearance", "Budget Planning"
 import { db } from "../Utils/dataStorege.ts";
 import dayjs from "dayjs";
 import { notify } from "../Utils/ToastNotify.tsx";
+import { getCurrentUser } from "../Utils/moduleStorage.ts";
 
 export const HolidayCalender = () => {
   const [rows, setRows] = useState([
@@ -170,14 +171,17 @@ export const HolidayCalender = () => {
   const saveChanges = async (rowdata: any, index: number) => {
     try {
       const row: any = rows[index];
-
+      let currentUser = getCurrentUser();
       if (!row.from || !row.to || !row.holiday.trim() || row.module.length === 0) {
         notify.error("Please fill all required fields before saving.");
         return;
       }
 
       if (!row.id) {
-        row.id = Date.now().toString();
+        row.id = uuidv4();
+        row.userGuiId = currentUser?.guiId;
+        row.orgId = currentUser?.orgId;
+        row.createdAt = new Date().toISOString();
       }
 
       const updatedRows = [...rows];
@@ -405,3 +409,7 @@ export const HolidayCalender = () => {
     </LocalizationProvider>
   );
 };
+
+function uuidv4(): any {
+  throw new Error("Function not implemented.");
+}

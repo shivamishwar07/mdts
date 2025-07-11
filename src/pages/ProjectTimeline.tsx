@@ -74,7 +74,7 @@ const ProjectTimeline = (project: any) => {
     const [_noteInput, setNoteInput] = useState('');
     const [_editNoteId, setEditNoteId] = useState<string | null>(null);
     const [selectedActivity, setSelectedActivity] = useState<any>(null);
-
+    const [currentUser, setCurrentUser] = useState<any>(null);
     const [activeTab, setActiveTab] = useState(0);
     const showModal = () => {
         setIsModalOpen(true);
@@ -96,6 +96,7 @@ const ProjectTimeline = (project: any) => {
                 const foundTimeline = project?.projectTimeline.filter((item: any) => item.version == latestVersionId);
                 const timelineId = !latestVersionId ? project.projectTimeline[0].timelineId : foundTimeline[0].timelineId;
                 const timeline = await db.getProjectTimelineById(timelineId);
+                if (timeline?.orgId !== currentUser.orgId) return;
                 const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
                 return finTimeline;
             } catch (err) {
@@ -114,8 +115,10 @@ const ProjectTimeline = (project: any) => {
     };
 
     const defaultSetup = async () => {
+        setCurrentUser(getCurrentUser());
         try {
-            const storedData: any = (await db.getProjects()).filter((p) => p.id == project.code);
+            const storedData: any = (await db.getProjects())
+                .filter((p) => p.id == project.code && p.orgId == currentUser.orgId);
             setAllProjects(storedData);
             let selectedProject = null;
             selectedProject = storedData[0];
@@ -765,6 +768,7 @@ const ProjectTimeline = (project: any) => {
 
     const handleChangeVersionTimeline = async (id: any) => {
         const timelineData = await db.getProjectTimelineById(id);
+        if (timelineData?.orgId !== currentUser.orgId) return;
         getProjectTimelineById(id);
         handleLibraryChange(timelineData);
     }

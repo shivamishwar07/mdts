@@ -1,197 +1,3 @@
-// import { useEffect, useState } from "react";
-// import "../styles/project-timeline.css";
-// import dayjs from "dayjs";
-// import { db } from "../Utils/dataStorege.ts";
-// import { Select, Empty } from "antd";
-// import {
-//     ScatterChart,
-//     Scatter,
-//     XAxis,
-//     YAxis,
-//     CartesianGrid,
-//     Tooltip,
-//     ResponsiveContainer
-// } from "recharts";
-// import '../styles/project-statistic.css';
-
-// const { Option } = Select;
-
-// const GRAPH_TYPES = {
-//     START: "Planned Start vs Actual Start",
-//     FINISH: "Planned Finish vs Actual Finish"
-// };
-
-// const ProjectStatistics = (project: any) => {
-//     const [dataSource, setDataSource] = useState<any>([]);
-//     const [selectedModules, setSelectedModules] = useState<string[]>([]);
-//     const [selectedGraph, setSelectedGraph] = useState<string>(GRAPH_TYPES.START);
-//     const [graphData, setGraphData] = useState<any[]>([]);
-
-//     useEffect(() => {
-//         defaultSetup();
-//     }, []);
-
-//     const defaultSetup = async () => {
-//         try {
-//             const storedData: any = (await db.getProjects()).filter((p) => p.id == project.code);
-//             const selectedProject = storedData[0];
-//             if (selectedProject?.projectTimeline) {
-//                 const timelineData = await getProjectTimeline(selectedProject);
-//                 setDataSource(timelineData);
-
-//                 const allModules = timelineData.map((mod: any) => mod.parentModuleCode);
-//                 setSelectedModules(allModules);
-//             }
-//         } catch (error) {
-//             console.error("An unexpected error occurred while fetching projects:", error);
-//         }
-//     };
-
-//     useEffect(() => {
-//         if (selectedModules.length > 0 && dataSource.length > 0) {
-//             const selectedActivities = dataSource
-//                 .filter((mod: any) => selectedModules.includes(mod.parentModuleCode))
-//                 .flatMap((mod: any) => mod.activities || []);
-
-//             const formatted = selectedActivities.map((activity: any) => {
-//                 const plannedStart = dayjs(activity.start);
-//                 const actualStart = dayjs(activity.actualStart, "DD-MM-YYYY", true);
-//                 const plannedFinish = dayjs(activity.end);
-//                 const actualFinish = dayjs(activity.actualFinish, "DD-MM-YYYY", true);
-
-//                 return {
-//                     activity: activity.activityName,
-//                     plannedStart: plannedStart.isValid() ? plannedStart.valueOf() : null,
-//                     actualStart: actualStart.isValid() ? actualStart.valueOf() : null,
-//                     plannedFinish: plannedFinish.isValid() ? plannedFinish.valueOf() : null,
-//                     actualFinish: actualFinish.isValid() ? actualFinish.valueOf() : null
-//                 };
-//             });
-
-//             setGraphData(formatted);
-//         } else {
-//             setGraphData([]);
-//         }
-//     }, [selectedModules, dataSource, selectedGraph]);
-
-//     const getProjectTimeline = async (project: any) => {
-//         try {
-//             const latestVersionId = localStorage.getItem("latestProjectVersion");
-//             const foundTimeline = project.projectTimeline.filter((item: any) => item.version == latestVersionId);
-//             const timelineId = !latestVersionId ? project.projectTimeline[0].timelineId : foundTimeline[0].timelineId;
-//             const timeline = await db.getProjectTimelineById(timelineId);
-//             return timeline.map(({ id, ...rest }: any) => rest);
-//         } catch (err) {
-//             console.error("Error fetching timeline:", err);
-//             return [];
-//         }
-//     };
-
-//     const getScatterData = () => {
-//         switch (selectedGraph) {
-//             case GRAPH_TYPES.START:
-//                 return graphData.filter(d => d.actualStart).map(d => ({ x: d.plannedStart, y: d.actualStart, activity: d.activity }));
-//             case GRAPH_TYPES.FINISH:
-//                 return graphData.filter(d => d.actualFinish).map(d => ({ x: d.plannedFinish, y: d.actualFinish, activity: d.activity }));
-//             default:
-//                 return [];
-//         }
-//     };
-
-//     return (
-//         <div className="project-statistics">
-//             <div className="top-heading-stats">
-//                 <p className="main-header">Project Statistics</p>
-//                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-//                     <div className="label"><p>Select Module</p></div>
-//                     <Select
-//                         mode="multiple"
-//                         placeholder="Select Modules"
-//                         style={{ width: 300 }}
-//                         value={selectedModules}
-//                         onChange={setSelectedModules}
-//                         allowClear
-//                     >
-//                         {dataSource.map((mod: any) => (
-//                             <Option key={mod.parentModuleCode} value={mod.parentModuleCode}>{mod.moduleName}</Option>
-//                         ))}
-//                     </Select>
-//                     <div className="label"><p>Select Graph</p></div>
-//                     <Select
-//                         value={selectedGraph}
-//                         onChange={setSelectedGraph}
-//                         style={{ width: 300 }}
-//                     >
-//                         {Object.values(GRAPH_TYPES).map(graph => (
-//                             <Option key={graph} value={graph}>{graph}</Option>
-//                         ))}
-//                     </Select>
-//                 </div>
-//             </div>
-
-//             {getScatterData().length > 0 ? (
-//                 <>
-//                     <p className="graph-title">{selectedGraph}</p>
-//                     <ResponsiveContainer width="100%" height={445}>
-//                         <ScatterChart margin={{ top: 20, right: 30, left: 40, bottom: 30 }}>
-//                             <CartesianGrid strokeDasharray="3 3" />
-//                             <XAxis
-//                                 type="number"
-//                                 dataKey="x"
-//                                 scale="time"
-//                                 domain={[
-//                                     (dataMin: number) => dayjs(dataMin).subtract(7, 'day').valueOf(),
-//                                     'auto'
-//                                 ]}
-//                                 tickFormatter={(tick) => dayjs(tick).format("DD MMM YY")}
-//                                 label={{
-//                                     value: selectedGraph === GRAPH_TYPES.FINISH ? "Planned Finish Date" : "Planned Start Date",
-//                                     position: "insideBottom",
-//                                     offset: -10
-//                                 }}
-//                             />
-//                             <YAxis
-//                                 type="number"
-//                                 dataKey="y"
-//                                 domain={['auto', 'auto']}
-//                                 tickFormatter={(tick) => dayjs(tick).format("DD MMM YY")}
-//                                 label={{
-//                                     value: selectedGraph === GRAPH_TYPES.FINISH ? "Actual Finish" : "Actual Start",
-//                                     angle: -90,
-//                                     position: "insideLeft",
-//                                     offset: -20
-//                                 }}
-//                             />
-//                             <Tooltip
-//                                 content={({ active, payload, label }) => {
-//                                     if (!active || !payload || payload.length === 0) return null;
-
-//                                     const plannedDate = dayjs(label).format("DD-MM-YYYY");
-//                                     const actualDate = dayjs(Number(payload[0].value)).format("DD-MM-YYYY");
-//                                     const axisLabel = selectedGraph === GRAPH_TYPES.START ? 'Actual Start' : 'Actual Finish';
-//                                     const xLabel = selectedGraph === GRAPH_TYPES.START ? 'Planned Start' : 'Planned Finish';
-
-//                                     return (
-//                                         <div style={{ background: 'white', padding: '8px', border: '1px solid #ccc' }}>
-//                                             <p style={{ margin: 0 }}>{xLabel}: {plannedDate}</p>
-//                                             <p style={{ margin: 0 }}>{axisLabel}: {actualDate}</p>
-//                                         </div>
-//                                     );
-//                                 }}
-//                             />
-//                             <Scatter data={getScatterData()} name={selectedGraph} fill="#8884d8" />
-//                         </ScatterChart>
-//                     </ResponsiveContainer>
-//                 </>
-//             ) : (
-//                 <Empty description="No data available. Select a module or change filter." />
-//             )}
-//         </div>
-//     );
-// };
-
-// export default ProjectStatistics;
-
 import { useEffect, useState } from "react";
 import "../styles/project-timeline.css";
 import dayjs from "dayjs";
@@ -215,19 +21,63 @@ const GRAPH_TYPES = {
     DELAY: "Planned Date vs Delay (Days)"
 };
 
-const TIME_VIEWS = ["day", "week", "month", "year"] as const;
-type TimeView = typeof TIME_VIEWS[number];
-
 const ProjectStatistics = (_project: any) => {
     const [dataSource, setDataSource] = useState<any>([]);
     const [selectedModules, setSelectedModules] = useState<string[]>([]);
     const [selectedGraph, setSelectedGraph] = useState<string>(GRAPH_TYPES.START);
     const [graphData, setGraphData] = useState<any[]>([]);
-    const [timeView, setTimeView] = useState<TimeView>('day');
+    const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff7f50', '#a83279', '#2f4f4f', '#00bcd4', '#f44336', '#4caf50', '#2196f3', '#ff9800', '#9c27b0', '#3f51b5', '#009688', '#e91e63', '#795548'];
+    const [selectedRange, setSelectedRange] = useState<'Daily' | 'Weekly' | 'Monthly' | 'Yearly'>('Daily');
 
     useEffect(() => {
         defaultSetup();
     }, []);
+
+    const getScatterDataByModule = () => {
+        const moduleMap: Record<string, any[]> = {};
+
+        selectedModules.forEach((modCode) => {
+            const module = dataSource.find((mod: any) => mod.Code === modCode);
+            if (!module) return;
+
+            const grouped: Record<number, any> = {};
+
+            module.children.forEach((activity: any) => {
+                const plannedStart = dayjs(activity.plannedStart, "DD-MM-YYYY", true);
+                const actualStart = dayjs(activity.actualStart, "DD-MM-YYYY", true);
+                const plannedFinish = dayjs(activity.plannedFinish, "DD-MM-YYYY", true);
+                const actualFinish = dayjs(activity.actualFinish, "DD-MM-YYYY", true);
+
+                let x: any, y: any;
+
+                if (selectedGraph === GRAPH_TYPES.START) {
+                    x = plannedStart.isValid() ? plannedStart.valueOf() : null;
+                    y = actualStart.isValid() ? actualStart.valueOf() : null;
+                } else if (selectedGraph === GRAPH_TYPES.FINISH) {
+                    x = plannedFinish.isValid() ? plannedFinish.valueOf() : null;
+                    y = actualFinish.isValid() ? actualFinish.valueOf() : null;
+                } else if (selectedGraph === GRAPH_TYPES.DELAY) {
+                    x = plannedStart.isValid() ? plannedStart.valueOf() : null;
+                    y = plannedStart.isValid() && actualStart.isValid()
+                        ? Math.max(0, actualStart.diff(plannedStart, 'day'))
+                        : null;
+                }
+
+                if (x !== null && y !== null) {
+                    const bucket = groupByDateGranularity(x);
+                    grouped[bucket] = {
+                        x: bucket,
+                        y,
+                        activity: activity.keyActivity
+                    };
+                }
+            });
+
+            moduleMap[modCode] = Object.values(grouped);
+        });
+
+        return moduleMap;
+    };
 
 
     const defaultSetup = async () => {
@@ -311,6 +161,110 @@ const ProjectStatistics = (_project: any) => {
                             activityStatus: 'ongoing'
                         }
                     ]
+                },
+                {
+                    parentModuleCode: 'EX',
+                    moduleName: 'Excavation Planning',
+                    mineType: 'UG',
+                    level: 'L2',
+                    activities: [
+                        {
+                            code: 'EX/10',
+                            activityName: 'Site Survey',
+                            start: '2025-08-05T00:00:00.000Z',
+                            end: '2025-08-07T00:00:00.000Z',
+                            actualStart: '2025-08-06T00:00:00.000Z',
+                            actualFinish: '2025-08-07T00:00:00.000Z',
+                            activityStatus: 'completed'
+                        },
+                        {
+                            code: 'EX/20',
+                            activityName: 'Drill Plan Approval',
+                            start: '2025-08-08T00:00:00.000Z',
+                            end: '2025-08-10T00:00:00.000Z',
+                            actualStart: '2025-08-08T00:00:00.000Z',
+                            actualFinish: '',
+                            activityStatus: 'ongoing'
+                        }
+                    ]
+                },
+                {
+                    parentModuleCode: 'SAF',
+                    moduleName: 'Safety Compliance',
+                    mineType: 'OC',
+                    level: 'L1',
+                    activities: [
+                        {
+                            code: 'SAF/10',
+                            activityName: 'Site Risk Assessment',
+                            start: '2025-07-15T00:00:00.000Z',
+                            end: '2025-07-17T00:00:00.000Z',
+                            actualStart: '',
+                            actualFinish: '',
+                            activityStatus: 'pending'
+                        },
+                        {
+                            code: 'SAF/20',
+                            activityName: 'PPE Distribution',
+                            start: '2025-07-18T00:00:00.000Z',
+                            end: '2025-07-20T00:00:00.000Z',
+                            actualStart: '',
+                            actualFinish: '',
+                            activityStatus: 'pending'
+                        }
+                    ]
+                },
+                {
+                    parentModuleCode: 'EN',
+                    moduleName: 'Environmental Clearance',
+                    mineType: 'UG',
+                    level: 'L3',
+                    activities: [
+                        {
+                            code: 'EN/10',
+                            activityName: 'EIA Study',
+                            start: '2025-06-20T00:00:00.000Z',
+                            end: '2025-07-01T00:00:00.000Z',
+                            actualStart: '2025-06-21T00:00:00.000Z',
+                            actualFinish: '2025-07-01T00:00:00.000Z',
+                            activityStatus: 'completed'
+                        },
+                        {
+                            code: 'EN/20',
+                            activityName: 'Public Hearing',
+                            start: '2025-07-05T00:00:00.000Z',
+                            end: '2025-07-06T00:00:00.000Z',
+                            actualStart: '',
+                            actualFinish: '',
+                            activityStatus: 'pending'
+                        }
+                    ]
+                },
+                {
+                    parentModuleCode: 'TR',
+                    moduleName: 'Transport Infrastructure',
+                    mineType: 'OC',
+                    level: 'L2',
+                    activities: [
+                        {
+                            code: 'TR/10',
+                            activityName: 'Road Construction',
+                            start: '2025-09-01T00:00:00.000Z',
+                            end: '2025-09-10T00:00:00.000Z',
+                            actualStart: '',
+                            actualFinish: '',
+                            activityStatus: 'pending'
+                        },
+                        {
+                            code: 'TR/20',
+                            activityName: 'Bridge Inspection',
+                            start: '2025-09-12T00:00:00.000Z',
+                            end: '2025-09-15T00:00:00.000Z',
+                            actualStart: '',
+                            actualFinish: '',
+                            activityStatus: 'pending'
+                        }
+                    ]
                 }
             ];
 
@@ -392,59 +346,50 @@ const ProjectStatistics = (_project: any) => {
     };
 
     const getScatterData = () => {
-        const raw = (() => {
-            switch (selectedGraph) {
-                case GRAPH_TYPES.START:
-                    return graphData.filter(d => d.actualStart).map(d => ({
-                        x: d.plannedStart,
-                        y: d.actualStart,
-                        activity: d.activity
-                    }));
-                case GRAPH_TYPES.FINISH:
-                    return graphData.filter(d => d.actualFinish).map(d => ({
-                        x: d.plannedFinish,
-                        y: d.actualFinish,
-                        activity: d.activity
-                    }));
-                case GRAPH_TYPES.DELAY:
-                    return graphData.filter(d => d.delay !== null).map(d => ({
-                        x: d.plannedStart,
-                        y: d.delay,
-                        activity: d.activity
-                    }));
-                default:
-                    return [];
-            }
-        })();
+        switch (selectedGraph) {
+            case GRAPH_TYPES.START:
+                return graphData.filter(d => d.actualStart).map(d => ({
+                    x: d.plannedStart,
+                    y: d.actualStart,
+                    activity: d.activity
+                }));
+            case GRAPH_TYPES.FINISH:
+                return graphData.filter(d => d.actualFinish).map(d => ({
+                    x: d.plannedFinish,
+                    y: d.actualFinish,
+                    activity: d.activity
+                }));
+            case GRAPH_TYPES.DELAY:
+                return graphData.filter(d => d.delay !== null).map(d => ({
+                    x: d.plannedStart,
+                    y: d.delay,
+                    activity: d.activity
+                }));
+            default:
+                return [];
+        }
+    };
 
-        if (timeView === 'day') return raw;
 
-        const formatKey = (timestamp: number) => {
-            const date = dayjs(timestamp);
-            if (timeView === 'week') return date.startOf('week').format('YYYY-[W]WW');
-            if (timeView === 'month') return date.startOf('month').format('YYYY-MM');
-            if (timeView === 'year') return date.startOf('year').format('YYYY');
-            return date.format('YYYY-MM-DD');
-        };
-
-        const grouped = raw.reduce((acc: any, curr: any) => {
-            const key = formatKey(curr.x);
-            if (!acc[key]) acc[key] = [];
-            acc[key].push(curr);
-            return acc;
-        }, {});
-
-        return Object.entries(grouped).map(([label, values]: any) => {
-            const avgX = Math.round(values.reduce((sum: number, v: any) => sum + v.x, 0) / values.length);
-            const avgY = Math.round(values.reduce((sum: number, v: any) => sum + v.y, 0) / values.length);
-            return { x: avgX, y: avgY, activity: `${values.length} activities`, label };
-        });
+    const groupByDateGranularity = (timestamp: number) => {
+        const date = dayjs(timestamp);
+        switch (selectedRange) {
+            case 'Daily':
+                return date.startOf('day').valueOf();
+            case 'Weekly':
+                return date.startOf('week').valueOf();
+            case 'Monthly':
+                return date.startOf('month').valueOf();
+            case 'Yearly':
+                return date.startOf('year').valueOf();
+            default:
+                return timestamp;
+        }
     };
 
     return (
         <div className="project-statistics">
             <div className="top-heading-stats">
-                <p className="main-header">Project Statistics</p>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                     <div className="label"><p>Select Module</p></div>
                     <Select
@@ -453,10 +398,27 @@ const ProjectStatistics = (_project: any) => {
                         style={{ width: 280 }}
                         value={selectedModules}
                         onChange={setSelectedModules}
-                        allowClear
+                        maxTagCount={1}
+                        maxTagPlaceholder={(omittedValues) => `+ ${omittedValues.length} more`}
                     >
                         {dataSource.map((mod: any) => (
-                            <Option key={mod.Code} value={mod.Code}>{mod.keyActivity}</Option>
+                            <Option key={mod.Code} value={mod.Code}>
+                                {mod.keyActivity}
+                            </Option>
+                        ))}
+                    </Select>
+
+                    <div className="label"><p>Time Range</p></div>
+                    <Select
+                        style={{ width: 120 }}
+                        value={selectedRange}
+                        onChange={(value) => setSelectedRange(value)}
+                        placeholder="Select Time Range"
+                    >
+                        {['Daily', 'Weekly', 'Monthly', 'Yearly'].map((label) => (
+                            <Option key={label} value={label}>
+                                {label}
+                            </Option>
                         ))}
                     </Select>
 
@@ -472,27 +434,21 @@ const ProjectStatistics = (_project: any) => {
                     </Select>
                 </div>
             </div>
+            {/* <div className="label"><p>Time Range</p></div>
+            <div className="range-buttons">
+                {['Daily', 'Weekly', 'Monthly', 'Yearly'].map((label) => (
+                    <button
+                        key={label}
+                        onClick={() => setSelectedRange(label as any)}
+                        className={`range-btn ${selectedRange === label ? 'active' : ''}`}
+                    >
+                        {label}
+                    </button>
+                ))}
+            </div> */}
 
             {getScatterData().length > 0 ? (
                 <>
-                    <div className="time-filter">
-                        {TIME_VIEWS.map(view => (
-                            <button
-                                key={view}
-                                onClick={() => setTimeView(view)}
-                                style={{
-                                    padding: '6px 12px',
-                                    backgroundColor: timeView === view ? '#007bff' : '#eee',
-                                    color: timeView === view ? '#fff' : '#000',
-                                    border: 'none',
-                                    borderRadius: 4,
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                {view.toUpperCase()}
-                            </button>
-                        ))}
-                    </div>
                     <p className="graph-title">{selectedGraph}</p>
                     <ResponsiveContainer width="100%" height={445}>
                         <ScatterChart margin={{ top: 20, right: 30, left: 40, bottom: 30 }}>
@@ -500,7 +456,7 @@ const ProjectStatistics = (_project: any) => {
                             <XAxis
                                 type="number"
                                 dataKey="x"
-                                scale={timeView === 'day' ? 'time' : 'linear'}
+                                scale={'linear'}
                                 domain={['auto', 'auto']}
                                 tickFormatter={(tick) => dayjs(tick).format("DD MMM YY")}
                                 label={{ value: selectedGraph.includes("Finish") ? "Planned Finish Date" : "Planned Start Date", position: "insideBottom", offset: -10 }}
@@ -528,7 +484,15 @@ const ProjectStatistics = (_project: any) => {
                                     );
                                 }}
                             />
-                            <Scatter data={getScatterData()} name={selectedGraph} fill="#8884d8" />
+
+                            {Object.entries(getScatterDataByModule()).map(([modCode, points], idx) => (
+                                <Scatter
+                                    key={modCode}
+                                    name={modCode}
+                                    data={points}
+                                    fill={COLORS[idx % COLORS.length]}
+                                />
+                            ))}
                         </ScatterChart>
                     </ResponsiveContainer>
                 </>

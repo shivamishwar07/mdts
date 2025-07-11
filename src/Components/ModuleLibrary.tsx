@@ -11,7 +11,7 @@ const { Option } = Select;
 import { db } from "../Utils/dataStorege.ts";
 import { notify } from "../Utils/ToastNotify.tsx";
 import { ToastContainer } from "react-toastify";
-
+import { v4 as uuidv4 } from 'uuid';
 interface Activity {
   code: string;
   activityName: string;
@@ -34,8 +34,10 @@ interface Library {
   name: string;
   mineType: string;
   items: Module[];
-  userId: string;
   id: any;
+  orgId: string;
+  userGuiId: string;
+  createdAt: string;
 }
 
 const ModuleLibrary = () => {
@@ -81,22 +83,21 @@ const ModuleLibrary = () => {
   useEffect(() => {
     if (currentUser) {
       db.getAllLibraries()
-        .then((libs) => setLibraries(libs.filter((lib: any) => lib.userId === currentUser.id)))
+        .then((libs) => setLibraries(libs.filter((lib: any) => lib.orgId === currentUser.orgId)))
         .catch((err) => {
           console.error("Error fetching libraries:", err);
           setLibraries([]);
         });
+
+      db.getModules()
+        .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId === currentUser.orgId)))
+        .catch((err) => {
+          console.error("Error fetching modules:", err);
+          setModulesData([]);
+        });
     }
   }, [currentUser]);
 
-  useEffect(() => {
-    db.getModules().then(setModulesData);
-    setTimeout(() => {
-
-      console.log(modulesData);
-    }, 2000);
-
-  }, []);
 
   const fetchAllProjects = async () => {
     setCurrentUser(getCurrentUser());
@@ -195,18 +196,21 @@ const ModuleLibrary = () => {
   const handleCreateLibrary = () => {
     if (!newLibraryName.trim() || !newLibraryMineType.trim()) return notify.error("Library name and Mine Type are mandatory.");
     if (!currentUser) return notify.error("User not found.");
-    if (selectedLibrary) handleSaveLibrary();
+    alert("I am")
 
     const newLibrary: Library = {
-      id: Date.now().toString(),
+      id: uuidv4(),
       name: newLibraryName,
       mineType: newLibraryMineType,
       items: [],
-      userId: currentUser.id,
+      userGuiId: currentUser?.guiId,
+      orgId: currentUser?.orgId,
+      createdAt: new Date().toISOString(),
     };
 
     setLibraries((prev) => [...prev, newLibrary]);
     setSelectedLibrary(newLibrary);
+    handleSaveLibrary(newLibrary);
     setNewLibraryName("");
     setNewLibraryMineType("");
   };
@@ -230,16 +234,14 @@ const ModuleLibrary = () => {
     }
   };
 
-  const handleSaveLibrary = async () => {
-    if (!selectedLibrary) return;
+  const handleSaveLibrary = async (library: any) => {
     try {
-      const existingLibrary = await db.getLibraryById(selectedLibrary.id);
-
+      const existingLibrary = await db.getLibraryById(library?.id);
       if (existingLibrary) {
-        await updateLibraryData(selectedLibrary);
+        await updateLibraryData(library);
         notify.success("Library updated successfully!");
       } else {
-        await db.addLibrary(selectedLibrary);
+        await db.addLibrary(library);
         notify.success("Library created successfully!");
       }
       const updatedLibraries = await db.getAllLibraries();
@@ -247,7 +249,7 @@ const ModuleLibrary = () => {
     } catch (error) {
       notify.error(error instanceof Error ? error.message : "Error saving library.");
     } finally {
-      setSelectedLibrary(null);
+      setSelectedLibrary(library);
     }
   };
 
@@ -605,3 +607,4 @@ const emptyTextStyle: React.CSSProperties = {
 };
 
 export default ModuleLibrary;
+

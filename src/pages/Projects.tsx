@@ -16,6 +16,7 @@ import ProjectDocs from "./ProjectDocs";
 import ProjectStatistics from "./ProjectStatistics.tsx";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
+import { getCurrentUser } from "../Utils/moduleStorage.ts";
 interface LocationDetails {
     state: string;
     district: string;
@@ -81,7 +82,7 @@ const Projects = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [projectToDelete, setProjectToDelete] = useState<any>(null);
     const [isProjectFocused, setIsProjectFocused] = useState(false);
-
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
     const tabs = [
         { key: 'projectStatistics', label: 'Project Statistics' },
@@ -94,47 +95,44 @@ const Projects = () => {
     ];
 
     const [activeTab, setActiveTab] = useState('projectStatistics');
-
-
-    // const getAllProjects = async () => {
-    //     try {
-    //         const storedData = await db.getProjects();
-    //         if (!Array.isArray(storedData) || storedData.length === 0) {
-    //             console.warn("No projects found.");
-    //             setAllProjects([]);
-    //             setProjectDetails(null);
-    //             return;
-    //         }
-    //         setAllProjects(storedData);
-    //         setProjectDetails(storedData[0]);
-    //         setSelectedProjectName(storedData[0].projectParameters.projectName);
-    //     } catch (error) {
-    //         console.error("An unexpected error occurred while fetching projects:", error);
-    //     }
-    // }
     const getAllProjects = async () => {
+        if (!currentUser) return;
+
         try {
             const storedData = await db.getProjects();
-            if (!Array.isArray(storedData) || storedData.length === 0) {
-                console.warn("No projects found.");
+            console.log(storedData);
+            console.log(currentUser);
+
+
+
+            const orgProjects = storedData?.filter((proj: any) => proj.orgId == currentUser.orgId) || [];
+
+            if (orgProjects.length === 0) {
+                console.warn("No projects found for this organization.");
                 setAllProjects([]);
                 setProjectDetails(null);
                 return;
             }
 
-            setAllProjects(storedData);
-            setProjectDetails(storedData[0]);
-            setSelectedProjectName(storedData[0].projectParameters.projectName);
-            setIsProjectFocused(true); // 👈 This line ensures module is visible on first load
+            setAllProjects(orgProjects);
+            setProjectDetails(orgProjects[0]);
+            setSelectedProjectName(orgProjects[0].projectParameters.projectName);
+            setIsProjectFocused(true);
 
         } catch (error) {
             console.error("An unexpected error occurred while fetching projects:", error);
         }
     };
 
+
     useEffect(() => {
-        getAllProjects();
+        setCurrentUser(getCurrentUser());
     }, []);
+
+     useEffect(() => {
+        setCurrentUser(getCurrentUser());
+        getAllProjects();
+    }, currentUser);
 
     if (!projectDetails) {
         return <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
@@ -147,17 +145,6 @@ const Projects = () => {
         </div>;
     }
 
-    // const handleProjectClick = (projectName: string) => {
-    //     const selectedProject = allProjects.find(
-    //         (project) => project.projectParameters.projectName === projectName
-    //     );
-    //     if (selectedProject) {
-    //         setProjectDetails(selectedProject);
-    //         setSelectedProjectName(selectedProject.projectParameters.projectName);
-    //         setActiveTab('fdpp');
-    //     }
-    // };
-
     const handleProjectClick = (projectName: string) => {
         const selectedProject = allProjects.find(
             (project) => project.projectParameters.projectName === projectName
@@ -166,7 +153,7 @@ const Projects = () => {
             setProjectDetails(selectedProject);
             setSelectedProjectName(selectedProject.projectParameters.projectName);
             setActiveTab('projectStatistics');
-            setIsProjectFocused(true); // Focus only on this project
+            setIsProjectFocused(true);
         }
     };
 

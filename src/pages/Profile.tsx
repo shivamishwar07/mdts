@@ -11,11 +11,15 @@ import { Tooltip } from "antd";
 import { InfoCircleOutlined } from "@ant-design/icons";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
+import { v4 as uuidv4 } from 'uuid';
+import 'react-phone-input-2/lib/style.css';
+import PhoneInput from 'react-phone-input-2';
 const Profile = () => {
 
     const [formData, setFormData] = useState<any>({
         id: null as number | null,
         name: null as string | null,
+        guiId: null as string | null,
         company: null as string | null,
         designation: null as string | null,
         companyType: null as string | null,
@@ -34,6 +38,7 @@ const Profile = () => {
         state: null as string | null,
         country: null as string | null,
         zipCode: null as string | null,
+        orgId: null as string | null,
         assignedModules: [] as {
             moduleCode: string | null;
             moduleName: string | null;
@@ -71,6 +76,7 @@ const Profile = () => {
             setFormData({
                 id: userData.id || "",
                 name: userData.name || "",
+                guiId: userData.guiId || "",
                 company: userData.company || "",
                 designation: userData.designation || "",
                 companyType: userData.companyType || "",
@@ -88,7 +94,7 @@ const Profile = () => {
                 zipCode: userData.zipCode || "",
                 role: userData.role || "",
                 isTempPassword: userData.isTempPassword,
-                Password: userData.password || ''
+                Password: userData.Password || ''
             });
             form.resetFields();
         }
@@ -119,34 +125,19 @@ const Profile = () => {
     };
 
     const handleSave = async () => {
-        try {
-            const users = await db.getUsers();
-            const currentUser = getCurrentUser();
+        const currentUser = getCurrentUser();
 
-            if (!currentUser?.email) {
-                notify.error("No user found. Please log in again.");
-                return;
-            }
-
-            if (currentUser?.isTempPassword) {
-                setIsModalOpen(true);
-            }
-
-            if (currentUser.id) {
-                const updatedUser = { ...users[currentUser.id], ...formData, isTempPassword: false };
-                await db.updateUsers(updatedUser.id, updatedUser);
-                userStore.setUser(updatedUser);
-
-                if (!formData.isTempPassword) {
-                    notify.success("Profile information updated successfully!");
-                }
-            } else {
-                notify.error("User not found in database.");
-            }
-        } catch (error) {
-            console.error("Error updating user profile:", error);
-            notify.error("An error occurred while updating profile. Please try again.");
+        if (!currentUser?.email) {
+            notify.error("No user found. Please log in again.");
+            return;
         }
+
+        if (currentUser?.isTempPassword) {
+            setIsModalOpen(true);
+            return;
+        }
+
+        await proceedProfileSave(currentUser);
     };
 
     function getInitials(name?: string): string {
@@ -211,16 +202,43 @@ const Profile = () => {
         form.resetFields();
     };
 
+    // const handlePasswordUpdate = async (values: any) => {
+    //     const currentUser = getCurrentUser();
+    //     console.log(currentUser);
+    //     console.log(values);
+
+
+
+    //     if (values.oldPassword == currentUser.Password) {
+    //         const updatedUser = {
+    //             ...currentUser,
+    //             password: values.newPassword,
+    //             isTempPassword: false,
+    //         };
+
+    //         await db.updateUsers(currentUser.id, updatedUser);
+    //         localStorage.setItem("user", JSON.stringify(updatedUser));
+    //         userStore.setUser(updatedUser);
+
+    //         notify.success("Password updated successfully!");
+    //         setIsModalOpen(false);
+
+    //         await proceedProfileSave(updatedUser);
+    //     } else {
+    //         notify.error("Current password is incorrect");
+    //     }
+    // };
+
     const handlePasswordUpdate = async (values: any) => {
         const currentUser = getCurrentUser();
-        if (values.oldPassword == currentUser.password) {
+        if (values.oldPassword == currentUser.Password) {
             const users = {
                 ...currentUser, password: values.newPassword,
                 isTempPassword: false,
             }
             await db.updateUsers(currentUser.id, users);
 
-            localStorage.setItem("user", JSON.stringify({ ...currentUser, password: values.newPassword, isTempPassword: false }));
+            localStorage.setItem("user", JSON.stringify({ ...currentUser, Password: values.newPassword, isTempPassword: false }));
 
             notify.success(formData.isTempPassword ? "Profile updated successfully!" : "Password updated successfully!");
             setIsModalOpen(false);
@@ -231,8 +249,65 @@ const Profile = () => {
         else {
             notify.error("Current password is incorrect");
         }
-
     };
+
+    const proceedProfileSave = async (currentUser: any) => {
+        try {
+            const users = await db.getUsers();
+
+            let orgId = currentUser.orgId || formData.orgId || uuidv4();
+            const updatedUser = {
+                ...users[currentUser.id],
+                ...formData,
+                isTempPassword: false,
+                orgId
+            };
+
+            await db.updateUsers(currentUser.id, updatedUser);
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            userStore.setUser(updatedUser);
+
+            const existingCompany = await db.getCompanyByGuiId(orgId);
+
+            if (formData.isTempPassword) {
+                const newCompany = {
+                    name: formData.company,
+                    industryType: formData.industryType,
+                    companyType: formData.companyType,
+                    city: formData.city,
+                    state: formData.state,
+                    country: formData.country,
+                    zipCode: formData.zipCode,
+                    address: formData.address,
+                    guiId: orgId,
+                    userGuiIds: [currentUser.guiId]
+                };
+                await db.addCompany(newCompany);
+            } else if (existingCompany) {
+                const updatedCompany = {
+                    ...existingCompany,
+                    name: formData.company,
+                    industryType: formData.industryType,
+                    companyType: formData.companyType,
+                    city: formData.city,
+                    state: formData.state,
+                    country: formData.country,
+                    zipCode: formData.zipCode,
+                    address: formData.address,
+                    userGuiIds: Array.from(new Set([...(existingCompany.userGuiIds || []), currentUser.guiId]))
+                };
+
+                await db.updateCompany(existingCompany.id, updatedCompany);
+            }
+
+            notify.success("Profile updated successfully!");
+            fillUsersData();
+        } catch (error) {
+            console.error("Error saving profile:", error);
+            notify.error("Something went wrong. Please try again.");
+        }
+    };
+
 
     const renderContent = () => {
         switch (selectedTab) {
@@ -380,34 +455,43 @@ const Profile = () => {
                                             </Form.Item>
                                         </Col>
                                     </Row>
-
                                     <Row gutter={[16, 16]} className="form-row">
                                         <Col span={12}>
                                             <Form.Item
                                                 label="Mobile No"
                                                 colon={false}
-                                                rules={[{ required: true, message: "Please enter mobile number" }]}
+                                                validateStatus={!formData.mobile ? 'error' : ''}
+                                                help={!formData.mobile ? "Please enter mobile number" : ""}
                                             >
-                                                <Input
-                                                    name="mobile"
+                                                <PhoneInput
+                                                     country="in"
                                                     value={formData.mobile}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter Mobile No"
+                                                    onChange={(phone) => setFormData({ ...formData, mobile: `+${phone}` })}
+                                                    inputProps={{
+                                                        name: 'mobile',
+                                                        required: true
+                                                    }}
+                                                    specialLabel={''}
+                                                    inputStyle={{ width: '100%' }}
                                                 />
                                             </Form.Item>
                                         </Col>
+
                                         <Col span={12}>
                                             <Form.Item label="WhatsApp No" colon={false}>
-                                                <Input
-                                                    name="whatsapp"
+                                                <PhoneInput
+                                                    country="in"
                                                     value={formData.whatsapp}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter WhatsApp No"
+                                                    onChange={(phone) => setFormData({ ...formData, whatsapp: `+${phone}` })}
+                                                    inputProps={{
+                                                        name: 'whatsapp'
+                                                    }}
+                                                    specialLabel={''}
+                                                    inputStyle={{ width: '100%' }}
                                                 />
                                             </Form.Item>
                                         </Col>
                                     </Row>
-
                                     <Row gutter={[16, 16]} className="form-row">
                                         <Col span={12}>
                                             <Form.Item

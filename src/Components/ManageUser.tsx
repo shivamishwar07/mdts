@@ -9,8 +9,10 @@ import { ExclamationCircleOutlined, ReloadOutlined } from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
-
+import { v4 as uuidv4 } from 'uuid';
 const { Option } = Select;
+import 'react-phone-input-2/lib/style.css';
+import PhoneInput from 'react-phone-input-2';
 interface Module {
   parentModuleCode: string;
 }
@@ -73,7 +75,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   const [dataSource, setDataSource] = useState<any>([]);
   useEffect(() => {
     const fetchData = async () => {
-      const allUsers = await db.getUsers();
+      const allUsers = (await db.getUsers()).filter((user: any) => user.orgId == currentUser?.orgId);
       setUsers(allUsers);
       const uniqueModules: any = [];
       allUsers.forEach((user: User) => {
@@ -109,12 +111,12 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   }, [users]);
 
   const saveModulesData = async () => {
-    const savedModules: Module[] = await db.getModules();
+    const savedModules: Module[] = (await db.getModules()).filter((mod: any) => mod.orgId == currentUser?.orgId);
     setModules(savedModules);
   }
 
   const getAllUsersData = async () => {
-    const storedUsers: any = await db.getUsers();
+    const storedUsers = (await db.getUsers()).filter((user: any) => user.orgId == currentUser?.orgId);
     if (storedUsers) {
       const parsedUsers: User[] = storedUsers.map((user: any) => ({
         id: user.id,
@@ -172,44 +174,120 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       : parts[0][0]?.toUpperCase() || "";
   }
 
+  // const handleSendInvites = async () => {
+  //   try {
+  //     const values = await form.validateFields();
+
+  //     const { employeeFullName, permissionProfile, emails, mobile, designation } = values;
+
+  //     const users = await db.getUsers();
+  //     const emailExists = users.some((user) => user.email === emails);
+  //     const currentUser = getCurrentUser();
+
+  //     if (emailExists) {
+  //       return notify.error("Email already registered");
+  //     }
+
+  //     const password = emails.slice(0, 6);
+  //     const newUser = {
+  //       id: Date.now(),
+  //       name: employeeFullName,
+  //       company: currentUser.company,
+  //       designation: designation || "N/A",
+  //       mobile: mobile || "N/A",
+  //       email: emails,
+  //       whatsapp: "",
+  //       registeredOn: new Date().toISOString(),
+  //       profilePhoto: "",
+  //       password: password,
+  //       isTempPassword: true,
+  //       role: permissionProfile,
+  //     };
+
+  //     await db.addUsers(newUser);
+
+  //     notify.success("Member added successfully!");
+  //     form.resetFields();
+  //     setAddMemberModalVisible(false);
+  //     handleClose();
+
+  //     const allUsers = (await db.getUsers()).filter((user: any) => user.orgId === orgId);
+  //     setUsers(allUsers);
+  //   } catch (error: any) {
+  //     console.error(error);
+  //     notify.error(error.message || "Error adding member!");
+  //   }
+  // };
+
   const handleSendInvites = async () => {
     try {
       const values = await form.validateFields();
-
       const { employeeFullName, permissionProfile, emails, mobile, designation } = values;
 
-      const users = await db.getUsers();
+      const users = (await db.getUsers()).filter((user: any) => user.orgId == currentUser?.orgId);
       const emailExists = users.some((user) => user.email === emails);
-      const currentUser = getCurrentUser();
-
       if (emailExists) {
         return notify.error("Email already registered");
       }
 
+      const currentUser = getCurrentUser();
       const password = emails.slice(0, 6);
+      const guiId = uuidv4();
+
+      let companyDetails = {};
+      if (currentUser.orgId) {
+        const company = await db.getCompanyByGuiId(currentUser.orgId);
+        if (company) {
+          companyDetails = {
+            company: company.name || "",
+            industryType: company.industryType || "",
+            companyType: company.companyType || "",
+            city: company.city || "",
+            state: company.state || "",
+            country: company.country || "",
+            zipCode: company.zipCode || "",
+            address: company.address || ""
+          };
+        }
+      }
+
       const newUser = {
         id: Date.now(),
+        guiId,
         name: employeeFullName,
-        company: currentUser.company,
-        designation: designation || "N/A",
-        mobile: mobile || "N/A",
         email: emails,
+        mobile: mobile || "N/A",
         whatsapp: "",
+        designation: designation || "N/A",
         registeredOn: new Date().toISOString(),
         profilePhoto: "",
         password: password,
         isTempPassword: true,
         role: permissionProfile,
+        orgId: currentUser.orgId || null,
+        addedBy: currentUser.guiId,
+        ...companyDetails
       };
 
       await db.addUsers(newUser);
+
+      if (currentUser.orgId) {
+        const company = await db.getCompanyByGuiId(currentUser.orgId);
+        if (company) {
+          const updatedCompany = {
+            ...company,
+            userGuiIds: Array.from(new Set([...(company.userGuiIds || []), guiId]))
+          };
+          await db.updateCompany(company.id, updatedCompany);
+        }
+      }
 
       notify.success("Member added successfully!");
       form.resetFields();
       setAddMemberModalVisible(false);
       handleClose();
 
-      const allUsers = await db.getUsers();
+      const allUsers = (await db.getUsers()).filter((user: any) => user.orgId == currentUser?.orgId);
       setUsers(allUsers);
     } catch (error: any) {
       console.error(error);
@@ -246,7 +324,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   };
 
   const handleRefresh = async () => {
-    const allUsers = await db.getUsers();
+    const allUsers = (await db.getUsers()).filter((user: any) => user.orgId == currentUser?.orgId);
     setUsers(allUsers);
   };
 
@@ -627,11 +705,31 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
               name="mobile"
               label="Mobile Number"
               rules={[
-                { required: true, message: 'Please enter mobile number!' },
-                { pattern: /^[6-9]\d{9}$/, message: 'Enter a valid 10-digit mobile number' },
+                {
+                  required: true,
+                  message: 'Please enter mobile number!',
+                },
+                {
+                  validator: (_, value) => {
+                    const numeric = value?.replace(/\D/g, '');
+                    if (!numeric || numeric.length < 10) {
+                      return Promise.reject('Enter a valid 10-digit mobile number with country code');
+                    }
+                    return Promise.resolve();
+                  },
+                },
               ]}
             >
-              <Input placeholder="Enter mobile number" />
+              <PhoneInput
+                country="in"
+                inputStyle={{ width: '100%' }}
+                enableSearch
+                countryCodeEditable={false}
+                inputProps={{
+                  name: 'mobile',
+                  required: true,
+                }}
+              />
             </Form.Item>
 
             <Form.Item
