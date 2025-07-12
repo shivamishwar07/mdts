@@ -24,7 +24,7 @@ interface Module {
   parentModuleCode: string;
   moduleName: string;
   level: string;
-  id: any;
+  id: number;
   mineType: string;
   activities: Activity[];
   duration?: string;
@@ -38,6 +38,7 @@ interface Library {
   orgId: string;
   userGuiId: string;
   createdAt: string;
+  guiId: string;
 }
 
 const ModuleLibrary = () => {
@@ -65,50 +66,50 @@ const ModuleLibrary = () => {
   const [selectedModuleId, setSelectedModuleId] = useState<any>();
 
   useEffect(() => {
-    fetchAllProjects();
-  }, []);
-
-  useEffect(() => {
-    const fetchMineTypes = async () => {
-      try {
-        const storedOptions: any = await db.getAllMineTypes();
-        setMineTypes(storedOptions);
-      } catch (error) {
-        console.error("Error fetching mine types:", error);
-      }
-    };
-    fetchMineTypes();
+    setCurrentUser(getCurrentUser());
   }, []);
 
   useEffect(() => {
     if (currentUser) {
       db.getAllLibraries()
-        .then((libs) => setLibraries(libs.filter((lib: any) => lib.orgId === currentUser.orgId)))
+        .then((libs) => setLibraries(libs.filter((lib: any) => lib.orgId == currentUser.orgId)))
         .catch((err) => {
           console.error("Error fetching libraries:", err);
           setLibraries([]);
         });
 
       db.getModules()
-        .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId === currentUser.orgId)))
+        .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId == currentUser.orgId)))
         .catch((err) => {
           console.error("Error fetching modules:", err);
           setModulesData([]);
         });
+
+      db.getAllMineTypes()
+        .then((mine) => setMineTypes(mine.filter((item: any) => item.orgId == currentUser.orgId)))
+        .catch((err) => {
+          console.error("Error fetching minetypes:", err);
+          setModulesData([]);
+        });
+
+      db.getProjects()
+        .then((projects) => {
+          const filteredProjects = (projects || []).filter(
+            (proj: any) => proj.orgId == currentUser.orgId
+          );
+
+          setAllProjects(filteredProjects);
+          setProjects(
+            filteredProjects.map((p: any) => p.projectParameters.projectName)
+          );
+        })
+        .catch((err) => {
+          console.error("Error fetching projects:", err);
+          setAllProjects([]);
+          setProjects([]);
+        });
     }
   }, [currentUser]);
-
-
-  const fetchAllProjects = async () => {
-    setCurrentUser(getCurrentUser());
-    try {
-      const storedProjects = await db.getProjects();
-      setProjects(storedProjects?.map((p: any) => p.projectParameters.projectName) || []);
-      setAllProjects(storedProjects);
-    } catch (error) {
-      console.error("Error fetching projects:", error);
-    }
-  }
 
   const handleSearch = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value.toLowerCase();
@@ -122,7 +123,7 @@ const ModuleLibrary = () => {
 
   const handleProjectChange = (value: string) => {
     setSelectedProject(value);
-    const selected: any = allProjects.find((project: any) => project.projectParameters.projectName === value);
+    const selected: any = allProjects.find((project: any) => project.projectParameters.projectName == value);
     setNewLibraryMineType(selected?.projectParameters.typeOfMine || null);
     setNewLibraryName(value);
   };
@@ -146,13 +147,13 @@ const ModuleLibrary = () => {
       );
       return;
     }
-    if (selectedLibrary.items.some(item => item.moduleName === moduleData.moduleName)) {
+    if (selectedLibrary.items.some(item => item.moduleName == moduleData.moduleName)) {
       notify.info("Module already exists in this library.");
       return;
     }
     const updatedLibrary = { ...selectedLibrary, items: [...selectedLibrary.items, moduleData] };
     setSelectedLibrary(updatedLibrary);
-    setLibraries(prev => prev.map(lib => lib.id === updatedLibrary.id ? updatedLibrary : lib));
+    setLibraries(prev => prev.map(lib => lib.id == updatedLibrary.id ? updatedLibrary : lib));
   };
 
   const handleModuleClick = (module: Module) => {
@@ -175,7 +176,7 @@ const ModuleLibrary = () => {
 
         setSelectedLibrary(updatedLibrary);
         setLibraries(prev =>
-          prev.map(lib => (lib.id === updatedLibrary.id ? updatedLibrary : lib))
+          prev.map(lib => (lib.id == updatedLibrary.id ? updatedLibrary : lib))
         );
         updateLibraryData(updatedLibrary);
       },
@@ -196,10 +197,9 @@ const ModuleLibrary = () => {
   const handleCreateLibrary = () => {
     if (!newLibraryName.trim() || !newLibraryMineType.trim()) return notify.error("Library name and Mine Type are mandatory.");
     if (!currentUser) return notify.error("User not found.");
-    alert("I am")
-
     const newLibrary: Library = {
-      id: uuidv4(),
+      id: Date.now(),
+      guiId: uuidv4(),
       name: newLibraryName,
       mineType: newLibraryMineType,
       items: [],
@@ -228,7 +228,7 @@ const ModuleLibrary = () => {
       await db.deleteLibrary(selectedLibrryId);
       setLibraries((prev) => prev.filter((lib) => lib.id !== selectedLibrryId));
       setIsDeleteModalVisible(false);
-      if (selectedLibrary?.id === selectedLibrryId) setSelectedLibrary(null);
+      if (selectedLibrary?.id == selectedLibrryId) setSelectedLibrary(null);
     } catch (error) {
       console.error("Error deleting library:", error);
     }
@@ -236,20 +236,24 @@ const ModuleLibrary = () => {
 
   const handleSaveLibrary = async (library: any) => {
     try {
-      const existingLibrary = await db.getLibraryById(library?.id);
+      const existingLibrary = await db.getLibraryById(library.id ? library.id : selectedLibrary?.id);
       if (existingLibrary) {
-        await updateLibraryData(library);
+        await updateLibraryData(library.id ? library : selectedLibrary);
         notify.success("Library updated successfully!");
       } else {
-        await db.addLibrary(library);
+        await db.addLibrary(library.id ? library : selectedLibrary);
         notify.success("Library created successfully!");
       }
-      const updatedLibraries = await db.getAllLibraries();
-      setLibraries(updatedLibraries);
+      db.getAllLibraries()
+        .then((libs) => setLibraries(libs.filter((lib: any) => lib.orgId == currentUser.orgId)))
+        .catch((err) => {
+          console.error("Error fetching libraries:", err);
+          setLibraries([]);
+        });
     } catch (error) {
       notify.error(error instanceof Error ? error.message : "Error saving library.");
     } finally {
-      setSelectedLibrary(library);
+      setSelectedLibrary(library.id ? library : null);
     }
   };
 
@@ -302,7 +306,7 @@ const ModuleLibrary = () => {
                 placeholder="Mine Type"
                 value={newLibraryMineTypeFilter || undefined}
                 style={{ width: "100%", height: "26px" }}
-                disabled={libraryType === "project"}
+                disabled={libraryType == "project"}
               >
                 {mineTypes?.map((type: any) => (
                   <Option key={type.type} value={type.type}>
@@ -396,10 +400,10 @@ const ModuleLibrary = () => {
                 <strong>
                   {selectedLibrary.name} ({selectedLibrary.mineType})
                 </strong>
-                {selectedLibrary.items.length === 0 ? (
+                {selectedLibrary.items?.length == 0 ? (
                   <p style={emptyTextStyle}>Drop modules here</p>
                 ) : null}
-                {selectedLibrary.items.map((item, idx) => (
+                {selectedLibrary?.items?.length > 0 && selectedLibrary.items.map((item, idx) => (
                   <div key={idx} style={{ display: "flex", gap: "10px" }}>
                     <span style={itemStyle}>
                       {item.moduleName}
@@ -453,7 +457,7 @@ const ModuleLibrary = () => {
           <div style={{ padding: "0px 10px" }}>
 
             <div style={{ display: "flex", gap: "8px", marginTop: "5px" }}>
-              {libraryType === "project" ? (
+              {libraryType == "project" ? (
                 <Select
                   value={newLibraryName || undefined}
                   onChange={handleProjectChange}
@@ -482,7 +486,7 @@ const ModuleLibrary = () => {
                 value={newLibraryMineType || undefined}
                 onChange={(value) => setNewLibraryMineType(value)}
                 style={{ width: "100%", height: "26px" }}
-                disabled={libraryType === "project"}
+                disabled={libraryType == "project"}
               >
                 {mineTypes.map((type: any) => (
                   <Option key={type.type} value={type.type}>
@@ -506,7 +510,7 @@ const ModuleLibrary = () => {
                     padding: "5px 10px",
                     borderRadius: "5px",
                     marginBottom: "5px",
-                    background: selectedLibrary && selectedLibrary.id === library.id ? "#d0ebff" : "#eee",
+                    background: selectedLibrary && selectedLibrary.id == library.id ? "#d0ebff" : "#eee",
                   }}
                 >
                   <Typography.Text style={{ cursor: "pointer" }} onClick={() => setSelectedLibrary(library)}>

@@ -14,7 +14,7 @@ import { getCurrentUser } from '../Utils/moduleStorage';
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
 import { Box } from "@mui/material";
-
+import { v4 as uuidv4 } from 'uuid';
 interface Activity {
   [x: string]: string;
   code: string;
@@ -69,7 +69,7 @@ const TimeBuilder = () => {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [selectedProject, setSelectedProject] = useState<any>(null);
   const [selectedProjectName, setSelectedProjectName] = useState<any>(null);
-  const [libraryName, setLibraryName] = useState<any>();
+  const [_libraryName, setLibraryName] = useState<any>();
   const [isCancelEditModalVisible, setIsCancelEditModalVisiblVisible] = useState(false);
   const [selectedProjectMineType, setSelectedProjectMineType] = useState("");
   const [finalHolidays, setFinalHolidays] = useState<HolidayData[]>();
@@ -103,6 +103,10 @@ const TimeBuilder = () => {
   const [selectedReviewerId, setSelectedReviewerId] = useState<any>(null);
   const moduleOptions = ["Land Acquisition", "Forest Clearance", "Budget Planning"];
   const [isAddHolidayModalVisible, setAddHolidayModalVisible] = useState(false);
+  const [libraries, setAllLibraries] = useState<any>([]);
+  const [selectedLibraryId, setSelectedLibraryId] = useState(null);
+  const [selectedLibrary, setSelectedLibrary] = useState(null);
+
   const [newHoliday, setNewHoliday] = useState({
     from: null,
     to: null,
@@ -118,23 +122,35 @@ const TimeBuilder = () => {
     },
   ]);
 
-  const userOptions = [
-    { id: '6fa84f42-81e4-49fd-b9fc-1cbced2f1d90', name: 'Amit Sharma' },
-    { id: '2de753d4-1be2-4230-a1ee-ec828ef10f6a', name: 'Priya Verma' },
-    { id: '12fcb989-f9ae-4904-bdcf-9c9d8b63e8cd', name: 'Rahul Mehta' },
-    { id: '9d8f16ee-e21c-4c58-9000-dc3d51f25f2e', name: 'Sneha Reddy' },
-    { id: 'c5c07f70-dbb6-4b02-9cf2-8f9e2d6b3c5f', name: 'Vikram Iyer' },
-    { id: 'a95f34d0-3cf9-4c58-9a70-dcc68a0c32a4', name: 'Neha Kapoor' },
-    { id: 'b4ac3f1b-0591-4435-aabb-b7a7fc5c3456', name: 'Ankit Jaiswal' },
-    { id: 'e7a54111-0a0c-4f91-849c-6816f74e7b12', name: 'Divya Narayan' },
-    { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
-    { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
-  ];
+  // const userOptions = [
+  //   { id: '6fa84f42-81e4-49fd-b9fc-1cbced2f1d90', name: 'Amit Sharma' },
+  //   { id: '2de753d4-1be2-4230-a1ee-ec828ef10f6a', name: 'Priya Verma' },
+  //   { id: '12fcb989-f9ae-4904-bdcf-9c9d8b63e8cd', name: 'Rahul Mehta' },
+  //   { id: '9d8f16ee-e21c-4c58-9000-dc3d51f25f2e', name: 'Sneha Reddy' },
+  //   { id: 'c5c07f70-dbb6-4b02-9cf2-8f9e2d6b3c5f', name: 'Vikram Iyer' },
+  //   { id: 'a95f34d0-3cf9-4c58-9a70-dcc68a0c32a4', name: 'Neha Kapoor' },
+  //   { id: 'b4ac3f1b-0591-4435-aabb-b7a7fc5c3456', name: 'Ankit Jaiswal' },
+  //   { id: 'e7a54111-0a0c-4f91-849c-6816f74e7b12', name: 'Divya Narayan' },
+  //   { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
+  //   { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
+  // ];
+  const [userOptions, setUserOptions] = useState<any>([]);
+  useEffect(() => {
+    const loadUser = async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        setCurrentUser(user);
+      }
+    };
+    loadUser();
+  }, []);
 
   useEffect(() => {
-    defaultSetup();
-    fetchHolidays();
-  }, []);
+    if (currentUser && currentUser.orgId) {
+      fetchAllLibrary(currentUser);
+      fetchHolidays();
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -146,7 +162,7 @@ const TimeBuilder = () => {
   }, [modules]);
 
   useEffect(() => {
-    if (currentStep === 6) {
+    if (currentStep == 6) {
       setExpandedKeys(finalData.map((_, index) => `module-${index}`));
       const finDataSource = sequencedModules.map((module: any, moduleIndex: number) => {
         return {
@@ -283,7 +299,7 @@ const TimeBuilder = () => {
   const fetchHolidays = async () => {
     try {
       const holidays = (await db.getAllHolidays())
-        .filter((h: any) => h.orgId === currentUser.orgId);
+        .filter((h: any) => h.orgId == currentUser.orgId);
       if (holidays) {
         const updatedData: HolidayData[] = holidays.map((item: any, index: number) => ({
           ...item,
@@ -322,27 +338,40 @@ const TimeBuilder = () => {
     return [];
   };
 
-  const defaultSetup = async () => {
-    setCurrentUser(getCurrentUser());
+  const defaultSetup = async (allFoundlibrary: any = []) => {
     try {
+      const allUsers = await db.getUsers();
+      setUserOptions(allUsers);
       const allProjects = (await db.getProjects())
         .filter((p: any) => p.orgId == currentUser.orgId);
       const frestTimelineProject = allProjects.filter((item: any) => item.projectTimeline == undefined);
       setAllProjectsTimelines(allProjects.filter((item: any) => item.projectTimeline != undefined))
-      if (!Array.isArray(frestTimelineProject) || frestTimelineProject.length === 0) {
+      if (!Array.isArray(frestTimelineProject) || frestTimelineProject.length == 0) {
         setAllProjects([]);
         return;
       }
       setAllProjects(frestTimelineProject);
-      if (frestTimelineProject && Array.isArray(frestTimelineProject) && frestTimelineProject.length === 1) {
+      if (frestTimelineProject && Array.isArray(frestTimelineProject) && frestTimelineProject.length == 1) {
         const firstProject = frestTimelineProject[0];
         if (firstProject && firstProject.id) {
           setSelectedProjectId(firstProject.id);
           setSelectedProject(frestTimelineProject[0]);
 
-          const project = frestTimelineProject.find((p) => p?.id === firstProject.id);
+          const project = frestTimelineProject.find((p) => p?.id == firstProject.id);
           const selectedProjectLibrary = project.initialStatus.library || [];
           setLibraryName(selectedProjectLibrary);
+          if (selectedProjectLibrary) {
+            const matchedLibrary = allFoundlibrary.find(
+              (lib: any) => lib.name == selectedProjectLibrary
+            );
+
+            if (matchedLibrary) {
+              setSelectedLibraryId(matchedLibrary.id);
+              setSelectedLibrary(matchedLibrary);
+            } else {
+              console.log("Library not found:", selectedProjectLibrary);
+            }
+          }
           if (project && project.projectTimeline) {
             if (project.projectParameters) {
               setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
@@ -432,11 +461,11 @@ const TimeBuilder = () => {
 
     function updateActivities(activities: any) {
       return activities.map((activity: any) => {
-        if (activity.activityStatus === "completed" || activity.fin_status === "completed") {
+        if (activity.activityStatus == "completed" || activity.fin_status == "completed") {
           return activity;
         }
 
-        if (activity.code === code) {
+        if (activity.code == code) {
           activity.duration = newDuration;
           if (activity.start && !isUpdateMode && !isReplanMode) {
             const startDate = activity.start;
@@ -475,10 +504,10 @@ const TimeBuilder = () => {
 
     function updateActivities(activities: any) {
       return activities.map((activity: any) => {
-        if (activity.activityStatus === "completed" || activity.fin_status === "completed") {
+        if (activity.activityStatus == "completed" || activity.fin_status == "completed") {
           return activity;
         }
-        if (activity.code === code) {
+        if (activity.code == code) {
           activity.slack = newSlack;
           const prerequisiteEndDate = activity.prerequisite
             ? getActivityEndDate(activity.prerequisite)
@@ -514,7 +543,7 @@ const TimeBuilder = () => {
     let endDate = null;
     finalData.forEach((module) => {
       module.activities.forEach((activity) => {
-        if (activity.code === prerequisiteCode) {
+        if (activity.code == prerequisiteCode) {
           endDate = activity.end;
         }
       });
@@ -533,12 +562,12 @@ const TimeBuilder = () => {
       const day = date.getDay();
       const formattedDate = date.toISOString().split("T")[0];
 
-      const isSaturday = day === 6;
-      const isSunday = day === 0;
+      const isSaturday = day == 6;
+      const isSunday = day == 0;
 
       const holidayEntry: any = finalHolidays?.find((holiday: any) => {
         const holidayDate = new Date(holiday.from).toISOString().split("T")[0];
-        return holidayDate === formattedDate;
+        return holidayDate == formattedDate;
       });
 
       if (isSaturday && !isSaturdayWorking) {
@@ -570,7 +599,7 @@ const TimeBuilder = () => {
 
     function updateActivities(activities: any) {
       return activities.map((activity: any) => {
-        if (activity.code === code) {
+        if (activity.code == code) {
           const duration = parseInt(activity.duration, 10) || 0;
           const { date: endDate, holidays } = addBusinessDays(date, duration);
 
@@ -608,7 +637,7 @@ const TimeBuilder = () => {
 
     function updateActivities(activities: any) {
       return activities.map((activity: any) => {
-        if (activity.prerequisite === prerequisiteCode) {
+        if (activity.prerequisite == prerequisiteCode) {
           const slack = parseInt(activity.slack, 10) || 0;
           const { date: startDate, holidays: slackHolidays } = addBusinessDays(prerequisiteEndDate, slack + 1);
           const duration = parseInt(activity.duration, 10) || 0;
@@ -644,9 +673,9 @@ const TimeBuilder = () => {
 
   const handleActivitySelection = (activityCode: string, isChecked: boolean) => {
     if (isDeletionInProgress) return;
-    const module = sequencedModules.find(m => m.parentModuleCode === "moduleCode");
+    const module = sequencedModules.find(m => m.parentModuleCode == "moduleCode");
     const hasCompletedActivities = module?.activities.some(activity =>
-      activity.activityStatus === "completed" || activity.fin_status === "completed"
+      activity.activityStatus == "completed" || activity.fin_status == "completed"
     );
 
     if (hasCompletedActivities) {
@@ -663,7 +692,7 @@ const TimeBuilder = () => {
         setSequencedModules((prevFinalData) =>
           prevFinalData.map((module) => {
             const index = module.activities.findIndex(
-              (activity) => activity.code === activityCode
+              (activity) => activity.code == activityCode
             );
 
             if (index !== -1) {
@@ -815,7 +844,7 @@ const TimeBuilder = () => {
       if (restoredActivity) {
         setSequencedModules((prevModules) =>
           prevModules.map((module) =>
-            module.parentModuleCode === restoredActivity.parentModuleCode
+            module.parentModuleCode == restoredActivity.parentModuleCode
               ? {
                 ...module,
                 activities: [
@@ -839,18 +868,71 @@ const TimeBuilder = () => {
     setSelectedActivities((prevSelected) => [...prevSelected, activityCode]);
   }
 
+  // const handleProjectChange = (projectId: any) => {
+  //   setCurrentStep(0);
+  //   setSelectedProjectId(projectId);
+  //   const project = allProjects.find((p) => p.id == projectId);
+  //   setSelectedProject(project);
+  //   if (project) {
+  //     const selectedProjectLibrary = project.initialStatus.library;
+  //     setLibraryName(selectedProjectLibrary);
+  //     setSelectedProjectMineType(project.projectParameters.typeOfMine)
+  //     handleLibraryChange((project.initialStatus.items.filter((item: any) => item.status?.toLowerCase() != "completed")));
+  //   } else {
+  //     setLibraryName([]);
+  //   }
+  // };
+
   const handleProjectChange = (projectId: any) => {
     setCurrentStep(0);
     setSelectedProjectId(projectId);
-    const project = allProjects.find((p) => p.id === projectId);
+
+    const project = allProjects.find((p) => p.id == projectId);
     setSelectedProject(project);
+
     if (project) {
-      const selectedProjectLibrary = project.initialStatus.library;
-      setLibraryName(selectedProjectLibrary);
-      setSelectedProjectMineType(project.projectParameters.typeOfMine)
-      handleLibraryChange((project.initialStatus.items.filter((item: any) => item.status?.toLowerCase() != "completed")));
+      const selectedProjectLibrary = project.initialStatus?.library || null;
+      setLibraryName(selectedProjectLibrary || null);
+
+      if (project.projectParameters) {
+        setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
+      } else {
+        setSelectedProjectMineType("");
+      }
+
+      if (selectedProjectLibrary) {
+        const matchedLibrary = (libraries || []).find(
+          (lib: any) => lib.name === selectedProjectLibrary
+        );
+
+        if (matchedLibrary) {
+          setSelectedLibraryId(matchedLibrary.id);
+          setSelectedLibrary(matchedLibrary);
+        } else {
+          console.log("Library not found in libraries list:", selectedProjectLibrary);
+          setSelectedLibraryId(null);
+          setSelectedLibrary(null);
+        }
+      } else {
+        setSelectedLibraryId(null);
+        setSelectedLibrary(null);
+      }
+
+      if (Array.isArray(project.initialStatus?.items)) {
+        const filteredItems = project.initialStatus.items.filter(
+          (item: any) => item.status?.toLowerCase() !== "completed"
+        );
+        handleLibraryChange(filteredItems);
+      } else {
+        handleLibraryChange([]);
+      }
+
     } else {
-      setLibraryName([]);
+      setLibraryName(null);
+      setSelectedProjectMineType("");
+      setSelectedLibraryId(null);
+      setSelectedLibrary(null);
+      handleLibraryChange([]);
     }
   };
 
@@ -887,7 +969,7 @@ const TimeBuilder = () => {
         version: string,
         reviewerId: string
       ) => {
-        const reviewer = userOptions.find((u) => u.id === reviewerId);
+        const reviewer = userOptions.find((u:any) => u.id == reviewerId);
 
         return {
           timelineId,
@@ -1005,9 +1087,9 @@ const TimeBuilder = () => {
       align: "left",
       width: "20%",
       render: (impact: any, record: any) =>
-        editingKey === record.key ? (
+        editingKey == record.key ? (
           <div style={{
-            backgroundColor: editingKey === record.key ? "#9AA6B2" : "transparent",
+            backgroundColor: editingKey == record.key ? "#9AA6B2" : "transparent",
             padding: "5px",
             borderRadius: "4px",
           }}>
@@ -1051,7 +1133,7 @@ const TimeBuilder = () => {
       align: "center",
       width: "5%",
       render: (_: any, record: any) =>
-        editingKey === record.key ? (
+        editingKey == record.key ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
             <Button
               type="link"
@@ -1079,7 +1161,7 @@ const TimeBuilder = () => {
 
   const handleSaveHoliday = async (key: any) => {
     const updatedHolidays: any = finalHolidays?.map((item) =>
-      item.key === key ? { ...item, impact: { ...editedImpact } } : item
+      item.key == key ? { ...item, impact: { ...editedImpact } } : item
     );
     const updatedProjectWithHoliday = {
       ...selectedProject,
@@ -1119,7 +1201,7 @@ const TimeBuilder = () => {
         key: "code",
         align: "left",
         render: (_: any, record: any) => (
-          <span className={record.activityStatus === "completed" ? "completed-field" : ""}>
+          <span className={record.activityStatus == "completed" ? "completed-field" : ""}>
             {record.code}
           </span>
         ),
@@ -1130,7 +1212,7 @@ const TimeBuilder = () => {
         key: "activityName",
         align: "left",
         render: (text: any, record: any) => (
-          <span className={record.activityStatus === "completed" ? "completed-field" : ""}>
+          <span className={record.activityStatus == "completed" ? "completed-field" : ""}>
             {text}
           </span>
         ),
@@ -1141,7 +1223,7 @@ const TimeBuilder = () => {
         key: "duration",
         align: "center",
         render: (_duration: any, record: any) => {
-          const isDisabled = record.activityStatus === "completed" || step !== 1;
+          const isDisabled = record.activityStatus == "completed" || step !== 1;
 
           return (
             <Input
@@ -1171,7 +1253,7 @@ const TimeBuilder = () => {
       },
     ];
 
-    if (step === 1 && (isUpdateMode || isReplanMode)) {
+    if (step == 1 && (isUpdateMode || isReplanMode)) {
       baseColumns.push(
         {
           title: "Status",
@@ -1210,13 +1292,13 @@ const TimeBuilder = () => {
         });
     }
 
-    if (step === 1) {
+    if (step == 1) {
       baseColumns.push(
         {
           key: "finalize",
           align: "right",
-          className: step === 1 ? "active-column" : "",
-          onCell: () => ({ className: step === 1 ? "first-column-red" : "" }),
+          className: step == 1 ? "active-column" : "",
+          onCell: () => ({ className: step == 1 ? "first-column-red" : "" }),
           render: (_: any, record: any) => (
             <div style={{ marginRight: '20px' }}>
               <Checkbox
@@ -1236,23 +1318,23 @@ const TimeBuilder = () => {
     if (step >= 2) {
       baseColumns.push({
         key: "prerequisite",
-        className: step === 2 ? "active-column" : "",
+        className: step == 2 ? "active-column" : "",
         render: (_: any, record: any) => {
-          const isDisabled = step !== 2 || record.activityStatus === "completed";
-          const selectClass = step === 2 && !isDisabled ? "highlighted-select" : "";
+          const isDisabled = step !== 2 || record.activityStatus == "completed";
+          const selectClass = step == 2 && !isDisabled ? "highlighted-select" : "";
 
           return (
             <div className={selectClass}>
               <Select
                 showSearch
                 placeholder="Select Prerequisite"
-                value={record.prerequisite === "-" ? undefined : record.prerequisite}
+                value={record.prerequisite == "-" ? undefined : record.prerequisite}
                 onChange={(value) => {
                   setSequencedModules((prevModules: any) =>
                     prevModules.map((module: any) => ({
                       ...module,
                       activities: module.activities.map((activity: any) =>
-                        activity.code === record.code
+                        activity.code == record.code
                           ? { ...activity, prerequisite: value }
                           : activity
                       ),
@@ -1286,10 +1368,10 @@ const TimeBuilder = () => {
     if (step >= 3) {
       baseColumns.push({
         key: "slack",
-        className: step === 3 ? "active-column" : "",
+        className: step == 3 ? "active-column" : "",
         render: (_: any, record: any) => {
-          const isDisabled = step !== 3 || record.activityStatus === "completed";
-          const inputClass = step === 3 && !isDisabled ? "highlighted-input" : "";
+          const isDisabled = step !== 3 || record.activityStatus == "completed";
+          const inputClass = step == 3 && !isDisabled ? "highlighted-input" : "";
 
           return (
             <div className={inputClass}>
@@ -1324,11 +1406,11 @@ const TimeBuilder = () => {
     if (step >= 4) {
       baseColumns.push({
         key: "start",
-        className: step === 4 ? "active-column" : "",
+        className: step == 4 ? "active-column" : "",
         render: (_: any, record: any) => {
           const isDisabled =
-            step !== 4 || record.activityStatus === "completed" || record.prerequisite !== "";
-          const datePickerClass = step === 4 && !isDisabled ? "highlighted-datepicker" : "";
+            step !== 4 || record.activityStatus == "completed" || record.prerequisite !== "";
+          const datePickerClass = step == 4 && !isDisabled ? "highlighted-datepicker" : "";
 
           return (
             <div className={datePickerClass}>
@@ -1505,7 +1587,7 @@ const TimeBuilder = () => {
       });
     }
 
-    if (step === 1) {
+    if (step == 1) {
       columns.push({
         title: (
           <div style={{ display: "flex", justifyContent: "flex-end", marginRight: "20px" }}>
@@ -1548,7 +1630,7 @@ const TimeBuilder = () => {
     setSelectedExistingProjectId(projectId);
     const storedAllProjects = (await db.getProjects())
       .filter((p: any) => p.orgId == currentUser.orgId);
-    const selectedExProject = storedAllProjects.find((p: any) => p.id === selectedExistingProjectId);
+    const selectedExProject = storedAllProjects.find((p: any) => p.id == selectedExistingProjectId);
     setSelectedExistigProject(selectedExProject);
   };
 
@@ -1560,8 +1642,8 @@ const TimeBuilder = () => {
 
       if (!selectedExistingProjectId) return;
 
-      if (selectedExProject?.initialStatus.library === selectedProject.initialStatus.library &&
-        selectedExProject?.projectParameters.typeOfMine === selectedProject.projectParameters.typeOfMine) {
+      if (selectedExProject?.initialStatus.library == selectedProject.initialStatus.library &&
+        selectedExProject?.projectParameters.typeOfMine == selectedProject.projectParameters.typeOfMine) {
         const updatedProjectWithTimeline = { ...selectedProject, projectTimeline: [] };
         if (selectedExProject.projectTimeline && selectedExProject.projectTimeline.length > 0) {
           updatedProjectWithTimeline.projectTimeline = selectedExProject.projectTimeline.map((module: any) => ({
@@ -1617,10 +1699,10 @@ const TimeBuilder = () => {
     setSequencedModules((prevModules) => {
       if (!isChecked) {
         const index = prevModules.findIndex(
-          (module) => module.parentModuleCode === moduleCode
+          (module) => module.parentModuleCode == moduleCode
         );
 
-        if (index === -1) return prevModules;
+        if (index == -1) return prevModules;
 
         const removedModule = prevModules[index];
         setDeletedModules((prevDeleted: any) => [
@@ -1726,10 +1808,10 @@ const TimeBuilder = () => {
   const restoreDeletedModule = (moduleCode: string) => {
     setDeletedModules((prevDeleted: any) => {
       const restoredModuleIndex = prevDeleted.findIndex(
-        (module: any) => module.parentModuleCode === moduleCode
+        (module: any) => module.parentModuleCode == moduleCode
       );
 
-      if (restoredModuleIndex === -1) return prevDeleted;
+      if (restoredModuleIndex == -1) return prevDeleted;
 
       const restoredModule = prevDeleted[restoredModuleIndex];
       const { originalIndex } = restoredModule;
@@ -1747,7 +1829,7 @@ const TimeBuilder = () => {
   const handleModalChange = (field: string, value: any) => {
     const updatedHoliday = { ...newHoliday, [field]: value };
 
-    if (field === "module") {
+    if (field == "module") {
       let selectedModules = value;
       const impact: Record<string, string> = {};
       if (selectedModules.includes("all")) {
@@ -1766,7 +1848,7 @@ const TimeBuilder = () => {
   const handleModalSave = async () => {
     const { from, to, holiday, module } = newHoliday;
 
-    if (!from || !to || !holiday.trim() || module.length === 0) {
+    if (!from || !to || !holiday.trim() || module.length == 0) {
       notify.error("Please fill all required fields before saving.");
       return;
     }
@@ -1793,6 +1875,87 @@ const TimeBuilder = () => {
     setNewHoliday({ ...newHoliday, impact: updatedImpact });
   };
 
+  const fetchAllLibrary = async (user: any) => {
+    try {
+      const libs = await db.getAllLibraries();
+      setAllLibraries(libs.filter((lib: any) => lib.orgId == user.orgId));
+      defaultSetup(libs);
+    } catch (err) {
+      console.error("Error fetching libraries:", err);
+      setAllLibraries([]);
+    }
+  };
+
+  const handleGroupLibChange = async (libraryId: any) => {
+    try {
+      setSelectedLibraryId(libraryId);
+
+      const foundLibrary = libraries.find((lib: any) => lib.id == libraryId) || null;
+      setSelectedLibrary(foundLibrary);
+
+      console.log("Selected Library Object:", foundLibrary);
+
+      if (foundLibrary && selectedProjectId) {
+        const selectedProject = allProjects.find(
+          (proj) => proj.id == selectedProjectId
+        );
+
+        if (!selectedProject) {
+          notify.error("Selected project not found.");
+          return;
+        }
+
+        const existingLibrary = selectedProject.initialStatus?.library;
+        let confirmMessage = "";
+        if (existingLibrary) {
+          confirmMessage = `A group (${existingLibrary}) is already linked to this project. Do you want to replace it?`;
+        } else {
+          confirmMessage = "Do you want to link this group to your project?";
+        }
+        Modal.confirm({
+          title: "Confirm Group Linking",
+          content: confirmMessage,
+          okText: "Yes",
+          cancelText: "No",
+          async onOk() {
+            const updatedProjects = allProjects.map((proj) => {
+              if (proj.id == selectedProjectId) {
+                return {
+                  ...proj,
+                  initialStatus: {
+                    ...proj.initialStatus,
+                    library: foundLibrary.name,
+                    items: foundLibrary.items
+                  }
+                };
+              }
+              return proj;
+            });
+
+            setAllProjects(updatedProjects);
+            const updatedProject = updatedProjects.find(
+              (p) => p.id === selectedProjectId
+            );
+            if (updatedProject) {
+              await db.updateProject(selectedProjectId, updatedProject);
+              notify.success("Group linked successfully!");
+            }
+          },
+          onCancel() {
+            console.log("User cancelled linking group.");
+          }
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error("An error occurred while linking group.");
+    }
+  };
+
+
+
+
+
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -1805,22 +1968,49 @@ const TimeBuilder = () => {
               {(allProjects.length > 0 || selectedProject) && (
                 <div>
                   <div className="filters">
-                    <Select
-                      placeholder="Select Project"
-                      disabled={isUpdateMode}
-                      value={isUpdateMode ? selectedProjectName : selectedProjectId}
-                      onChange={handleProjectChange}
-                      style={{ width: "100%" }}
-                    >
-                      {allProjects.map((project) => (
-                        <Option key={project.id} value={project.id}>
-                          {project.projectParameters.projectName}
-                        </Option>
-                      ))}
-                    </Select>
+                    <div className="form-row">
+                      <label>Project</label>
+                      <Select
+                        placeholder="Select Project"
+                        disabled={isUpdateMode}
+                        value={isUpdateMode ? selectedProjectName : selectedProjectId}
+                        onChange={handleProjectChange}
+                        style={{ minWidth: 200 }}
+                      >
+                        {allProjects.map((project) => (
+                          <Option key={project.id} value={project.id}>
+                            {project.projectParameters.projectName}
+                          </Option>
+                        ))}
+                      </Select>
+                    </div>
 
-                    <Input value={selectedProjectMineType} placeholder="Project Mine Type" disabled style={{ width: "100%" }} />
-                    <Input value={libraryName} placeholder="Library" disabled style={{ width: "100%" }} />
+                    <div className="form-row">
+                      <label>Mine Type</label>
+                      <Input
+                        value={selectedProjectMineType}
+                        placeholder="Project Mine Type"
+                        disabled
+                        style={{ minWidth: 200 }}
+                      />
+                    </div>
+
+                    <div className="form-row">
+                      <label>Library</label>
+                      <Select
+                        placeholder="Select Library"
+                        disabled={isUpdateMode || !selectedProjectId}
+                        value={selectedLibraryId}
+                        onChange={handleGroupLibChange}
+                        style={{ minWidth: 200 }}
+                      >
+                        {(libraries || []).map((lib: any) => (
+                          <Option key={lib.id} value={lib.id}>
+                            {lib.name}
+                          </Option>
+                        ))}
+                      </Select>
+                    </div>
                   </div>
                 </div>
               )}
@@ -1857,7 +2047,7 @@ const TimeBuilder = () => {
           {selectedProject != null && isMenualTimeline ? (
             <div className="main-item-container">
               <div className="timeline-items">
-                {currentStep === 0 ? (
+                {currentStep == 0 ? (
                   <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable droppableId="modules">
                       {(provided) => (
@@ -1887,7 +2077,7 @@ const TimeBuilder = () => {
                       )}
                     </Droppable>
                   </DragDropContext>
-                ) : currentStep === 5 ? (
+                ) : currentStep == 5 ? (
                   <div>
                     <div className="holiday-actions">
                       <div className="st-sun-field">
@@ -1939,7 +2129,7 @@ const TimeBuilder = () => {
                       </div>
                     )}
                   </div>
-                ) : currentStep === 6 || currentStep === 7 ? (
+                ) : currentStep == 6 || currentStep == 7 ? (
                   <div style={{ overflowX: "hidden" }}>
                     <Table
                       columns={finalColumns}
@@ -2004,7 +2194,7 @@ const TimeBuilder = () => {
                 )}
               </div>
               <hr />
-              <div className={`action-buttons ${currentStep === 0 ? "float-right" : ""}`}>
+              <div className={`action-buttons ${currentStep == 0 ? "float-right" : ""}`}>
                 {currentStep > 0 && (
                   <Button className="bg-tertiary" onClick={handlePrev} style={{ marginRight: 8 }} size="small">
                     Previous
@@ -2014,7 +2204,7 @@ const TimeBuilder = () => {
                   disabled={selectedProjectId == null || !isNextStepAllowed()}
                   className="bg-secondary"
                   onClick={() => {
-                    if (currentStep === 6) {
+                    if (currentStep == 6) {
                       setIsReviewModalVisible(true);
                     } else {
                       handleNext();
@@ -2023,11 +2213,11 @@ const TimeBuilder = () => {
                   type="primary"
                   size="small"
                 >
-                  {currentStep === 7
+                  {currentStep == 7
                     ? isUpdateMode
                       ? "Update"
                       : "Save"
-                    : currentStep === 6
+                    : currentStep == 6
                       ? "Send For Review"
                       : "Next"}
                 </Button>
@@ -2036,7 +2226,7 @@ const TimeBuilder = () => {
           ) : <div className="container">
             <div className="no-project-message">
 
-              {allProjects.length === 0 ? (
+              {allProjects.length == 0 ? (
                 <>
                   <h3>No Projects Available</h3>
                   <p>Start by creating a new project to define a timeline.</p>
@@ -2063,7 +2253,7 @@ const TimeBuilder = () => {
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <Button
                       type="primary"
-                      disabled={!selectedProjectId}
+                      disabled={!selectedProjectId || !selectedLibrary}
                       icon={<LinkOutlined />}
                       onClick={() => setOpenExistingTimelineModal(true)}
                       style={{ marginLeft: "15px", backgroundColor: "grey", borderColor: "#4CAF50" }}
@@ -2072,7 +2262,7 @@ const TimeBuilder = () => {
                     </Button>
                     <Button
                       type="primary"
-                      disabled={!selectedProjectId}
+                      disabled={!selectedProjectId || !selectedLibrary}
                       icon={<FolderOpenOutlined />}
                       onClick={() => setIsMenualTimeline(true)}
                       style={{ marginLeft: "15px", backgroundColor: "#D35400", borderColor: "#FF9800" }}
@@ -2251,7 +2441,7 @@ const TimeBuilder = () => {
             option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
           }
         >
-          {userOptions.map((user) => (
+          {userOptions.map((user:any) => (
             <Option key={user.id} value={user.id}>
               {user.name}
             </Option>
@@ -2265,7 +2455,3 @@ const TimeBuilder = () => {
 };
 
 export default TimeBuilder;
-
-function uuidv4() {
-  throw new Error("Function not implemented.");
-}

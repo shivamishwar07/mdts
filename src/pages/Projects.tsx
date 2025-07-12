@@ -129,10 +129,12 @@ const Projects = () => {
         setCurrentUser(getCurrentUser());
     }, []);
 
-     useEffect(() => {
-        setCurrentUser(getCurrentUser());
-        getAllProjects();
-    }, currentUser);
+    useEffect(() => {
+        if (currentUser && currentUser.orgId) {
+            getAllProjects();
+        }
+    }, [currentUser]);
+
 
     if (!projectDetails) {
         return <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>

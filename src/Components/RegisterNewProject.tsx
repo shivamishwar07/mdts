@@ -24,10 +24,10 @@ const { Text } = Typography;
 export const RegisterNewProject: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [allLibrariesName, setAllLibrariesName] = useState<any>([]);
   const [formData, setFormData] = useState<{ [key: string]: string }>({});
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [mineTypeOptions, setMineTypeOptions] = useState<string[]>([]);
+  const [allLibrariesName, setAllLibrariesName] = useState<any>([]);
   const initialLibrary = allLibrariesName[0]?.name;
   const [selectedLibrary, setSelectedLibrary] = useState<any>(initialLibrary);
   const [mineTypePopupOpen, setMineTypePopupOpen] = useState<boolean>(false);
@@ -38,7 +38,7 @@ export const RegisterNewProject: React.FC = () => {
     { id: 1, title: "Project Parameters" },
     { id: 2, title: "Locations" },
     { id: 3, title: "Contractual Details" },
-    { id: 4, title: "Initial Status" },
+    // { id: 4, title: "Initial Status" },
   ];
   const [formStepsData, setFormStepsData] = useState<any[]>(() => {
     const savedData = localStorage.getItem("projectFormData");
@@ -71,7 +71,10 @@ export const RegisterNewProject: React.FC = () => {
 
   const fetchMineTypes = async (storedLib: any) => {
     try {
-      const storedOptions: any = await db.getAllMineTypes();
+      let currentUser = getCurrentUser();
+      const storedOptions: any = (await db.getAllMineTypes())?.filter(
+        (type: any) => type.orgId === currentUser.orgId
+      );
       setMineTypeOptions(storedOptions);
 
       if (storedOptions.length === 1) {
@@ -132,7 +135,7 @@ export const RegisterNewProject: React.FC = () => {
 
   const handleSubmit = async () => {
     const loggedInUser = getCurrentUser();
-    const initialDataVal = { library: selectedLibrary, items: selectedItems };
+    const initialDataVal = { library: "", items: [] };
     if (!loggedInUser.id) {
       notify.error("Authentication Required! No logged-in user was found. Please log in and try again."
       );
@@ -142,7 +145,8 @@ export const RegisterNewProject: React.FC = () => {
     finalData[currentStep - 1] = { ...formData };
     let currentUser = getCurrentUser();
     const newProject = {
-      id: uuidv4(),
+      id: Date.now(),
+      guiId: uuidv4(),
       projectParameters: finalData[0] || {},
       locations: finalData[1] || {},
       contractualDetails: finalData[2] || {},

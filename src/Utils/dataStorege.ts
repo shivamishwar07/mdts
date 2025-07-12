@@ -155,7 +155,6 @@ export class DataStorage extends Dexie {
       if (existingLibrary) {
         const updatedLibrary = { ...newRecord, id };
         await this.moduleLibrary.put(updatedLibrary);
-        message.success(`Library with ID ${id} updated successfully.`);
       } else {
         message.warning(`Library with ID ${id} not found.`);
       }
@@ -169,7 +168,6 @@ export class DataStorage extends Dexie {
       const existingLibrary = await this.moduleLibrary.get(id);
       if (existingLibrary) {
         await this.moduleLibrary.delete(id);
-        message.success(`Library with ID ${id} deleted successfully.`);
       } else {
         message.warning(`Library with ID ${id} not found.`);
       }
