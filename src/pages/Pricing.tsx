@@ -1,6 +1,6 @@
 import { useState } from "react";
 import "../styles/pricing.css";
-
+import { useNavigate } from "react-router-dom";
 const monthlyPlans = [
     {
         title: "Free",
@@ -94,7 +94,7 @@ const annualPlans = [
 const Pricing = () => {
     const [activePlan, setActivePlan] = useState("annual");
     const [selected, setSelected] = useState("pro");
-
+    const navigate = useNavigate();
     const plans = activePlan === "monthly" ? monthlyPlans : annualPlans;
 
     return (
@@ -140,6 +140,12 @@ const Pricing = () => {
                         <button className="plan-button">{plan.button}</button>
                     </div>
                 ))}
+            </div>
+            <div className="demo-section">
+                <p>Need a custom walkthrough? See how we can support your unique needs.</p>
+                <button className="demo-button" onClick={() => navigate("/home/contacts")}>
+                    Schedule a Demo
+                </button>
             </div>
         </div>
     );

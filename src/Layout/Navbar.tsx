@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, Dropdown, Button, Typography, Divider, Modal, Badge, Input } from "antd";
+import { Menu, Dropdown, Button, Typography, Divider, Modal, Badge } from "antd";
 import { BellOutlined, DownOutlined, LogoutOutlined, QuestionCircleOutlined, SettingOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
 import { userStore } from "../Utils/UserStore";
@@ -194,59 +194,59 @@ const Navbar: React.FC = () => {
                         </div>
                     </div>
                     <div className="search-bar-wrapper" style={{ marginRight: "20px", width: "250px" }}>
-                        <Input.Search
-                            placeholder="Search MDTS..."
-                            allowClear
-                            enterButton
-                        />
+                        <div className="spectacledcoder-search-bar">
+                            <img className="search-icon" width="27" height="27" src="https://img.icons8.com/sf-black/500/000000/search.png" alt="search" />
+                            <input type="text" name="search" placeholder="Search MDTS" className="spectacledcoder-search-input"/>
+
+                        </div>
                     </div>
                 </div>
                 <div className="user-data">
-                <div className="nav-tab-items">
-                    <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
-                    {navLinks.map((link, index) => (
-                        <div key={index} style={{ margin: "0 5px" }}>
-                            {link.subItems ? (
-                                <div className="nav-dropdown-cust"
-                                    style={{
-                                        position: "relative",
-                                        cursor: "pointer",
-                                        transition: "all 0.3s ease",
-                                        backgroundColor: isActive(link.subItems[0]?.action || "") ? "#424242" : "transparent",
-                                        borderRadius: "4px",
-                                    }}
-                                >
-                                    <Dropdown
-                                        overlay={
-                                            <Menu selectedKeys={[selectedDropdownKeys[link.label] || ""]} style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                                {link.subItems.map((subItem, _subIndex) => (
-                                                    <Menu.Item
-                                                        key={subItem.label}
-                                                        onClick={() => handleDropdownSelect(link.label, subItem)}
-                                                    >
-                                                        {subItem.label}
-                                                    </Menu.Item>
-                                                ))}
-                                            </Menu>
-                                        }
+                    <div className="nav-tab-items">
+                        <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
+                        {navLinks.map((link, index) => (
+                            <div key={index} style={{ margin: "0 5px" }}>
+                                {link.subItems ? (
+                                    <div className="nav-dropdown-cust"
+                                        style={{
+                                            position: "relative",
+                                            cursor: "pointer",
+                                            transition: "all 0.3s ease",
+                                            backgroundColor: isActive(link.subItems[0]?.action || "") ? "#424242" : "transparent",
+                                            borderRadius: "4px",
+                                        }}
                                     >
-                                        <Button type="text">
-                                            {link.label} <DownOutlined />
-                                        </Button>
-                                    </Dropdown>
-                                </div>
-                            ) : (
-                                <Button className={`nav-item ${isActive(link.action) ? "active" : ""}`} type="text">
-                                    <Link style={{ color: "inherit", textDecoration: "none" }} to={link.action || "#"} onClick={() => setSelectedDropdownKeys({})}>{link.label}</Link>
-                                </Button>
+                                        <Dropdown
+                                            overlay={
+                                                <Menu selectedKeys={[selectedDropdownKeys[link.label] || ""]} style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                                    {link.subItems.map((subItem, _subIndex) => (
+                                                        <Menu.Item
+                                                            key={subItem.label}
+                                                            onClick={() => handleDropdownSelect(link.label, subItem)}
+                                                        >
+                                                            {subItem.label}
+                                                        </Menu.Item>
+                                                    ))}
+                                                </Menu>
+                                            }
+                                        >
+                                            <Button type="text">
+                                                {link.label} <DownOutlined />
+                                            </Button>
+                                        </Dropdown>
+                                    </div>
+                                ) : (
+                                    <Button className={`nav-item ${isActive(link.action) ? "active" : ""}`} type="text">
+                                        <Link style={{ color: "inherit", textDecoration: "none" }} to={link.action || "#"} onClick={() => setSelectedDropdownKeys({})}>{link.label}</Link>
+                                    </Button>
 
-                            )}
-                            {index < navLinks.length - 1 && !link.subItems && (
-                                <Divider type="vertical" style={{ backgroundColor: "#ddd", height: 20, margin: "0 2px" }} />
-                            )}
-                        </div>
-                    ))}
-                </div>
+                                )}
+                                {index < navLinks.length - 1 && !link.subItems && (
+                                    <Divider type="vertical" style={{ backgroundColor: "#ddd", height: 20, margin: "0 2px" }} />
+                                )}
+                            </div>
+                        ))}
+                    </div>
                     <span className="notification-icon-wrapper">
                         <Badge count={5} size="small" offset={[-2, 4]}>
                             <BellOutlined className="bell-icon" />

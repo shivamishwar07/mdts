@@ -15,6 +15,7 @@ import { RollbackOutlined } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
 import { notify } from "../Utils/ToastNotify.tsx";
 import { getCurrentUser } from "../Utils/moduleStorage";
+import { ToastContainer } from "react-toastify";
 const Module = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
@@ -69,7 +70,7 @@ const Module = () => {
     const [openResponsibilityModal, setOpenResponsibilityModal] = useState(false);
     const [raciForm] = Form.useForm();
     const [userOptions, setUserOptions] = useState<any>([]);
-
+    const [currentUser, setCurrentUser] = useState<any>(null);
     const pushToUndoStack = (currentState: any) => {
         setUndoStack((prevStack) => {
             const newStack = [...prevStack, currentState];
@@ -80,6 +81,7 @@ const Module = () => {
         });
         setIsOriginalActivitiesStateStored(false);
     };
+
 
     useEffect(() => {
         if (state && state.activities) {
@@ -102,18 +104,26 @@ const Module = () => {
     }, [state]);
 
     useEffect(() => {
+        setCurrentUser(getCurrentUser());
+    }, []);
+
+    useEffect(() => {
         const fetchMineTypes = async () => {
             try {
-                const storedOptions: any = await db.getAllMineTypes();
+                const storedOptions: any = (await db.getAllMineTypes())?.filter(
+                    (type: any) => type.orgId === currentUser.orgId
+                );
                 setOptions(storedOptions);
-                const allUsers = await db.getUsers();
+                const allUsers = (await db.getUsers())?.filter(
+                    (user: any) => user.orgId === currentUser.orgId
+                );
                 setUserOptions(allUsers);
             } catch (error) {
                 console.error("Error fetching mine types:", error);
             }
         };
         fetchMineTypes();
-    }, []);
+    }, [currentUser]);
 
     useEffect(() => {
         if (moduleData.activities.length > 0) {
@@ -542,7 +552,6 @@ const Module = () => {
         if (newModelName && selectedOption) {
             if (newModelName.trim()) {
                 const generatedId = uuidv4();
-                let currentUser = getCurrentUser();
                 setModuleData({
                     guiId: generatedId,
                     parentModuleCode: moduleCodeName
@@ -575,15 +584,35 @@ const Module = () => {
 
     const handleAddNewMineType = async () => {
         if (newMineType && shorthandCode) {
+            const isDuplicate = options.some(
+                (opt: any) =>
+                    opt.description.trim().toLowerCase() === newMineType.trim().toLowerCase() ||
+                    opt.type.trim().toLowerCase() === shorthandCode.trim().toLowerCase()
+            );
+
+            if (isDuplicate) {
+                notify.error("Mine type already exists.");
+                return;
+            }
+
             try {
-                const mineTypeData: any = { type: shorthandCode, description: newMineType };
+                const mineTypeData: any = {
+                    type: shorthandCode.trim(),
+                    description: newMineType.trim(),
+                    userGuiId: currentUser?.guiId,
+                    orgId: currentUser?.orgId,
+                    createdAt: new Date().toISOString(),
+                    guiId: uuidv4(),
+                };
+
                 const id = await db.addMineType(mineTypeData);
                 setOptions([...options, { id, ...mineTypeData }]);
                 setNewMineType("");
                 setShorthandCode("");
                 setMineTypePopupOpen(false);
+                notify.success("Added Successfully");
             } catch (error) {
-                console.error("Error adding mine type:", error);
+                notify.error("Error adding mine type");
             }
         }
     };
@@ -1617,6 +1646,7 @@ const Module = () => {
                     </Form>
                 </Modal>
             </div>
+            <ToastContainer />
         </div>
     );
 };

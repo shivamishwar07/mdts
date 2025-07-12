@@ -3,7 +3,7 @@ import "../styles/sign-in.css";
 import { Button } from "antd";
 import { useNavigate } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
-import { GoogleOutlined, WindowsOutlined, KeyOutlined } from '@ant-design/icons';
+import { GoogleOutlined, WindowsOutlined, KeyOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
 import { v4 as uuidv4 } from 'uuid';
@@ -15,6 +15,7 @@ const SignInSignUp: React.FC = () => {
     const [password, setPassword] = useState("");
     const [workEmail, setWorkEmail] = useState("");
     const [isSignUp, setIsSignUp] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const isProfileCompleted = (user: any) => {
         return (
@@ -121,7 +122,23 @@ const SignInSignUp: React.FC = () => {
                     ) : (
                         <>
                             <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} />
-                            <input type="password" placeholder="Password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                            <div className="password-input-wrapper">
+                                <input
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Password"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                />
+                                {password && (
+                                    <span
+                                        onClick={() => setShowPassword((prev) => !prev)}
+                                        className="toggle-password"
+                                    >
+                                        {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+                                    </span>
+                                )}
+                            </div>
+
                             <button onClick={handleLogin}>Login</button>
                         </>
                     )}

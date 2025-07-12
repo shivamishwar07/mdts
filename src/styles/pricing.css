@@ -3,20 +3,20 @@
     padding: 2rem;
     background: #f9f9fb;
     font-family: 'Segoe UI', sans-serif;
-    
+
     .title {
         font-size: 2.5rem;
         margin-bottom: 0.5rem;
         font-weight: bold;
         animation: fadeInDown 0.6s ease-out;
     }
-    
+
     .subtitle {
         color: #666;
         animation: fadeInUp 0.6s ease-out;
         margin: 0.5% 10%;
     }
-    
+
     .toggle-section {
         background: #e6e6e6;
         display: inline-flex;
@@ -24,7 +24,7 @@
         padding: 5px;
         margin-bottom: 2rem;
     }
-    
+
     .toggle-btn {
         background: transparent;
         border: none;
@@ -34,12 +34,12 @@
         font-weight: 600;
         color: #000;
     }
-    
+
     .toggle-btn.active {
         background: #000;
         color: #fff;
     }
-    
+
     .save-tag {
         font-size: 0.75rem;
         background: #f37921;
@@ -47,7 +47,7 @@
         margin-left: 0.3rem;
         border-radius: 4px;
     }
-    
+
     .cards-container {
         display: flex;
         flex-wrap: wrap;
@@ -55,7 +55,7 @@
         gap: 2rem;
         margin-top: 2rem;
     }
-    
+
     .pricing-card {
         background: #fff;
         padding: 2rem;
@@ -66,27 +66,27 @@
         animation: slideUp 0.7s ease-out;
         cursor: pointer;
     }
-    
+
     .pricing-card:hover {
         transform: translateY(-8px);
         box-shadow: 0 12px 30px rgba(0, 0, 0, 0.1);
     }
-    
+
     .selected-plan {
         outline: 2px solid red;
         transform: scale(1.03);
     }
-    
+
     .pricing-card.enterprise {
         background: #1f1f1f;
         color: #fff;
     }
-    
+
     .plan-title {
         font-size: 1.4rem;
         margin-bottom: 0.5rem;
     }
-    
+
     .badge {
         background: #ff6b6b;
         color: #fff;
@@ -95,19 +95,19 @@
         margin-left: 0.5rem;
         border-radius: 5px;
     }
-    
+
     .plan-price {
         font-size: 2rem;
         font-weight: bold;
         margin: 0.5rem 0;
     }
-    
+
     .plan-desc {
         font-size: 0.9rem;
         color: #999;
         margin-bottom: 1rem;
     }
-    
+
     .plan-features {
         list-style: none;
         padding: 0;
@@ -115,16 +115,16 @@
         text-align: left;
         color: #333;
     }
-    
+
     .pricing-card.enterprise .plan-features {
         color: #ddd;
     }
-    
+
     .plan-features li {
         margin: 0.5rem 0;
         font-size: 0.9rem;
     }
-    
+
     .plan-button {
         color: #000;
         padding: 0.75rem 1rem;
@@ -135,51 +135,80 @@
         transition: background 0.3s ease;
         outline: 1px solid grey;
     }
-    
+
     .plan-button:hover {
         background: #e6e0e0;
     }
-    
+
     @keyframes fadeInDown {
         from {
             opacity: 0;
             transform: translateY(-20px);
         }
-    
+
         to {
             opacity: 1;
             transform: translateY(0);
         }
     }
-    
+
     @keyframes fadeInUp {
         from {
             opacity: 0;
             transform: translateY(20px);
         }
-    
+
         to {
             opacity: 1;
             transform: translateY(0);
         }
     }
-    
+
     @keyframes slideUp {
         from {
             opacity: 0;
             transform: translateY(40px);
         }
-    
+
         to {
             opacity: 1;
             transform: translateY(0);
         }
     }
-    
+
     @media screen and (max-width: 768px) {
         .cards-container {
             flex-direction: column;
             align-items: center;
         }
     }
+
+    .demo-section {
+        margin-top: 3rem;
+        text-align: center;
+        animation: fadeInUp 0.7s ease-out;
+    }
+
+    .demo-section p {
+        font-size: 1rem;
+        color: #444;
+        margin-bottom: 1rem;
+    }
+
+    .demo-button {
+        background-color: #000;
+        color: #fff;
+        border: none;
+        padding: 0.9rem 1.8rem;
+        border-radius: 30px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+
+    .demo-button:hover {
+        background-color: #333;
+    }
+
 }
