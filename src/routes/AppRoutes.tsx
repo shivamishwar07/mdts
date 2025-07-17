@@ -29,6 +29,7 @@ import Hero from "../pages/Hero";
 import Contact from "../pages/Contact";
 import SettingsAndPrivacy from "../pages/SettingsAndPrivacy";
 import HelpAndSupport from "../pages/HelpAndSupport";
+import SignInSignUp from "../pages/SignIn";
 
 const AppRoutes = () => {
     const isAuthenticated = !!localStorage.getItem('user');
@@ -48,6 +49,7 @@ const AppRoutes = () => {
                     <Route path="services" element={<Services />} />
                     <Route path="pricing" element={<Pricing />} />
                     <Route path="contacts" element={<Contact />} />
+                    <Route path="login" element={<SignInSignUp />} />
                 </Route>
                 <Route
                     path="/"

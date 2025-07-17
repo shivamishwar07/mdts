@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, Result, notification, Progress, Typography } from "antd";
+import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, Result, notification, Progress, Typography, Form, Row, Col, Tooltip } from "antd";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import "../styles/time-builder.css";
 import type { ColumnsType } from "antd/es/table";
@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 const { Option } = Select;
 const { Step } = Steps;
 import { useNavigate } from "react-router-dom";
-import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, CloseOutlined, DeleteOutlined, EditOutlined, ExclamationCircleOutlined, FolderOpenOutlined, LinkOutlined, PlusOutlined, SaveOutlined, ToolOutlined } from "@ant-design/icons";
+import { CalendarOutlined, ClockCircleOutlined, CloseCircleOutlined, CloseOutlined, DeleteOutlined, EditOutlined, ExclamationCircleOutlined, FolderOpenOutlined, LinkOutlined, PlusOutlined, SaveOutlined } from "@ant-design/icons";
 import { useLocation } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -81,7 +81,7 @@ const TimeBuilder = () => {
   const [allProjectsTimelines, setAllProjectsTimelines] = useState<any[]>([]);
   const [openExistingTimelineModal, setOpenExistingTimelineModal] = useState(false);
   const [selectedExistingProjectId, setSelectedExistingProjectId] = useState(null);
-  const [selectedExistingProject, setSelectedExistigProject] = useState<any>(null);
+  const [_selectedExistingProject, setSelectedExistigProject] = useState<any>(null);
   const [editingKey, setEditingKey] = useState(null);
   const [editedImpact, setEditedImpact] = useState<any>({});
   const [_deletedModules, setDeletedModules] = useState<any>([]);
@@ -105,14 +105,19 @@ const TimeBuilder = () => {
   const [isAddHolidayModalVisible, setAddHolidayModalVisible] = useState(false);
   const [libraries, setAllLibraries] = useState<any>([]);
   const [selectedLibraryId, setSelectedLibraryId] = useState(null);
-  const [selectedLibrary, setSelectedLibrary] = useState(null);
-
+  const [selectedLibrary, setSelectedLibrary] = useState<any>(null);
+  const initialLibrary = libraries[0]?.name;
+  const [selectedItems, setSelectedItems] = useState(
+    libraries.find((lib: any) => lib.name == initialLibrary)?.items || []
+  );
+  const [selectedGroupName, setSelectedGroupName] = useState<string | null>(null);
   const [newHoliday, setNewHoliday] = useState({
     from: null,
     to: null,
     holiday: "",
     module: [],
     impact: {},
+    projectId: null,
   });
   const [currentUser, setCurrentUser] = useState<any>(null);
 
@@ -123,22 +128,62 @@ const TimeBuilder = () => {
   ]);
 
   const [userOptions, setUserOptions] = useState<any>([]);
+
   useEffect(() => {
-    const loadUser = async () => {
-      const user = await getCurrentUser();
-      if (user) {
-        setCurrentUser(user);
-      }
-    };
     loadUser();
   }, []);
+
+  const loadUser = async () => {
+    const user = await getCurrentUser();
+    if (user) {
+      setCurrentUser(user);
+    }
+  };
 
   useEffect(() => {
     if (currentUser && currentUser.orgId) {
       fetchAllLibrary(currentUser);
-      fetchHolidays();
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const state = location.state;
+    if (!state?.selectedProject || !state?.selectedTimeline) return;
+    console.log(state);
+    const fetchData = async () => {
+      setIsReplanMode(state.rePlanTimeline || false);
+
+      const { selectedProject, selectedTimeline } = state;
+      const { projectParameters, id, holidays, projectTimeline, initialStatus } = selectedProject || {};
+
+      const timelineId = selectedTimeline.versionId || selectedTimeline.timelineId;
+      setSelectedTimelineId(timelineId);
+      getProjectTimeline(timelineId);
+      setIsUpdateMode(true);
+      setSelectedProjectName(projectParameters?.projectName || "");
+      setSelectedProjectId(id || "");
+      setSelectedProject(selectedProject || {});
+      setFinalHolidays(holidays || []);
+      setSelectedLibraryId(initialStatus.id);
+      setLibraryName(initialStatus?.library || []);
+      setSelectedItems(initialStatus.items);
+      setSelectedGroupName(initialStatus.library);
+
+      if (projectTimeline?.length) {
+        setIsSaturdayWorking(projectTimeline[0]?.saturdayWorking || false);
+        setIsSundayWorking(projectTimeline[0]?.sundayWorking || false);
+        setSelectedProjectMineType(projectParameters?.typeOfMine || "");
+      } else {
+        setLibraryName([]);
+      }
+
+      setIsMenualTimeline(true);
+    };
+
+    fetchData();
+  }, [currentUser, location.state]);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -148,6 +193,40 @@ const TimeBuilder = () => {
 
     return () => clearTimeout(timeout);
   }, [modules]);
+
+  useEffect(() => {
+    finalData.forEach((module) => {
+      module.activities.forEach((activity) => {
+        if (activity.start) {
+          handleStartDateChange(activity.code, activity.start);
+        }
+      });
+    });
+  }, [isSaturdayWorking, isSundayWorking, finalHolidays]);
+
+  const fetchHolidays = async () => {
+    try {
+      const holidays = (await db.getAllHolidays()).filter(
+        (h: any) =>
+          h.orgId == currentUser.orgId &&
+          (h.projectId == null || h.projectId == selectedProject.id)
+      );
+      if (holidays) {
+        const updatedData: HolidayData[] = holidays.map((item: any, index: number) => ({
+          ...item,
+          from: item.from?.$d ? item.from.$d : item.from,
+          to: item.to?.$d ? item.to.$d : item.to,
+          key: String(index + 1),
+        }));
+
+        setHolidayData(updatedData);
+        setFinalHolidays(updatedData);
+        setSelected(Object.fromEntries(updatedData.map((item) => [item.key, true])));
+      }
+    } catch (error) {
+      console.error("Error fetching holidays:", error);
+    }
+  };
 
   useEffect(() => {
     if (currentStep == 6) {
@@ -239,72 +318,6 @@ const TimeBuilder = () => {
     }
   }, [currentStep, finalData]);
 
-  useEffect(() => {
-    finalData.forEach((module) => {
-      module.activities.forEach((activity) => {
-        if (activity.start) {
-          handleStartDateChange(activity.code, activity.start);
-        }
-      });
-    });
-  }, [isSaturdayWorking, isSundayWorking, finalHolidays]);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      const state = location.state;
-      if (!state?.selectedProject || !state?.selectedTimeline) return;
-
-      setIsReplanMode(state.rePlanTimeline || false);
-
-      const { selectedProject, selectedTimeline } = state;
-      const { projectParameters, id, holidays, projectTimeline, initialStatus } = selectedProject || {};
-
-      const timelineId = selectedTimeline.versionId || selectedTimeline.timelineId;
-      setSelectedTimelineId(timelineId);
-      getProjectTimeline(timelineId);
-      setIsUpdateMode(true);
-      setSelectedProjectName(projectParameters?.projectName || "");
-      setSelectedProjectId(id || "");
-      setSelectedProject(selectedProject || {});
-      setFinalHolidays(holidays || []);
-
-      setLibraryName(initialStatus?.library || []);
-
-      if (projectTimeline?.length) {
-        setIsSaturdayWorking(projectTimeline[0]?.saturdayWorking || false);
-        setIsSundayWorking(projectTimeline[0]?.sundayWorking || false);
-        setSelectedProjectMineType(projectParameters?.typeOfMine || "");
-      } else {
-        setLibraryName([]);
-      }
-
-      setIsMenualTimeline(true);
-    };
-
-    fetchData();
-  }, [location.state]);
-
-  const fetchHolidays = async () => {
-    try {
-      const holidays = (await db.getAllHolidays())
-        .filter((h: any) => h.orgId == currentUser.orgId);
-      if (holidays) {
-        const updatedData: HolidayData[] = holidays.map((item: any, index: number) => ({
-          ...item,
-          from: item.from?.$d ? item.from.$d : item.from,
-          to: item.to?.$d ? item.to.$d : item.to,
-          key: String(index + 1),
-        }));
-
-        setHolidayData(updatedData);
-        setFinalHolidays(updatedData);
-        setSelected(Object.fromEntries(updatedData.map((item) => [item.key, true])));
-      }
-    } catch (error) {
-      console.error("Error fetching holidays:", error);
-    }
-  };
-
   const getProjectTimeline = async (timelineId: any) => {
     if (timelineId) {
       try {
@@ -344,22 +357,23 @@ const TimeBuilder = () => {
         if (firstProject && firstProject.id) {
           setSelectedProjectId(firstProject.id);
           setSelectedProject(frestTimelineProject[0]);
-
           const project = frestTimelineProject.find((p) => p?.id == firstProject.id);
-          const selectedProjectLibrary = project.initialStatus.library || [];
+          const selectedProjectLibrary = project.initialStatus;
           setLibraryName(selectedProjectLibrary);
+          const FilteredLibrary = (allFoundlibrary || [])
+            .filter((lib: any) => lib.mineType == project.projectParameters.typeOfMine)
+          setAllLibraries(FilteredLibrary);
           if (selectedProjectLibrary) {
-            const matchedLibrary = allFoundlibrary.find(
-              (lib: any) => lib.name == selectedProjectLibrary
-            );
-
-            if (matchedLibrary) {
-              setSelectedLibraryId(matchedLibrary.id);
-              setSelectedLibrary(matchedLibrary);
+            if (selectedProjectLibrary) {
+              setSelectedLibraryId(selectedProjectLibrary.id);
+              setSelectedLibrary(selectedProjectLibrary);
+              setSelectedItems((selectedProjectLibrary.items).filter((item: any) => item.status != 'Completed'));
+              setSelectedGroupName(selectedProjectLibrary.name);
             } else {
-              console.log("Library not found:", selectedProjectLibrary);
+              console.error("Library not found:", selectedProjectLibrary);
             }
           }
+
           if (project && project.projectTimeline) {
             if (project.projectParameters) {
               setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
@@ -856,55 +870,108 @@ const TimeBuilder = () => {
     setSelectedActivities((prevSelected) => [...prevSelected, activityCode]);
   }
 
+  // const handleProjectChange = (projectId: any) => {
+  //   setCurrentStep(0);
+  //   setSelectedProjectId(projectId);
+  //   const project = allProjects.find((p) => p.id == projectId);
+  //   setSelectedProject(project);
+
+  //   if (project) {
+  //     const selectedProjectLibrary = project.initialStatus?.library || null;
+  //     setLibraryName(selectedProjectLibrary || null);
+  //     const filteredLibraries = libraries?.filter((lib: any) => lib.mineType == project.projectParameters.typeOfMine);
+  //     setAllLibraries(filteredLibraries);
+  //     if (project.projectParameters) {
+  //       setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
+  //     } else {
+  //       setSelectedProjectMineType("");
+  //     }
+
+  //     if (selectedProjectLibrary) {
+  //       const FilteredLibrary = (libraries || [])
+  //         .filter((lib: any) => lib.mineType == project.projectParameters.typeOfMine)
+  //       setAllLibraries(FilteredLibrary);
+  //       const matchedLibrary = (libraries || [])
+  //         .filter((lib: any) => lib.mineType == project.projectParameters.typeOfMine)
+  //       if (matchedLibrary) {
+  //         setSelectedLibraryId(matchedLibrary[0].id);
+  //         setSelectedLibrary(matchedLibrary[0]);
+  //         setSelectedItems((matchedLibrary[0]?.items)?.filter((item: any) => item.status != 'Completed'));
+  //         setSelectedGroupName(matchedLibrary[0].name);
+  //       } else {
+  //         setSelectedLibraryId(null);
+  //         setSelectedLibrary(null);
+  //       }
+  //     } else {
+  //       setSelectedLibraryId(null);
+  //       setSelectedLibrary(null);
+  //     }
+  //     if (Array.isArray(project.initialStatus?.items)) {
+  //       const filteredItems = project.initialStatus.items.filter(
+  //         (item: any) => item.status?.toLowerCase() !== "completed"
+  //       );
+  //       handleLibraryChange(filteredItems);
+  //     } else {
+  //       handleLibraryChange([]);
+  //     }
+
+  //   } else {
+  //     setLibraryName(null);
+  //     setSelectedProjectMineType("");
+  //     setSelectedLibraryId(null);
+  //     setSelectedLibrary(null);
+  //     handleLibraryChange([]);
+  //   }
+  // };
   const handleProjectChange = (projectId: any) => {
     setCurrentStep(0);
     setSelectedProjectId(projectId);
 
-    const project = allProjects.find((p) => p.id == projectId);
+    const project = allProjects.find((p) => p.id === projectId);
     setSelectedProject(project);
 
-    if (project) {
-      const selectedProjectLibrary = project.initialStatus?.library || null;
-      setLibraryName(selectedProjectLibrary || null);
-
-      if (project.projectParameters) {
-        setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
-      } else {
-        setSelectedProjectMineType("");
-      }
-
-      if (selectedProjectLibrary) {
-        const matchedLibrary = (libraries || []).find(
-          (lib: any) => lib.name === selectedProjectLibrary
-        );
-
-        if (matchedLibrary) {
-          setSelectedLibraryId(matchedLibrary.id);
-          setSelectedLibrary(matchedLibrary);
-        } else {
-          console.log("Library not found in libraries list:", selectedProjectLibrary);
-          setSelectedLibraryId(null);
-          setSelectedLibrary(null);
-        }
-      } else {
-        setSelectedLibraryId(null);
-        setSelectedLibrary(null);
-      }
-
-      if (Array.isArray(project.initialStatus?.items)) {
-        const filteredItems = project.initialStatus.items.filter(
-          (item: any) => item.status?.toLowerCase() !== "completed"
-        );
-        handleLibraryChange(filteredItems);
-      } else {
-        handleLibraryChange([]);
-      }
-
-    } else {
+    if (!project) {
       setLibraryName(null);
       setSelectedProjectMineType("");
       setSelectedLibraryId(null);
       setSelectedLibrary(null);
+      handleLibraryChange([]);
+      return;
+    }
+
+    const mineType = project.projectParameters?.typeOfMine || "";
+    setSelectedProjectMineType(mineType);
+
+    const selectedLibrary = project.initialStatus || null;
+    setLibraryName(selectedLibrary || null);
+
+    const filteredLibraries = (libraries || []).filter((lib: any) => lib.mineType === mineType);
+    setAllLibraries(filteredLibraries);
+
+    if (selectedLibrary && filteredLibraries.length > 0) {
+      const matchedLibrary = filteredLibraries.find((lib: any) => lib.id === selectedLibrary.id) || filteredLibraries[0];
+
+      setSelectedLibraryId(matchedLibrary.id);
+      setSelectedLibrary(matchedLibrary);
+      setSelectedItems((matchedLibrary.items || []).filter((item: any) => item.status?.toLowerCase() !== "completed"));
+      setSelectedGroupName(matchedLibrary.name);
+    } else {
+      setSelectedLibraryId(null);
+      setSelectedLibrary(null);
+      setSelectedItems([]);
+      setSelectedGroupName(null);
+    }
+
+    // Handle Timeline/Items Logic
+    if (Array.isArray(project.projectTimeline) && project.projectTimeline.length > 0) {
+      setIsSaturdayWorking(project.projectTimeline[0].saturdayWorking);
+      setIsSundayWorking(project.projectTimeline[0].sundayWorking);
+      handleLibraryChange(project.projectTimeline);
+    } else if (Array.isArray(project.initialStatus?.items)) {
+      handleLibraryChange(
+        project.initialStatus.items.filter((item: any) => item.status?.toLowerCase() !== "completed")
+      );
+    } else {
       handleLibraryChange([]);
     }
   };
@@ -942,7 +1009,7 @@ const TimeBuilder = () => {
         version: string,
         reviewerId: string
       ) => {
-        const reviewer = userOptions.find((u:any) => u.id == reviewerId);
+        const reviewer = userOptions.find((u: any) => u.id == reviewerId);
 
         return {
           timelineId,
@@ -1226,7 +1293,7 @@ const TimeBuilder = () => {
       },
     ];
 
-    if (step == 1 && (isUpdateMode || isReplanMode)) {
+    if (step == 2 && (isUpdateMode || isReplanMode)) {
       baseColumns.push(
         {
           title: "Status",
@@ -1265,13 +1332,13 @@ const TimeBuilder = () => {
         });
     }
 
-    if (step == 1) {
+    if (step == 2) {
       baseColumns.push(
         {
           key: "finalize",
           align: "right",
-          className: step == 1 ? "active-column" : "",
-          onCell: () => ({ className: step == 1 ? "first-column-red" : "" }),
+          className: step == 2 ? "active-column" : "",
+          onCell: () => ({ className: step == 2 ? "first-column-red" : "" }),
           render: (_: any, record: any) => (
             <div style={{ marginRight: '20px' }}>
               <Checkbox
@@ -1288,13 +1355,13 @@ const TimeBuilder = () => {
         });
     }
 
-    if (step >= 2) {
+    if (step >= 3) {
       baseColumns.push({
         key: "prerequisite",
         className: step == 2 ? "active-column" : "",
         render: (_: any, record: any) => {
-          const isDisabled = step !== 2 || record.activityStatus == "completed";
-          const selectClass = step == 2 && !isDisabled ? "highlighted-select" : "";
+          const isDisabled = step !== 3 || record.activityStatus == "completed";
+          const selectClass = step == 3 && !isDisabled ? "highlighted-select" : "";
 
           return (
             <div className={selectClass}>
@@ -1338,13 +1405,13 @@ const TimeBuilder = () => {
       });
     }
 
-    if (step >= 3) {
+    if (step >= 4) {
       baseColumns.push({
         key: "slack",
         className: step == 3 ? "active-column" : "",
         render: (_: any, record: any) => {
-          const isDisabled = step !== 3 || record.activityStatus == "completed";
-          const inputClass = step == 3 && !isDisabled ? "highlighted-input" : "";
+          const isDisabled = step !== 4 || record.activityStatus == "completed";
+          const inputClass = step == 4 && !isDisabled ? "highlighted-input" : "";
 
           return (
             <div className={inputClass}>
@@ -1376,14 +1443,14 @@ const TimeBuilder = () => {
       });
     }
 
-    if (step >= 4) {
+    if (step >= 5) {
       baseColumns.push({
         key: "start",
-        className: step == 4 ? "active-column" : "",
+        className: step == 5 ? "active-column" : "",
         render: (_: any, record: any) => {
           const isDisabled =
-            step !== 4 || record.activityStatus == "completed" || record.prerequisite !== "";
-          const datePickerClass = step == 4 && !isDisabled ? "highlighted-datepicker" : "";
+            step !== 5 || record.activityStatus == "completed" || record.prerequisite !== "";
+          const datePickerClass = step == 5 && !isDisabled ? "highlighted-datepicker" : "";
 
           return (
             <div className={datePickerClass}>
@@ -1412,7 +1479,7 @@ const TimeBuilder = () => {
       mod.activities?.some((act: any) => !!act.actualFinish)
     );
 
-    if (hasStatus && step != 1) {
+    if (hasStatus && step != 2) {
       baseColumns.push({
         title: "Status",
         dataIndex: "activityStatus",
@@ -1433,7 +1500,7 @@ const TimeBuilder = () => {
       });
     }
 
-    if (hasActualStart && step != 1) {
+    if (hasActualStart && step != 2) {
       baseColumns.push({
         title: "Actual Start",
         dataIndex: "actualStart",
@@ -1449,7 +1516,7 @@ const TimeBuilder = () => {
       });
     }
 
-    if (hasActualFinish && step != 1) {
+    if (hasActualFinish && step != 2) {
       baseColumns.push({
         title: "Actual Finish",
         dataIndex: "actualFinish",
@@ -1490,7 +1557,7 @@ const TimeBuilder = () => {
       },
     ];
 
-    if (step == 1 && (isUpdateMode || isReplanMode)) {
+    if (step == 2 && (isUpdateMode || isReplanMode)) {
       columns.push({
         title: "Status",
         dataIndex: "activityStatus",
@@ -1500,7 +1567,7 @@ const TimeBuilder = () => {
       },);
     }
 
-    if (step >= 2) {
+    if (step >= 3) {
       columns.push({
         title: "Prerequisite",
         dataIndex: "prerequisite",
@@ -1510,7 +1577,7 @@ const TimeBuilder = () => {
       });
     }
 
-    if (step >= 3) {
+    if (step >= 4) {
       columns.push({
         title: "Slack",
         dataIndex: "slack",
@@ -1518,7 +1585,7 @@ const TimeBuilder = () => {
       });
     }
 
-    if (step >= 4) {
+    if (step >= 5) {
       columns.push({
         title: "Start Date",
         dataIndex: "startDate",
@@ -1536,7 +1603,7 @@ const TimeBuilder = () => {
       mod.activities?.some((act: any) => !!act.actualFinish)
     );
 
-    if (hasStatus && step != 1) {
+    if (hasStatus && step != 2) {
       columns.push({
         title: "Status",
         dataIndex: "status",
@@ -1544,7 +1611,7 @@ const TimeBuilder = () => {
       });
     }
 
-    if (hasActualStart && step != 1) {
+    if (hasActualStart && step != 2) {
       columns.push({
         title: "Actual Start",
         dataIndex: "actualStart",
@@ -1552,7 +1619,7 @@ const TimeBuilder = () => {
       });
     }
 
-    if (hasActualFinish && step != 1) {
+    if (hasActualFinish && step != 2) {
       columns.push({
         title: "Actual Finish",
         dataIndex: "actualFinish",
@@ -1560,7 +1627,7 @@ const TimeBuilder = () => {
       });
     }
 
-    if (step == 1) {
+    if (step == 2) {
       columns.push({
         title: (
           <div style={{ display: "flex", justifyContent: "flex-end", marginRight: "20px" }}>
@@ -1611,17 +1678,18 @@ const TimeBuilder = () => {
     try {
       const storedAllProjects = (await db.getProjects())
         .filter((p: any) => p.orgId == currentUser.orgId);
+
       const selectedExProject = storedAllProjects.find((p: any) => p.id == selectedExistingProjectId);
 
       if (!selectedExistingProjectId) return;
 
-      if (selectedExProject?.initialStatus.library == selectedProject.initialStatus.library &&
-        selectedExProject?.projectParameters.typeOfMine == selectedProject.projectParameters.typeOfMine) {
+      if (selectedExProject?.projectParameters.typeOfMine == selectedProject.projectParameters.typeOfMine) {
         const updatedProjectWithTimeline = { ...selectedProject, projectTimeline: [] };
+
         if (selectedExProject.projectTimeline && selectedExProject.projectTimeline.length > 0) {
           updatedProjectWithTimeline.projectTimeline = selectedExProject.projectTimeline.map((module: any) => ({
             ...module,
-            activities: module.activities.map((activity: any) => ({
+            activities: (module.activities || []).map((activity: any) => ({
               ...activity,
               start: "",
               end: "",
@@ -1635,10 +1703,11 @@ const TimeBuilder = () => {
         setTimeout(() => notify.success("Project timeline linked successfully!"), 0);
         navigate("/create/project-timeline");
       } else {
-        setTimeout(() => notify.error("Selected project and existing project do not match library and mine type!"), 0);
+        setTimeout(() => notify.error("Selected project and existing project must have the same mine type!"), 0);
       }
     } catch (error: any) {
-      setTimeout(() => notify.warning(error.message || "An error occurred"), 0);
+      console.error(error);
+      setTimeout(() => notify.error(error.message || "An error occurred"), 0);
     }
   };
 
@@ -1655,7 +1724,7 @@ const TimeBuilder = () => {
   };
 
   const isNextStepAllowed = () => {
-    if (currentStep == 4) {
+    if (currentStep == 5) {
       return sequencedModules.every((module: any) =>
         module.activities.every((activity: any) => {
           if (!activity.prerequisite) {
@@ -1835,7 +1904,7 @@ const TimeBuilder = () => {
       await db.addHolidays(holidayEntry);
       setRows((prev: any) => [...prev, { ...holidayEntry, editing: false }]);
       setAddHolidayModalVisible(false);
-      setNewHoliday({ from: null, to: null, holiday: "", module: [], impact: {} });
+      setNewHoliday({ from: null, to: null, holiday: "", module: [], impact: {}, projectId: null });
       fetchHolidays();
       notify.success("Holiday added successfully");
     } catch (err) {
@@ -1861,18 +1930,14 @@ const TimeBuilder = () => {
 
   const handleGroupLibChange = async (libraryId: any) => {
     try {
-      setSelectedLibraryId(libraryId);
+      const foundLibrary = libraries.find((lib: any) => lib.id == libraryId);
+      if (!foundLibrary) {
+        notify.error("Selected group not found.");
+        return;
+      }
 
-      const foundLibrary = libraries.find((lib: any) => lib.id == libraryId) || null;
-      setSelectedLibrary(foundLibrary);
-
-      console.log("Selected Library Object:", foundLibrary);
-
-      if (foundLibrary && selectedProjectId) {
-        const selectedProject = allProjects.find(
-          (proj) => proj.id == selectedProjectId
-        );
-
+      if (selectedProjectId) {
+        const selectedProject = allProjects.find((proj) => proj.id == selectedProjectId);
         if (!selectedProject) {
           notify.error("Selected project not found.");
           return;
@@ -1885,12 +1950,19 @@ const TimeBuilder = () => {
         } else {
           confirmMessage = "Do you want to link this group to your project?";
         }
+
         Modal.confirm({
           title: "Confirm Group Linking",
           content: confirmMessage,
           okText: "Yes",
           cancelText: "No",
           async onOk() {
+            setSelectedLibraryId(libraryId);
+            setSelectedLibrary(foundLibrary);
+            setSelectedItems(foundLibrary.items);
+            setSelectedGroupName(foundLibrary.name);
+            setCurrentStep(0);
+
             const updatedProjects = allProjects.map((proj) => {
               if (proj.id == selectedProjectId) {
                 return {
@@ -1898,17 +1970,174 @@ const TimeBuilder = () => {
                   initialStatus: {
                     ...proj.initialStatus,
                     library: foundLibrary.name,
-                    items: foundLibrary.items
-                  }
+                    items: foundLibrary.items,
+                    id: foundLibrary.id,
+                    guiId: foundLibrary.guiId,
+                    name: foundLibrary.name,
+                    mineType: foundLibrary.mineType,
+                    userGuiId: foundLibrary.userGuiId,
+                    orgId: foundLibrary.orgId,
+                    createdAt: foundLibrary.createdAt
+                  },
                 };
               }
               return proj;
             });
 
             setAllProjects(updatedProjects);
-            const updatedProject = updatedProjects.find(
-              (p) => p.id === selectedProjectId
-            );
+
+            const updatedProject = updatedProjects.find((p) => p.id == selectedProjectId);
+            if (updatedProject) {
+              await db.updateProject(selectedProjectId, updatedProject);
+              notify.success("Group linked successfully!");
+            }
+          },
+          onCancel() {
+            setSelectedLibraryId(null);
+            setSelectedLibrary(null);
+            setSelectedItems([]);
+            setSelectedGroupName("");
+          }
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      notify.error("An error occurred while linking group.");
+    }
+  };
+
+  const columns: any = [
+    {
+      title: "Module",
+      dataIndex: "moduleName",
+      key: "moduleName",
+      width: "60%",
+      align: "left",
+    },
+    {
+      title: "Action",
+      dataIndex: "action",
+      key: "action",
+      width: "20%",
+      align: "center",
+      render: (_: any, record: any, index: number) => {
+        const isDisabled = index > 0 && selectedItems[index - 1].status !== "Completed";
+
+        return (
+          <Tooltip title={isDisabled ? "Complete the previous module first" : "Mark as Completed"}>
+            <Select
+              value={record.status == "Completed" ? "Yes" : "No"}
+              style={{ width: "100%" }}
+              onChange={(value) => handleStatusChange(index, value)}
+              disabled={isDisabled}
+            >
+              <Option value="No">No</Option>
+              <Option value="Yes">Yes</Option>
+            </Select>
+          </Tooltip>
+        );
+      },
+    },
+  ];
+
+  const handleStatusChange = (index: number, value: string) => {
+    setSelectedItems((prevItems: any) =>
+      prevItems.map((item: any, i: any) => {
+        if (i < index) return item;
+        if (i == index) return { ...item, status: value == "Yes" ? "Completed" : "Pending" };
+        return { ...item, status: "Pending" };
+      })
+    );
+  };
+
+  useEffect(() => {
+    if (currentStep !== 1) return;
+    const updateProject = async () => {
+      const updatedProjects = allProjects.map((proj) => {
+        if (proj.id == selectedProjectId) {
+          return {
+            ...proj,
+            initialStatus: {
+              ...proj.initialStatus,
+              library: selectedGroupName,
+              items: selectedItems,
+            },
+          };
+        }
+        return proj;
+      });
+      setAllProjects(updatedProjects);
+      const updatedProject = updatedProjects.find((p) => p.id == selectedProjectId);
+      if (updatedProject) {
+        await db.updateProject(selectedProjectId, updatedProject);
+        defaultSetup(libraries);
+      }
+    };
+
+    updateProject();
+    fetchHolidays();
+  }, [currentStep == 1]);
+
+  const handleGroupNameChange = async (newGroupName: string | undefined) => {
+    try {
+      if (!newGroupName) return;
+
+      const foundLibrary = libraries.find((item: any) => item.name === newGroupName);
+      if (!foundLibrary) {
+        notify.error("Selected group not found.");
+        return;
+      }
+
+      if (selectedProjectId) {
+        const selectedProject = allProjects.find((proj) => proj.id === selectedProjectId);
+        if (!selectedProject) {
+          notify.error("Selected project not found.");
+          return;
+        }
+
+        const existingLibrary = selectedProject.initialStatus?.library;
+        let confirmMessage = "";
+        if (existingLibrary) {
+          confirmMessage = `A group (${existingLibrary}) is already linked to this project. Do you want to replace it?`;
+        } else {
+          confirmMessage = "Do you want to link this group to your project?";
+        }
+
+        Modal.confirm({
+          title: "Confirm Group Linking",
+          content: confirmMessage,
+          okText: "Yes",
+          cancelText: "No",
+          async onOk() {
+            setSelectedGroupName(newGroupName);
+            setSelectedItems(foundLibrary.items);
+            setSelectedLibraryId(foundLibrary.id);
+            setSelectedLibrary(foundLibrary);
+
+            const updatedProjects = allProjects.map((proj) => {
+              if (proj.id === selectedProjectId) {
+                return {
+                  ...proj,
+                  initialStatus: {
+                    ...proj.initialStatus,
+                    library: foundLibrary.name,
+                    items: foundLibrary.items,
+                    id: foundLibrary.id,
+                    guiId: foundLibrary.guiId,
+                    name: foundLibrary.name,
+                    mineType: foundLibrary.mineType,
+                    userGuiId: foundLibrary.userGuiId,
+                    orgId: foundLibrary.orgId,
+                    createdAt: foundLibrary.createdAt
+                  },
+                };
+              }
+              return proj;
+            });
+
+            setAllProjects(updatedProjects);
+
+            const updatedProject = updatedProjects.find((p) => p.id === selectedProjectId);
             if (updatedProject) {
               await db.updateProject(selectedProjectId, updatedProject);
               notify.success("Group linked successfully!");
@@ -1916,7 +2145,7 @@ const TimeBuilder = () => {
           },
           onCancel() {
             console.log("User cancelled linking group.");
-          }
+          },
         });
       }
     } catch (error) {
@@ -1965,10 +2194,10 @@ const TimeBuilder = () => {
                     </div>
 
                     <div className="form-row-top">
-                      <label>Library</label>
+                      <label>Link Library</label>
                       <Select
                         placeholder="Select Library"
-                        disabled={isUpdateMode || !selectedProjectId}
+                        disabled={!selectedProjectId}
                         value={selectedLibraryId}
                         onChange={handleGroupLibChange}
                         style={{ minWidth: 200 }}
@@ -2002,6 +2231,7 @@ const TimeBuilder = () => {
           {selectedProject != null && isMenualTimeline && (
             <div className="timeline-steps">
               <Steps current={currentStep}>
+                <Step title="Initial Status" />
                 <Step title="Sequencing" />
                 <Step title="Activities & Duration" />
                 <Step title="Prerequisites" />
@@ -2017,6 +2247,43 @@ const TimeBuilder = () => {
             <div className="main-item-container">
               <div className="timeline-items">
                 {currentStep == 0 ? (
+                  <div>
+                    <Form className="select-module-group" layout="horizontal">
+                      <Row gutter={[16, 16]}>
+                        <Col span={24}>
+                          <Form.Item
+                            colon={false}
+                            label="Select Group"
+                            labelAlign="left"
+                            labelCol={{ span: 6 }}
+                            wrapperCol={{ span: 18 }}
+                            style={{ fontSize: "18px", fontWeight: "400" }}
+                          >
+                            <Select
+                              value={selectedGroupName}
+                              onChange={handleGroupNameChange}
+                              allowClear={true}
+                            >
+                              {libraries.map((lib: any) => (
+                                <Select.Option key={lib.name} value={lib.name}>
+                                  {lib.name}
+                                </Select.Option>
+                              ))}
+                            </Select>
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                    </Form>
+
+                    <Table
+                      columns={columns}
+                      dataSource={selectedItems}
+                      pagination={false}
+                      rowKey="moduleName"
+                      className="project-timeline-table"
+                    />
+                  </div>
+                ) : currentStep == 1 ? (
                   <DragDropContext onDragEnd={onDragEnd}>
                     <Droppable droppableId="modules">
                       {(provided) => (
@@ -2046,7 +2313,7 @@ const TimeBuilder = () => {
                       )}
                     </Droppable>
                   </DragDropContext>
-                ) : currentStep == 5 ? (
+                ) : currentStep == 6 ? (
                   <div>
                     <div className="holiday-actions">
                       <div className="st-sun-field">
@@ -2067,7 +2334,16 @@ const TimeBuilder = () => {
                       </div>
                       {holidayData.length > 0 && (
                         <div className="add-new-holiday">
-                          <Button type="primary" className="bg-secondary" size="small" onClick={() => setAddHolidayModalVisible(true)}>
+                          <Button type="primary" className="bg-secondary" size="small" onClick={() => {
+                            setNewHoliday(prev => ({
+                              ...prev,
+                              projectId: selectedProject.id,
+                              userGuiId: currentUser?.guiId,
+                              orgId: currentUser?.orgId,
+                              createdAt: new Date().toISOString()
+                            }));
+                            setAddHolidayModalVisible(true);
+                          }}>
                             Add New Holiday
                           </Button>
                         </div>
@@ -2098,7 +2374,7 @@ const TimeBuilder = () => {
                       </div>
                     )}
                   </div>
-                ) : currentStep == 6 || currentStep == 7 ? (
+                ) : currentStep == 7 || currentStep == 8 ? (
                   <div style={{ overflowX: "hidden" }}>
                     <Table
                       columns={finalColumns}
@@ -2173,7 +2449,7 @@ const TimeBuilder = () => {
                   disabled={selectedProjectId == null || !isNextStepAllowed()}
                   className="bg-secondary"
                   onClick={() => {
-                    if (currentStep == 6) {
+                    if (currentStep == 7) {
                       setIsReviewModalVisible(true);
                     } else {
                       handleNext();
@@ -2182,11 +2458,11 @@ const TimeBuilder = () => {
                   type="primary"
                   size="small"
                 >
-                  {currentStep == 7
+                  {currentStep == 8
                     ? isUpdateMode
                       ? "Update"
                       : "Save"
-                    : currentStep == 6
+                    : currentStep == 7
                       ? "Send For Review"
                       : "Next"}
                 </Button>
@@ -2222,7 +2498,7 @@ const TimeBuilder = () => {
                   <div style={{ display: "flex", justifyContent: "space-between" }}>
                     <Button
                       type="primary"
-                      disabled={!selectedProjectId || !selectedLibrary}
+                      disabled={!selectedGroupName}
                       icon={<LinkOutlined />}
                       onClick={() => setOpenExistingTimelineModal(true)}
                       style={{ marginLeft: "15px", backgroundColor: "grey", borderColor: "#4CAF50" }}
@@ -2291,7 +2567,7 @@ const TimeBuilder = () => {
           <div className="filters" style={{ marginTop: "8px" }}>
             {allProjectsTimelines.length > 0 ? (
               <>
-                <span style={{ marginLeft: "10px", fontSize: "16px", fontWeight: "400" }}>Select Project</span>
+                <span style={{ marginLeft: "10px", fontSize: "16px", fontWeight: "400", minWidth: 120 }}>Select Project</span>
                 <Select
                   placeholder="Select Project"
                   disabled={isUpdateMode}
@@ -2306,15 +2582,6 @@ const TimeBuilder = () => {
                     </Option>
                   ))}
                 </Select>
-                <Button
-                  type="primary"
-                  disabled={!selectedExistingProjectId}
-                  icon={<ToolOutlined />}
-                  onClick={() => navigate("/create/project-timeline", { state: { selectedExistingProject } })}
-                  style={{ marginLeft: "15px", backgroundColor: "#d35400" }}
-                >
-                  View Timeline
-                </Button>
               </>
             ) : (
               <p style={{ marginLeft: "10px", marginTop: "10px" }}>No existing project timelines found.</p>
@@ -2398,24 +2665,30 @@ const TimeBuilder = () => {
         onCancel={() => setIsReviewModalVisible(false)}
         okText="Send"
         cancelText="Cancel"
+        className="modal-container"
       >
-        <Select
-          showSearch
-          placeholder="Select a reviewer"
-          value={selectedReviewerId}
-          onChange={(value) => setSelectedReviewerId(value)}
-          style={{ width: "100%" }}
-          optionFilterProp="children"
-          filterOption={(input: any, option: any) =>
-            option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
-          }
-        >
-          {userOptions.map((user:any) => (
-            <Option key={user.id} value={user.id}>
-              {user.name}
-            </Option>
-          ))}
-        </Select>
+        <div style={{ padding: "0px 10px" }}>
+          <Select
+            showSearch
+            placeholder="Select a reviewer"
+            value={selectedReviewerId}
+            onChange={(value) => setSelectedReviewerId(value)}
+            style={{ width: "100%" }}
+            optionFilterProp="children"
+            filterOption={(input: any, option: any) =>
+              option.children.toLowerCase().indexOf(input.toLowerCase()) >= 0
+            }
+          >
+            {userOptions
+              .filter((user: any) => user.id !== currentUser.id)
+              .map((user: any) => (
+                <Option key={user.id} value={user.id}>
+                  {user.name}
+                </Option>
+              ))}
+          </Select>
+        </div>
+
       </Modal>
 
       <ToastContainer />

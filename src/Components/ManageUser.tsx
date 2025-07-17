@@ -73,6 +73,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   const [form] = Form.useForm();
   const [currentUser, setCurrentUser] = useState<any>({});
   const [dataSource, setDataSource] = useState<any>([]);
+
   useEffect(() => {
     const fetchData = async () => {
       const allUsers = (await db.getUsers()).filter((user: any) => user.orgId == currentUser?.orgId);
@@ -91,10 +92,8 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       setModules(uniqueModules);
     };
 
-    if (openRACIModal) {
-      fetchData();
-    }
-  }, [openRACIModal]);
+    fetchData();
+  }, [currentUser]);
 
   useEffect(() => {
     setCurrentUser(getCurrentUser());

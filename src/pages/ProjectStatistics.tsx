@@ -408,6 +408,17 @@ const ProjectStatistics = (_project: any) => {
                         ))}
                     </Select>
 
+                    <div className="label"><p>Select Graph</p></div>
+                    <Select
+                        value={selectedGraph}
+                        onChange={setSelectedGraph}
+                        style={{ width: 280 }}
+                    >
+                        {Object.values(GRAPH_TYPES).map(graph => (
+                            <Option key={graph} value={graph}>{graph}</Option>
+                        ))}
+                    </Select>
+
                     <div className="label"><p>Time Range</p></div>
                     <Select
                         style={{ width: 120 }}
@@ -419,17 +430,6 @@ const ProjectStatistics = (_project: any) => {
                             <Option key={label} value={label}>
                                 {label}
                             </Option>
-                        ))}
-                    </Select>
-
-                    <div className="label"><p>Select Graph</p></div>
-                    <Select
-                        value={selectedGraph}
-                        onChange={setSelectedGraph}
-                        style={{ width: 280 }}
-                    >
-                        {Object.values(GRAPH_TYPES).map(graph => (
-                            <Option key={graph} value={graph}>{graph}</Option>
                         ))}
                     </Select>
                 </div>

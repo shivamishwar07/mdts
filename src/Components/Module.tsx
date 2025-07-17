@@ -104,26 +104,23 @@ const Module = () => {
     }, [state]);
 
     useEffect(() => {
-        setCurrentUser(getCurrentUser());
-    }, []);
+        const init = async () => {
+            const user = await getCurrentUser();
+            setCurrentUser(user);
 
-    useEffect(() => {
-        const fetchMineTypes = async () => {
-            try {
-                const storedOptions: any = (await db.getAllMineTypes())?.filter(
-                    (type: any) => type.orgId === currentUser.orgId
-                );
-                setOptions(storedOptions);
-                const allUsers = (await db.getUsers())?.filter(
-                    (user: any) => user.orgId === currentUser.orgId
-                );
-                setUserOptions(allUsers);
-            } catch (error) {
-                console.error("Error fetching mine types:", error);
-            }
+            const storedOptions: any = (await db.getAllMineTypes())?.filter(
+                (type: any) => type.orgId === user.orgId
+            );
+            setOptions(storedOptions);
+
+            const allUsers = (await db.getUsers())?.filter(
+                (usr: any) => usr.orgId === user.orgId
+            );
+            setUserOptions(allUsers);
         };
-        fetchMineTypes();
-    }, [currentUser]);
+
+        init();
+    }, []);
 
     useEffect(() => {
         if (moduleData.activities.length > 0) {

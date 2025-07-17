@@ -1,14 +1,9 @@
 import { Typography } from "@mui/material";
-import { useState } from "react";
-import { Drawer, Button } from "antd";
 import { Link, Outlet, useLocation } from "react-router-dom";
-import { CloseOutlined } from "@ant-design/icons";
-import SignIn from "./SignIn";
 import "../styles/home.css";
 import Footer from "./Footer";
 
 const Home = () => {
-    const [open, setOpen] = useState(false);
     const location = useLocation();
 
     const isHomeRoute = location.pathname === "/home";
@@ -46,23 +41,13 @@ const Home = () => {
                         <Link to="/home/contacts">
                             <Typography className="tab-items" variant="body1">Contacts</Typography>
                         </Link>
-                        <Button
-                            type="primary"
-                            size="large"
-                            onClick={() => setOpen(true)}
-                            style={{
-                                background: "#fff",
-                                color: "#4C585B",
-                                border: "none",
-                                fontWeight: "bold",
-                            }}
-                        >
-                            Login
-                        </Button>
+                        <Link to="/home/login">
+                            <Typography className="tab-items" variant="body1">Login</Typography>
+                        </Link>
                     </div>
                 </div>
 
-                <div style={{ marginTop: "65px" }}>
+                <div style={{ marginTop: "-8px" }}>
                     {isHomeRoute ? (
                         <>
                             <div className="hero-wrapper">
@@ -111,33 +96,6 @@ const Home = () => {
             </div>
 
             <Footer />
-
-            <Drawer
-                title={null}
-                placement="right"
-                onClose={() => setOpen(false)}
-                open={open}
-                closable={false}
-                width="40%"
-                bodyStyle={{ padding: "0px", position: "relative" }}
-            >
-                <Button
-                    onClick={() => setOpen(false)}
-                    style={{
-                        position: "absolute",
-                        top: "10px",
-                        right: "10px",
-                        border: "none",
-                        fontSize: "18px",
-                        zIndex: "2",
-                    }}
-                >
-                    <CloseOutlined />
-                </Button>
-                <div>
-                    <SignIn />
-                </div>
-            </Drawer>
         </div>
     );
 };

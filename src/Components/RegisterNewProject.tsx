@@ -136,6 +136,7 @@ export const RegisterNewProject: React.FC = () => {
   const handleSubmit = async () => {
     const loggedInUser = getCurrentUser();
     const initialDataVal = { library: "", items: [] };
+    // const initialDataVal = { library: selectedLibrary, items: selectedItems };
     if (!loggedInUser.id) {
       notify.error("Authentication Required! No logged-in user was found. Please log in and try again."
       );

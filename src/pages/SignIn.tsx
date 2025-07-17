@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import "../styles/sign-in.css";
 import { Button } from "antd";
 import { useNavigate } from "react-router-dom";
@@ -102,6 +102,9 @@ const SignInSignUp: React.FC = () => {
         }
     };
 
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
     return (
         <div className="auth-container">
             <div className="auth-card">

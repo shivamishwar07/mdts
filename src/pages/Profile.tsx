@@ -183,7 +183,7 @@ const Profile = () => {
 
                 notify.success("Profile photo updated successfully!");
                 setIsModalOpen(false);
-                fillUsersData();
+                // fillUsersData();
             };
 
             reader.readAsDataURL(file);
@@ -201,33 +201,6 @@ const Profile = () => {
         setIsModalOpen(false);
         form.resetFields();
     };
-
-    // const handlePasswordUpdate = async (values: any) => {
-    //     const currentUser = getCurrentUser();
-    //     console.log(currentUser);
-    //     console.log(values);
-
-
-
-    //     if (values.oldPassword == currentUser.Password) {
-    //         const updatedUser = {
-    //             ...currentUser,
-    //             password: values.newPassword,
-    //             isTempPassword: false,
-    //         };
-
-    //         await db.updateUsers(currentUser.id, updatedUser);
-    //         localStorage.setItem("user", JSON.stringify(updatedUser));
-    //         userStore.setUser(updatedUser);
-
-    //         notify.success("Password updated successfully!");
-    //         setIsModalOpen(false);
-
-    //         await proceedProfileSave(updatedUser);
-    //     } else {
-    //         notify.error("Current password is incorrect");
-    //     }
-    // };
 
     const handlePasswordUpdate = async (values: any) => {
         const currentUser = getCurrentUser();
@@ -254,7 +227,6 @@ const Profile = () => {
     const proceedProfileSave = async (currentUser: any) => {
         try {
             const users = await db.getUsers();
-
             let orgId = currentUser.orgId || formData.orgId || uuidv4();
             const updatedUser = {
                 ...users[currentUser.id],
@@ -307,7 +279,6 @@ const Profile = () => {
             notify.error("Something went wrong. Please try again.");
         }
     };
-
 
     const renderContent = () => {
         switch (selectedTab) {
