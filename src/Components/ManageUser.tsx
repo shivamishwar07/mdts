@@ -173,51 +173,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       : parts[0][0]?.toUpperCase() || "";
   }
 
-  // const handleSendInvites = async () => {
-  //   try {
-  //     const values = await form.validateFields();
-
-  //     const { employeeFullName, permissionProfile, emails, mobile, designation } = values;
-
-  //     const users = await db.getUsers();
-  //     const emailExists = users.some((user) => user.email === emails);
-  //     const currentUser = getCurrentUser();
-
-  //     if (emailExists) {
-  //       return notify.error("Email already registered");
-  //     }
-
-  //     const password = emails.slice(0, 6);
-  //     const newUser = {
-  //       id: Date.now(),
-  //       name: employeeFullName,
-  //       company: currentUser.company,
-  //       designation: designation || "N/A",
-  //       mobile: mobile || "N/A",
-  //       email: emails,
-  //       whatsapp: "",
-  //       registeredOn: new Date().toISOString(),
-  //       profilePhoto: "",
-  //       password: password,
-  //       isTempPassword: true,
-  //       role: permissionProfile,
-  //     };
-
-  //     await db.addUsers(newUser);
-
-  //     notify.success("Member added successfully!");
-  //     form.resetFields();
-  //     setAddMemberModalVisible(false);
-  //     handleClose();
-
-  //     const allUsers = (await db.getUsers()).filter((user: any) => user.orgId === orgId);
-  //     setUsers(allUsers);
-  //   } catch (error: any) {
-  //     console.error(error);
-  //     notify.error(error.message || "Error adding member!");
-  //   }
-  // };
-
   const handleSendInvites = async () => {
     try {
       const values = await form.validateFields();
