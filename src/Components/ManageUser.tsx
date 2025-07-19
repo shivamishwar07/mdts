@@ -174,6 +174,8 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
 
   const handleSendInvites = async () => {
     try {
+      const currentUser = getCurrentUser(); // <-- move this up
+
       const values = await form.validateFields();
       const { employeeFullName, permissionProfile, emails, mobile, designation } = values;
 
@@ -183,7 +185,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
         return notify.error("Email already registered");
       }
 
-      const currentUser = getCurrentUser();
       const password = emails.slice(0, 6);
       const guiId = uuidv4();
 
@@ -247,6 +248,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       notify.error(error.message || "Error adding member!");
     }
   };
+
 
   const handleClose = () => {
     setAddMemberModalVisible(false);

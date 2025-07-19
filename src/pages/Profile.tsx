@@ -132,11 +132,13 @@ const Profile = () => {
             return;
         }
 
-        if (currentUser?.isTempPassword) {
+        if (currentUser.isTempPassword) {
+            // First-time user: open modal to prompt for password update
             setIsModalOpen(true);
             return;
         }
 
+        // Returning user: directly save profile
         await proceedProfileSave(currentUser);
     };
 
@@ -183,7 +185,6 @@ const Profile = () => {
 
                 notify.success("Profile photo updated successfully!");
                 setIsModalOpen(false);
-                // fillUsersData();
             };
 
             reader.readAsDataURL(file);
@@ -204,22 +205,22 @@ const Profile = () => {
 
     const handlePasswordUpdate = async (values: any) => {
         const currentUser = getCurrentUser();
-        if (values.oldPassword == currentUser.Password) {
-            const users = {
-                ...currentUser, password: values.newPassword,
+
+        if (values.oldPassword === currentUser.Password) {
+            const updatedUser = {
+                ...currentUser,
+                password: values.newPassword,
                 isTempPassword: false,
-            }
-            await db.updateUsers(currentUser.id, users);
+            };
 
-            localStorage.setItem("user", JSON.stringify({ ...currentUser, Password: values.newPassword, isTempPassword: false }));
+            await db.updateUsers(currentUser.id, updatedUser);
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            userStore.setUser(updatedUser);
 
-            notify.success(formData.isTempPassword ? "Profile updated successfully!" : "Password updated successfully!");
+            await proceedProfileSave(updatedUser);
+
             setIsModalOpen(false);
-            setTimeout(() => {
-                fillUsersData();
-            }, 1000)
-        }
-        else {
+        } else {
             notify.error("Current password is incorrect");
         }
     };
@@ -227,15 +228,20 @@ const Profile = () => {
     const proceedProfileSave = async (currentUser: any) => {
         try {
             const users = await db.getUsers();
+            const existingUser = users.find((u) => u.id === currentUser.id);
+
             let orgId = currentUser.orgId || formData.orgId || uuidv4();
+
             const updatedUser = {
-                ...users[currentUser.id],
+                ...existingUser,
                 ...formData,
+                profilePhoto: existingUser?.profilePhoto || "",
                 isTempPassword: false,
                 orgId
             };
 
             await db.updateUsers(currentUser.id, updatedUser);
+
             localStorage.setItem("user", JSON.stringify(updatedUser));
             userStore.setUser(updatedUser);
 
@@ -422,6 +428,7 @@ const Profile = () => {
                                                     value={formData.email}
                                                     onChange={handleInputChange}
                                                     placeholder="Enter Email"
+                                                    disabled
                                                 />
                                             </Form.Item>
                                         </Col>
@@ -435,7 +442,7 @@ const Profile = () => {
                                                 help={!formData.mobile ? "Please enter mobile number" : ""}
                                             >
                                                 <PhoneInput
-                                                     country="in"
+                                                    country="in"
                                                     value={formData.mobile}
                                                     onChange={(phone) => setFormData({ ...formData, mobile: `+${phone}` })}
                                                     inputProps={{
@@ -535,6 +542,7 @@ const Profile = () => {
                                             <Form.Item label="Zip Code" colon={false}>
                                                 <Input
                                                     name="zipCode"
+                                                    type="number"
                                                     value={formData.zipCode}
                                                     onChange={handleInputChange}
                                                     placeholder="Enter Zip Code"
@@ -628,7 +636,7 @@ const Profile = () => {
                 </div>
 
                 <div style={{ marginBottom: "0px" }} className="items-details">
-                    {!isProfileCompleted() && (
+                    {!isProfileCompleted() && selectedTab != 'Team Members' && (
                         <div style={{ marginTop: "10px" }} className={`card-header progress-warning create-doc-heading ${isProfileCompleted() ? 'bg-secondary' : ""}`}>
                             <p style={{ margin: "0px", padding: "0px" }}>{isProfileCompleted() ? "Manage Profile" : "Please complete registration"}</p>
                         </div>
