@@ -6,7 +6,7 @@ import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col } from "antd";
+import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, Tag } from "antd";
 import { ClockCircleOutlined, CloseCircleOutlined, DollarOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
@@ -71,6 +71,7 @@ export const StatusUpdate = () => {
   const [raciForm] = Form.useForm();
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isEditUser, setIsEditUser] = useState(false);
+  const [isStatusUpdateMode, setIsStatusUpdateMode] = useState(false);
   const [editedUserId, setEditedUserId] = useState(selectedProjectTimeline?.assignedUserId);
 
   useEffect(() => {
@@ -753,7 +754,7 @@ export const StatusUpdate = () => {
         const displayDuration = expectedDuration ?? calculatedDuration ?? duration;
 
         const isEditable =
-          isEditing &&
+          isEditing && isStatusUpdateMode &&
           !isModule &&
           activityStatus == "inProgress" &&
           !(replaneMode && ["completed", "inProgress"].includes(record.fin_status));
@@ -777,9 +778,9 @@ export const StatusUpdate = () => {
       width: 150,
       align: "center",
       render: (_, record) => {
-        return isEditing && !record.isModule
+        return isEditing && isStatusUpdateMode && !record.isModule
           ? renderStatusSelect(record.activityStatus, record, dataSource, replaneMode)
-          : record.activityStatus;
+          : getStatusTag(record.activityStatus);
       },
 
     },
@@ -829,7 +830,7 @@ export const StatusUpdate = () => {
         const shouldDisable =
           activityStatus == "yetToStart" || (activityStatus == "completed" && isBlocked);
 
-        return isEditing && !isModule ? (
+        return isEditing && isStatusUpdateMode && !isModule ? (
           <DatePicker
             format="DD-MM-YYYY"
             value={
@@ -895,7 +896,7 @@ export const StatusUpdate = () => {
           activityStatus == "inProgress" ||
           (activityStatus == "completed" && isBlocked);
 
-        return isEditing && !isModule ? (
+        return isEditing && isStatusUpdateMode && !isModule ? (
           <DatePicker
             format="DD-MM-YYYY"
             value={
@@ -915,6 +916,19 @@ export const StatusUpdate = () => {
     }
   ];
 
+  const getStatusTag = (status: string) => {
+    switch (status) {
+      case 'yetToStart':
+        return <Tag color="default">Yet to Start</Tag>;
+      case 'inProgress':
+        return <Tag color="blue">In Progress</Tag>;
+      case 'completed':
+        return <Tag color="green">Completed</Tag>;
+      default:
+        return <Tag>{status}</Tag>;
+    }
+  };
+  
   const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
   const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
     setDataSource((prevData: any) => {
@@ -1243,6 +1257,7 @@ export const StatusUpdate = () => {
 
   const handleUpdateStatus = () => {
     setIsEditing(true);
+    setIsStatusUpdateMode(true);
   };
 
   const handleSaveStatus = async () => {
@@ -1319,6 +1334,7 @@ export const StatusUpdate = () => {
     updatedProject.projectTimeline = updatedSequencedModules;
     await db.updateProjectTimeline(selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId, updatedSequencedModules);
     defaultSetup();
+    setIsStatusUpdateMode(false);
     notify.success(`Status updated successfully!`);
   };
 
@@ -1932,15 +1948,15 @@ export const StatusUpdate = () => {
                 )}
                 {(selectedProjectTimeline?.status == 'Approved') && (
                   <Button
-                    type={isEditing ? "primary" : "default"}
+                    type={isStatusUpdateMode ? "primary" : "default"}
                     style={{
-                      backgroundColor: isEditing ? "#AB47BC" : "#5C6BC0",
-                      color: isEditing ? undefined : "#fff",
+                      backgroundColor: isStatusUpdateMode ? "#AB47BC" : "#5C6BC0",
+                      color: isStatusUpdateMode ? undefined : "#fff",
                     }}
-                    icon={isEditing ? <SaveOutlined /> : <FormOutlined />}
-                    onClick={isEditing ? handleSaveStatus : handleUpdateStatus}
+                    icon={isStatusUpdateMode ? <SaveOutlined /> : <FormOutlined />}
+                    onClick={isStatusUpdateMode ? handleSaveStatus : handleUpdateStatus}
                   >
-                    {isEditing ? "Save Status" : "Update Status"}
+                    {(isStatusUpdateMode) ? "Save Status" : "Update Status"}
                   </Button>
                 )}
 

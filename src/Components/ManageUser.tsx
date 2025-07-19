@@ -419,16 +419,16 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
           options?.isToolbar !== false && (
             <Toolbar className="toolbar" style={{ paddingRight: '5px' }}>
               {[
-                {
-                  title: 'Delete User',
-                  icon: <DeleteOutlined style={{ color: 'red' }} />,
-                  action: () => setIsDeleteModalVisible(true),
-                },
-                {
-                  title: 'Alerts',
-                  icon: <Notifications sx={{ color: '#d32f2f' }} />,
-                  action: () => setOpenAlertModal(true),
-                },
+                // {
+                //   title: 'Delete User',
+                //   icon: <DeleteOutlined style={{ color: 'red' }} />,
+                //   action: () => setIsDeleteModalVisible(true),
+                // },
+                // {
+                //   title: 'Alerts',
+                //   icon: <Notifications sx={{ color: '#d32f2f' }} />,
+                //   action: () => setOpenAlertModal(true),
+                // },
                 {
                   title: 'Refresh',
                   icon: <ReloadOutlined style={{ color: '#1890ff' }} />,
