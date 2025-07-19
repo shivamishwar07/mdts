@@ -7,13 +7,14 @@ import {
   Input,
   Button,
   Select,
-  message,
   List,
   Form,
 } from "antd";
 import { saveDocument, updateDocument, getModules } from "../Utils/moduleStorage";
 import "../styles/documents.css"
-import ImageContainer from "../Components/ImageContainer"; 
+import ImageContainer from "../Components/ImageContainer";
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify";
 const { Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
@@ -60,7 +61,7 @@ const CreateDocument: React.FC = () => {
 
   const handleSave = () => {
     if (!documentName || !milestone || files.length === 0) {
-      message.error("Please fill all fields and upload files.");
+      notify.error("Please fill all fields and upload files.");
       return;
     }
 
@@ -75,13 +76,13 @@ const CreateDocument: React.FC = () => {
 
     if (documentToEdit) {
       updateDocument(documentToEdit.id, newDocument);
-      message.success("Document updated successfully!");
+      notify.success("Document updated successfully!");
     } else {
       const isSaved = saveDocument(newDocument);
       if (isSaved) {
-        message.success("Document saved successfully!");
+        notify.success("Document saved successfully!");
       } else {
-        message.error("Failed to save the document. Please try again.");
+        notify.error("Failed to save the document. Please try again.");
       }
     }
     navigate("/document");
@@ -227,6 +228,7 @@ const CreateDocument: React.FC = () => {
           </div>
         </div>
       </Form>
+      <ToastContainer />
     </>
   );
 };

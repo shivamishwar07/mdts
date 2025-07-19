@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import "../styles/projects.css";
-import { Input, Button, Modal, Select, Dropdown, Menu, message, Checkbox } from 'antd';
+import { Input, Button, Modal, Select, Dropdown, Menu, Checkbox } from 'antd';
 import { Link } from "react-router-dom";
 import { SearchOutlined } from "@mui/icons-material";
 import { MoreOutlined, RobotOutlined } from "@ant-design/icons";
@@ -14,6 +14,9 @@ import CSR from "./CSR.tsx";
 import ProjectTimeline from "./ProjectTimeline.tsx";
 import ProjectDocs from "./ProjectDocs";
 import ProjectStatistics from "./ProjectStatistics.tsx";
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
+import { getCurrentUser } from "../Utils/moduleStorage.ts";
 interface LocationDetails {
     state: string;
     district: string;
@@ -79,7 +82,7 @@ const Projects = () => {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [projectToDelete, setProjectToDelete] = useState<any>(null);
     const [isProjectFocused, setIsProjectFocused] = useState(false);
-
+    const [currentUser, setCurrentUser] = useState<any>(null);
 
     const tabs = [
         { key: 'projectStatistics', label: 'Project Statistics' },
@@ -92,47 +95,46 @@ const Projects = () => {
     ];
 
     const [activeTab, setActiveTab] = useState('projectStatistics');
-
-
-    // const getAllProjects = async () => {
-    //     try {
-    //         const storedData = await db.getProjects();
-    //         if (!Array.isArray(storedData) || storedData.length === 0) {
-    //             console.warn("No projects found.");
-    //             setAllProjects([]);
-    //             setProjectDetails(null);
-    //             return;
-    //         }
-    //         setAllProjects(storedData);
-    //         setProjectDetails(storedData[0]);
-    //         setSelectedProjectName(storedData[0].projectParameters.projectName);
-    //     } catch (error) {
-    //         console.error("An unexpected error occurred while fetching projects:", error);
-    //     }
-    // }
     const getAllProjects = async () => {
+        if (!currentUser) return;
+
         try {
             const storedData = await db.getProjects();
-            if (!Array.isArray(storedData) || storedData.length === 0) {
-                console.warn("No projects found.");
+            console.log(storedData);
+            console.log(currentUser);
+
+
+
+            const orgProjects = storedData?.filter((proj: any) => proj.orgId == currentUser.orgId) || [];
+
+            if (orgProjects.length === 0) {
+                console.warn("No projects found for this organization.");
                 setAllProjects([]);
                 setProjectDetails(null);
                 return;
             }
 
-            setAllProjects(storedData);
-            setProjectDetails(storedData[0]);
-            setSelectedProjectName(storedData[0].projectParameters.projectName);
-            setIsProjectFocused(true); // 👈 This line ensures module is visible on first load
+            setAllProjects(orgProjects);
+            setProjectDetails(orgProjects[0]);
+            setSelectedProjectName(orgProjects[0].projectParameters.projectName);
+            setIsProjectFocused(true);
 
         } catch (error) {
             console.error("An unexpected error occurred while fetching projects:", error);
         }
     };
 
+
     useEffect(() => {
-        getAllProjects();
+        setCurrentUser(getCurrentUser());
     }, []);
+
+    useEffect(() => {
+        if (currentUser && currentUser.orgId) {
+            getAllProjects();
+        }
+    }, [currentUser]);
+
 
     if (!projectDetails) {
         return <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
@@ -145,17 +147,6 @@ const Projects = () => {
         </div>;
     }
 
-    // const handleProjectClick = (projectName: string) => {
-    //     const selectedProject = allProjects.find(
-    //         (project) => project.projectParameters.projectName === projectName
-    //     );
-    //     if (selectedProject) {
-    //         setProjectDetails(selectedProject);
-    //         setSelectedProjectName(selectedProject.projectParameters.projectName);
-    //         setActiveTab('fdpp');
-    //     }
-    // };
-
     const handleProjectClick = (projectName: string) => {
         const selectedProject = allProjects.find(
             (project) => project.projectParameters.projectName === projectName
@@ -164,7 +155,7 @@ const Projects = () => {
             setProjectDetails(selectedProject);
             setSelectedProjectName(selectedProject.projectParameters.projectName);
             setActiveTab('projectStatistics');
-            setIsProjectFocused(true); // Focus only on this project
+            setIsProjectFocused(true);
         }
     };
 
@@ -190,9 +181,9 @@ const Projects = () => {
             setAllProjects(updatedProjects);
             setProjectDetails(updatedProjects.length > 0 ? updatedProjects[0] : null);
             setSelectedProjectName(updatedProjects.length > 0 ? updatedProjects[0]?.projectParameters?.projectName || "" : "");
-            message.success("Project removed successfully");
+            notify.success("Project removed successfully");
         } catch (error: any) {
-            message.error("Error deleting project:", error);
+            notify.error("Error deleting project:", error);
         } finally {
             setIsDeleteModalOpen(false);
         }
@@ -219,7 +210,7 @@ const Projects = () => {
     const shareProject = (project: ProjectData) => {
         const shareableLink = `https://yourapp.com/project/${project}`;
         navigator.clipboard.writeText(shareableLink);
-        message.success("Project link copied to clipboard!");
+        notify.success("Project link copied to clipboard!");
     };
 
     const menu = (project: ProjectData) => (
@@ -267,7 +258,7 @@ const Projects = () => {
         <>
             <div className="project-container">
                 <div className="all-project-details">
-                    <div style={{ display: "flex", justifyContent: "space-between",alignItems:'center' }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: 'center' }}>
                         <span
                             className={`project-heading ${isProjectFocused ? "focused" : ""}`}
                             onClick={() => {
@@ -403,7 +394,7 @@ const Projects = () => {
             >
                 <p>Are you sure you want to delete this project?</p>
             </Modal>
-
+            <ToastContainer />
         </>
     );
 };

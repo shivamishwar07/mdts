@@ -44,7 +44,8 @@
 }
 
 .company-registration-form {
-    height: calc(100vh - 270px);
+    margin-top: 40px !important;
+    height: calc(100vh - 310px);
     overflow-y: auto;
     margin: 20px 0px 20px 10px;
     padding-right: 8px;
@@ -228,4 +229,37 @@ input[type="file"] {
 
 .ant-form-horizontal .ant-form-item-control {
     margin-bottom: 10px !important;
+}
+
+.strength-pill-wrapper {
+    display: flex;
+    justify-content: end;
+}
+
+.strength-pill {
+    border-radius: 16px;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 10px 0 10px;
+    text-transform: uppercase;
+    z-index: 1;
+    margin-bottom: 10px;
+}
+
+.strength-pill.weak {
+    background-color: #fff1f0;
+    color: #cf1322;
+    border: 1px solid #ffa39e;
+}
+
+.strength-pill.medium {
+    background-color: #fffbe6;
+    color: #d48806;
+    border: 1px solid #ffe58f;
+}
+
+.strength-pill.strong {
+    background-color: #f6ffed;
+    color: #389e0d;
+    border: 1px solid #b7eb8f;
 }

@@ -395,3 +395,14 @@
         }
     }
 }
+
+.form-row-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.form-row-top label {
+    width: 100%;
+    font-weight: 500;
+}

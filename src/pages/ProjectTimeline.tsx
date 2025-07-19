@@ -6,7 +6,7 @@ import { FolderOpenOutlined } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, message, Table, DatePicker, Tooltip, Space, List } from "antd";
+import { Button, Select, Modal, Input, Table, Tooltip, Space, List, Tag } from "antd";
 import { ClockCircleOutlined, DownloadOutlined, DownOutlined, InfoCircleOutlined, LikeOutlined, ShareAltOutlined, SyncOutlined, UserOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
@@ -40,6 +40,7 @@ interface Module {
 import { Dropdown } from 'antd';
 import { FilterOutlined } from '@ant-design/icons';
 import { notify } from "../Utils/ToastNotify.tsx";
+import { ToastContainer } from "react-toastify";
 
 const tabs = [
     "All",
@@ -73,7 +74,7 @@ const ProjectTimeline = (project: any) => {
     const [_noteInput, setNoteInput] = useState('');
     const [_editNoteId, setEditNoteId] = useState<string | null>(null);
     const [selectedActivity, setSelectedActivity] = useState<any>(null);
-
+    const [currentUser, setCurrentUser] = useState<any>(null);
     const [activeTab, setActiveTab] = useState(0);
     const showModal = () => {
         setIsModalOpen(true);
@@ -85,8 +86,19 @@ const ProjectTimeline = (project: any) => {
     };
 
     useEffect(() => {
-        defaultSetup();
+        const fetchUser = async () => {
+            const user = await getCurrentUser(); // if it's async
+            setCurrentUser(user);
+        };
+        fetchUser();
     }, []);
+
+    useEffect(() => {
+        if (currentUser && currentUser.orgId) {
+            defaultSetup();
+        }
+    }, [currentUser]);
+
 
     const getProjectTimeline = async (project: any) => {
         if (Array.isArray(project?.projectTimeline)) {
@@ -95,6 +107,7 @@ const ProjectTimeline = (project: any) => {
                 const foundTimeline = project?.projectTimeline.filter((item: any) => item.version == latestVersionId);
                 const timelineId = !latestVersionId ? project.projectTimeline[0].timelineId : foundTimeline[0].timelineId;
                 const timeline = await db.getProjectTimelineById(timelineId);
+                if (timeline[0]?.orgId != currentUser.orgId) return;
                 const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
                 return finTimeline;
             } catch (err) {
@@ -114,7 +127,7 @@ const ProjectTimeline = (project: any) => {
 
     const defaultSetup = async () => {
         try {
-            const storedData: any = (await db.getProjects()).filter((p) => p.id == project.code);
+            const storedData: any = (await db.getProjects()).filter((p) => p.id == project.code && p.orgId == currentUser.orgId);
             setAllProjects(storedData);
             let selectedProject = null;
             selectedProject = storedData[0];
@@ -321,35 +334,12 @@ const ProjectTimeline = (project: any) => {
 
     const handleShare = () => {
         if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
-            message.error("Please enter a valid email address.");
+            notify.error("Please enter a valid email address.");
             return;
         }
-        message.success(`Shared to ${email}`);
+        notify.success(`Shared to ${email}`);
         setIsModalOpen(false);
         setEmail("");
-    };
-
-    const isPreReqCompleted = (preRequisiteCode: string, allData: any[]): boolean => {
-        let isCompleted = false;
-
-        const findActivityByCode = (data: any[]): any => {
-            for (const item of data) {
-                if (item.children && item.children.length > 0) {
-                    const found = findActivityByCode(item.children);
-                    if (found) return found;
-                } else if (item.Code === preRequisiteCode) {
-                    return item;
-                }
-            }
-            return null;
-        };
-
-        if (!preRequisiteCode) return true;
-
-        const preReqActivity = findActivityByCode(allData);
-        isCompleted = preReqActivity?.activityStatus === 'completed';
-
-        return isCompleted;
     };
 
     const handleLibraryChange = (libraryItems: any) => {
@@ -396,8 +386,6 @@ const ProjectTimeline = (project: any) => {
                     children,
                 };
             });
-            console.log(finDataSource);
-
             setDataSource(finDataSource);
             setExpandedKeys(finDataSource.map((_: any, index: any) => `module-${index}`));
             if (editingRequired) {
@@ -410,28 +398,6 @@ const ProjectTimeline = (project: any) => {
             setDataSource([]);
             setIsEditing(false);
         }
-    };
-
-    const renderStatusSelect = (
-        status: string,
-        recordKey: string,
-        fin_status: string,
-        disabled: boolean = false
-    ) => {
-        return (
-            <Select
-                value={status}
-                onChange={(value) => handleFieldChange(value, recordKey, "activityStatus")}
-                options={[
-                    { label: "Yet to Start", value: "yetToStart" },
-                    { label: "In Progress", value: "inProgress" },
-                    { label: "Completed", value: "completed" },
-                ]}
-                disabled={disabled || fin_status === "completed"}
-                className={`status-select ${status}`}
-                style={{ width: "100%", fontWeight: "bold" }}
-            />
-        );
     };
 
     const getWorkingDaysDiff = (start: dayjs.Dayjs, end: dayjs.Dayjs): number => {
@@ -543,6 +509,19 @@ const ProjectTimeline = (project: any) => {
         return count;
     }
 
+    const getStatusTag = (status: string) => {
+        switch (status) {
+            case 'yetToStart':
+                return <Tag color="default">Yet to Start</Tag>;
+            case 'inProgress':
+                return <Tag color="blue">In Progress</Tag>;
+            case 'completed':
+                return <Tag color="green">Completed</Tag>;
+            default:
+                return <Tag>{status}</Tag>;
+        }
+    };
+
     const editingColumns: ColumnsType = [
         {
             title: "Actual/Expected Duration",
@@ -562,16 +541,6 @@ const ProjectTimeline = (project: any) => {
                 const calculatedDuration = start && finish ? getWorkingDaysDiff(start, finish) : null;
                 const displayDuration = calculatedDuration ?? duration;
 
-                if (isEditing && !record.isModule && record.activityStatus === "inProgress") {
-                    return (
-                        <Input
-                            type="number"
-                            value={displayDuration}
-                            onChange={(e) => handleFieldChange(e.target.value, record.key, "expectedDuration")}
-                            style={{ width: 80 }}
-                        />
-                    );
-                }
                 return displayDuration != null ? `${displayDuration} days` : "";
             }
         },
@@ -581,12 +550,7 @@ const ProjectTimeline = (project: any) => {
             key: "activityStatus",
             width: 150,
             align: "center",
-            render: (_, record) => {
-                const preReqDone = isPreReqCompleted(record.preRequisite, dataSource);
-                return isEditing && !record.isModule
-                    ? renderStatusSelect(record.activityStatus, record.key, record.fin_status, !preReqDone)
-                    : record.activityStatus;
-            },
+            render: (_, record) => getStatusTag(record.activityStatus),
         },
         {
             title: "Actual / Expected Start",
@@ -594,23 +558,7 @@ const ProjectTimeline = (project: any) => {
             key: "actualStart",
             width: 180,
             align: "center",
-            render: (_, { actualStart, activityStatus, key, isModule, fin_status }) =>
-                isEditing && !isModule ? (
-                    <DatePicker
-                        format="DD-MM-YYYY"
-                        value={
-                            actualStart && dayjs(actualStart, 'DD-MM-YYYY').isValid()
-                                ? dayjs(actualStart, 'DD-MM-YYYY')
-                                : null
-                        }
-                        onChange={(date) =>
-                            handleFieldChange(date ? dayjs(date).format('DD-MM-YYYY') : null, key, "actualStart")
-                        }
-                        disabled={activityStatus === "yetToStart" || fin_status === 'completed'}
-                    />
-                ) : (
-                    actualStart || ""
-                ),
+            render: (_, record) => record.actualStart || "",
         },
         {
             title: "Actual / Expected Finish",
@@ -618,139 +566,10 @@ const ProjectTimeline = (project: any) => {
             key: "actualFinish",
             width: 180,
             align: "center",
-            render: (_, { actualFinish, activityStatus, key, isModule, fin_status }) =>
-                isEditing && !isModule ? (
-                    <DatePicker
-                        format="DD-MM-YYYY"
-                        value={
-                            actualFinish && dayjs(actualFinish, 'DD-MM-YYYY').isValid()
-                                ? dayjs(actualFinish, 'DD-MM-YYYY')
-                                : null
-                        }
-                        onChange={(date) =>
-                            handleFieldChange(date ? dayjs(date).format('DD-MM-YYYY') : null, key, "actualFinish")
-                        }
-                        disabled={
-                            activityStatus === "yetToStart" ||
-                            activityStatus === "inProgress" ||
-                            fin_status === 'completed'
-                        }
-                    />
-                ) : (
-                    actualFinish || ""
-                ),
+            render: (_, record) => record.actualFinish || "",
         },
     ];
-
     const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
-
-    const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
-        setDataSource((prevData: any) => {
-            const today = dayjs().startOf('day');
-
-            const parseDate = (date: string | null | undefined) =>
-                date && dayjs(date, 'DD-MM-YYYY').isValid() ? dayjs(date, 'DD-MM-YYYY') : null;
-
-            const updateItem = (item: any): any => {
-                if (item.key !== recordKey) return item;
-
-                let updatedItem = { ...item };
-
-                const start = parseDate(updatedItem.actualStart);
-                const finish = parseDate(updatedItem.actualFinish);
-                const duration = updatedItem.expectedDuration;
-
-                switch (fieldName) {
-                    case "activityStatus": {
-                        updatedItem.activityStatus = value;
-
-                        if (value === "yetToStart") {
-                            updatedItem.actualStart = null;
-                            updatedItem.actualFinish = null;
-                            updatedItem.expectedDuration = null;
-                        }
-
-                        if ((value === "inProgress" || value === "completed")) {
-                            if (!start && updatedItem.plannedStart) {
-                                const plannedStart = parseDate(updatedItem.plannedStart);
-                                updatedItem.actualStart = plannedStart ? plannedStart.format('DD-MM-YYYY') : null;
-                            }
-
-                            if (!finish && updatedItem.plannedFinish) {
-                                const plannedFinish = parseDate(updatedItem.plannedFinish);
-                                updatedItem.actualFinish = plannedFinish ? plannedFinish.format('DD-MM-YYYY') : null;
-                            }
-
-                            const startDate = parseDate(updatedItem.actualStart);
-                            const finishDate = parseDate(updatedItem.actualFinish);
-
-                            if (startDate && finishDate) {
-                                const dur = finishDate.diff(startDate, 'day');
-                                updatedItem.expectedDuration = dur >= 0 ? dur : null;
-
-                                if (value === "inProgress" && finishDate.isBefore(today)) {
-                                    updatedItem.actualFinish = today.format('DD-MM-YYYY');
-                                    updatedItem.expectedDuration = today.diff(startDate, 'day');
-                                }
-                            }
-                        }
-                        break;
-                    }
-
-                    case "expectedDuration": {
-                        const parsed = parseInt(value, 10);
-                        updatedItem.expectedDuration = isNaN(parsed) ? null : parsed;
-
-                        if (start && parsed >= 0) {
-                            updatedItem.actualFinish = start.add(parsed, 'day').format('DD-MM-YYYY');
-                        }
-
-                        break;
-                    }
-
-                    case "actualStart": {
-                        updatedItem.actualStart = value;
-                        const newStart = parseDate(value);
-                        if (newStart && duration >= 0) {
-                            updatedItem.actualFinish = newStart.add(duration, 'day').format('DD-MM-YYYY');
-                        }
-                        break;
-                    }
-
-                    case "actualFinish": {
-                        updatedItem.actualFinish = value;
-                        const newFinish = parseDate(value);
-                        if (start && newFinish) {
-                            const dur = newFinish.diff(start, 'day');
-                            updatedItem.expectedDuration = dur >= 0 ? dur : null;
-                        }
-                        break;
-                    }
-
-                    default:
-                        updatedItem[fieldName] = value;
-                }
-
-                return updatedItem;
-            };
-
-            const updateData = (data: any[]): any[] => {
-                return data.map((item) => {
-                    if (item.key === recordKey) {
-                        return updateItem(item);
-                    } else if (item.children) {
-                        return {
-                            ...item,
-                            children: updateData(item.children),
-                        };
-                    }
-                    return item;
-                });
-            };
-
-            return updateData(prevData);
-        });
-    };
 
     const getProjectTimelineById = (id: any) => {
         const data = selectedProject.projectTimeline.filter((item: any) => item.timelineId == id);
@@ -764,6 +583,7 @@ const ProjectTimeline = (project: any) => {
 
     const handleChangeVersionTimeline = async (id: any) => {
         const timelineData = await db.getProjectTimelineById(id);
+        if (timelineData?.orgId !== currentUser.orgId) return;
         getProjectTimelineById(id);
         handleLibraryChange(timelineData);
     }
@@ -856,8 +676,6 @@ const ProjectTimeline = (project: any) => {
         { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
         { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
     ];
-
-
     const [fetchingUsers, setFetchingUsers] = useState(false);
 
     const fetchUserList = debounce((search: string) => {
@@ -1214,7 +1032,7 @@ const ProjectTimeline = (project: any) => {
                                 <div className="raci-row">
                                     <span className="raci-label">Consulted:</span>
                                     <span className="raci-value">
-                                        {selectedActivity.raci.consulted?.map((id:any) => (
+                                        {selectedActivity.raci.consulted?.map((id: any) => (
                                             <span key={id} className="raci-tag">{userMap[id]}</span>
                                         ))}
                                     </span>
@@ -1222,7 +1040,7 @@ const ProjectTimeline = (project: any) => {
                                 <div className="raci-row">
                                     <span className="raci-label">Informed:</span>
                                     <span className="raci-value">
-                                        {selectedActivity.raci.informed?.map((id:any) => (
+                                        {selectedActivity.raci.informed?.map((id: any) => (
                                             <span key={id} className="raci-tag">{userMap[id]}</span>
                                         ))}
                                     </span>
@@ -1236,7 +1054,7 @@ const ProjectTimeline = (project: any) => {
 
                 </Tabs>
             </Modal>
-
+            <ToastContainer />
         </>
     )
 }

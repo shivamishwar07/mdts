@@ -1,18 +1,25 @@
 import { useEffect, useState } from "react";
 import "../styles/profile.css";
-import { Form, Input, Button, Row, Col, Select, message, Modal } from "antd";
-import { ArrowRightOutlined } from "@ant-design/icons";
+import { Form, Input, Button, Row, Col, Select, Modal } from "antd";
 import ManageUser from "../Components/ManageUser";
 import { CameraOutlined } from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser, getCurrentUserId } from '../Utils/moduleStorage';
+import { userStore } from "../Utils/UserStore.ts";
 const { Option } = Select;
-
+import { Tooltip } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
+import { v4 as uuidv4 } from 'uuid';
+import 'react-phone-input-2/lib/style.css';
+import PhoneInput from 'react-phone-input-2';
 const Profile = () => {
 
     const [formData, setFormData] = useState<any>({
         id: null as number | null,
         name: null as string | null,
+        guiId: null as string | null,
         company: null as string | null,
         designation: null as string | null,
         companyType: null as string | null,
@@ -31,6 +38,7 @@ const Profile = () => {
         state: null as string | null,
         country: null as string | null,
         zipCode: null as string | null,
+        orgId: null as string | null,
         assignedModules: [] as {
             moduleCode: string | null;
             moduleName: string | null;
@@ -46,6 +54,7 @@ const Profile = () => {
     const [image, setImage] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [form] = Form.useForm();
+    const [password, setPassword] = useState("");
 
     useEffect(() => {
         fillUsersData();
@@ -67,6 +76,7 @@ const Profile = () => {
             setFormData({
                 id: userData.id || "",
                 name: userData.name || "",
+                guiId: userData.guiId || "",
                 company: userData.company || "",
                 designation: userData.designation || "",
                 companyType: userData.companyType || "",
@@ -84,7 +94,7 @@ const Profile = () => {
                 zipCode: userData.zipCode || "",
                 role: userData.role || "",
                 isTempPassword: userData.isTempPassword,
-                Password: userData.password || ''
+                Password: userData.Password || ''
             });
             form.resetFields();
         }
@@ -115,34 +125,21 @@ const Profile = () => {
     };
 
     const handleSave = async () => {
-        try {
-            const users = await db.getUsers();
-            const currentUser = getCurrentUser();
+        const currentUser = getCurrentUser();
 
-            if (!currentUser?.email) {
-                message.error("No user found. Please log in again.");
-                return;
-            }
-
-            if (currentUser?.isTempPassword) {
-                setIsModalOpen(true);
-            }
-
-            if (currentUser.id) {
-                const updatedUser = { ...users[currentUser.id], ...formData, isTempPassword: false };
-                await db.updateUsers(updatedUser.id, updatedUser);
-                localStorage.setItem("user", JSON.stringify(updatedUser));
-
-                if (!formData.isTempPassword) {
-                    message.success("Profile information updated successfully!");
-                }
-            } else {
-                message.error("User not found in database.");
-            }
-        } catch (error) {
-            console.error("Error updating user profile:", error);
-            message.error("An error occurred while updating profile. Please try again.");
+        if (!currentUser?.email) {
+            notify.error("No user found. Please log in again.");
+            return;
         }
+
+        if (currentUser.isTempPassword) {
+            // First-time user: open modal to prompt for password update
+            setIsModalOpen(true);
+            return;
+        }
+
+        // Returning user: directly save profile
+        await proceedProfileSave(currentUser);
     };
 
     function getInitials(name?: string): string {
@@ -157,14 +154,14 @@ const Profile = () => {
         try {
             const file = event.target.files?.[0];
             if (!file) {
-                message.error("No file selected.");
+                notify.error("No file selected.");
                 return;
             }
 
             const reader = new FileReader();
             reader.onload = async (e) => {
                 if (!e.target?.result) {
-                    message.error("Error reading file.");
+                    notify.error("Error reading file.");
                     return;
                 }
 
@@ -174,7 +171,7 @@ const Profile = () => {
                 const currentUserId = getCurrentUserId();
                 const activeUser = await db.getUserById(currentUserId);
                 if (!activeUser) {
-                    message.error("User not found.");
+                    notify.error("User not found.");
                     return;
                 }
 
@@ -182,17 +179,18 @@ const Profile = () => {
                 await db.updateUsers(currentUserId, updatedUser);
 
                 const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-                localStorage.setItem("user", JSON.stringify({ ...currentUser, profilePhoto: base64Image }));
+                const updatedLocalUser = { ...currentUser, profilePhoto: base64Image };
+                localStorage.setItem("user", JSON.stringify(updatedLocalUser));
+                userStore.setUser(updatedLocalUser);
 
-                message.success("Profile photo updated successfully!");
+                notify.success("Profile photo updated successfully!");
                 setIsModalOpen(false);
-                fillUsersData();
             };
 
             reader.readAsDataURL(file);
         } catch (error) {
             console.error("Error updating profile photo:", error);
-            message.error("Something went wrong. Please try again.");
+            notify.error("Something went wrong. Please try again.");
         }
     };
 
@@ -207,25 +205,85 @@ const Profile = () => {
 
     const handlePasswordUpdate = async (values: any) => {
         const currentUser = getCurrentUser();
-        if (values.oldPassword == currentUser.password) {
-            const users = {
-                ...currentUser, password: values.newPassword,
+
+        if (values.oldPassword === currentUser.Password) {
+            const updatedUser = {
+                ...currentUser,
+                password: values.newPassword,
                 isTempPassword: false,
-            }
-            await db.updateUsers(currentUser.id, users);
+            };
 
-            localStorage.setItem("user", JSON.stringify({ ...currentUser, password: values.newPassword, isTempPassword: false }));
+            await db.updateUsers(currentUser.id, updatedUser);
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            userStore.setUser(updatedUser);
 
-            message.success(formData.isTempPassword ? "Profile updated successfully!" : "Password updated successfully!");
+            await proceedProfileSave(updatedUser);
+
             setIsModalOpen(false);
-            setTimeout(() => {
-                fillUsersData();
-            }, 1000)
+        } else {
+            notify.error("Current password is incorrect");
         }
-        else {
-            message.error("Current password is incorrect");
-        }
+    };
 
+    const proceedProfileSave = async (currentUser: any) => {
+        try {
+            const users = await db.getUsers();
+            const existingUser = users.find((u) => u.id === currentUser.id);
+
+            let orgId = currentUser.orgId || formData.orgId || uuidv4();
+
+            const updatedUser = {
+                ...existingUser,
+                ...formData,
+                profilePhoto: existingUser?.profilePhoto || "",
+                isTempPassword: false,
+                orgId
+            };
+
+            await db.updateUsers(currentUser.id, updatedUser);
+
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            userStore.setUser(updatedUser);
+
+            const existingCompany = await db.getCompanyByGuiId(orgId);
+
+            if (formData.isTempPassword) {
+                const newCompany = {
+                    name: formData.company,
+                    industryType: formData.industryType,
+                    companyType: formData.companyType,
+                    city: formData.city,
+                    state: formData.state,
+                    country: formData.country,
+                    zipCode: formData.zipCode,
+                    address: formData.address,
+                    guiId: orgId,
+                    userGuiIds: [currentUser.guiId]
+                };
+                await db.addCompany(newCompany);
+            } else if (existingCompany) {
+                const updatedCompany = {
+                    ...existingCompany,
+                    name: formData.company,
+                    industryType: formData.industryType,
+                    companyType: formData.companyType,
+                    city: formData.city,
+                    state: formData.state,
+                    country: formData.country,
+                    zipCode: formData.zipCode,
+                    address: formData.address,
+                    userGuiIds: Array.from(new Set([...(existingCompany.userGuiIds || []), currentUser.guiId]))
+                };
+
+                await db.updateCompany(existingCompany.id, updatedCompany);
+            }
+
+            notify.success("Profile updated successfully!");
+            fillUsersData();
+        } catch (error) {
+            console.error("Error saving profile:", error);
+            notify.error("Something went wrong. Please try again.");
+        }
     };
 
     const renderContent = () => {
@@ -253,10 +311,11 @@ const Profile = () => {
                                     </div>
                                 </div>
                             </div>
-                            <div className="change-password-container">
-                                <a onClick={showModal}>Change Password</a>
-                            </div>
-
+                            {!formData.isTempPassword && (
+                                <div className="change-password-container">
+                                    <a onClick={showModal}>Change Password</a>
+                                </div>
+                            )}
                             <div className="company-registration-form">
                                 <Form
                                     className={`employee-professional-form ${isProfileCompleted()
@@ -369,38 +428,48 @@ const Profile = () => {
                                                     value={formData.email}
                                                     onChange={handleInputChange}
                                                     placeholder="Enter Email"
+                                                    disabled
                                                 />
                                             </Form.Item>
                                         </Col>
                                     </Row>
-
                                     <Row gutter={[16, 16]} className="form-row">
                                         <Col span={12}>
                                             <Form.Item
                                                 label="Mobile No"
                                                 colon={false}
-                                                rules={[{ required: true, message: "Please enter mobile number" }]}
+                                                validateStatus={!formData.mobile ? 'error' : ''}
+                                                help={!formData.mobile ? "Please enter mobile number" : ""}
                                             >
-                                                <Input
-                                                    name="mobile"
+                                                <PhoneInput
+                                                    country="in"
                                                     value={formData.mobile}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter Mobile No"
+                                                    onChange={(phone) => setFormData({ ...formData, mobile: `+${phone}` })}
+                                                    inputProps={{
+                                                        name: 'mobile',
+                                                        required: true
+                                                    }}
+                                                    specialLabel={''}
+                                                    inputStyle={{ width: '100%' }}
                                                 />
                                             </Form.Item>
                                         </Col>
+
                                         <Col span={12}>
                                             <Form.Item label="WhatsApp No" colon={false}>
-                                                <Input
-                                                    name="whatsapp"
+                                                <PhoneInput
+                                                    country="in"
                                                     value={formData.whatsapp}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter WhatsApp No"
+                                                    onChange={(phone) => setFormData({ ...formData, whatsapp: `+${phone}` })}
+                                                    inputProps={{
+                                                        name: 'whatsapp'
+                                                    }}
+                                                    specialLabel={''}
+                                                    inputStyle={{ width: '100%' }}
                                                 />
                                             </Form.Item>
                                         </Col>
                                     </Row>
-
                                     <Row gutter={[16, 16]} className="form-row">
                                         <Col span={12}>
                                             <Form.Item
@@ -473,6 +542,7 @@ const Profile = () => {
                                             <Form.Item label="Zip Code" colon={false}>
                                                 <Input
                                                     name="zipCode"
+                                                    type="number"
                                                     value={formData.zipCode}
                                                     onChange={handleInputChange}
                                                     placeholder="Enter Zip Code"
@@ -488,11 +558,10 @@ const Profile = () => {
                             <div className="button-group">
                                 <Button
                                     className="bg-secondary save-btn"
-                                    icon={<ArrowRightOutlined />}
                                     onClick={handleSave}
                                     style={{ float: "right" }}
                                 >
-                                    Save
+                                    {formData.isTempPassword ? 'Save' : 'Update'}
                                 </Button>
                             </div>
                         </div>
@@ -505,6 +574,30 @@ const Profile = () => {
             default:
                 return null;
         }
+    };
+
+    const getPasswordStrength = (password: string) => {
+        if (!password) return "";
+        let score = 0;
+        if (password.length >= 8) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[a-z]/.test(password)) score++;
+        if (/\d/.test(password)) score++;
+        if (/[\W_]/.test(password)) score++;
+
+        if (score <= 2) return "Weak";
+        if (score === 3 || score === 4) return "Medium";
+        return "Strong";
+    };
+
+    const getPasswordValidationStatus = (pwd: any) => {
+        return {
+            length: pwd.length >= 8,
+            uppercase: /[A-Z]/.test(pwd),
+            lowercase: /[a-z]/.test(pwd),
+            number: /\d/.test(pwd),
+            specialChar: /[\W_]/.test(pwd),
+        };
     };
 
     return (
@@ -543,7 +636,7 @@ const Profile = () => {
                 </div>
 
                 <div style={{ marginBottom: "0px" }} className="items-details">
-                    {!isProfileCompleted() && (
+                    {!isProfileCompleted() && selectedTab != 'Team Members' && (
                         <div style={{ marginTop: "10px" }} className={`card-header progress-warning create-doc-heading ${isProfileCompleted() ? 'bg-secondary' : ""}`}>
                             <p style={{ margin: "0px", padding: "0px" }}>{isProfileCompleted() ? "Manage Profile" : "Please complete registration"}</p>
                         </div>
@@ -581,16 +674,67 @@ const Profile = () => {
                         )}
                         {formData.isTempPassword}
                         <Form.Item
-                            label="New Password"
+                            label={
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                    New Password
+                                    <Tooltip
+                                        title={
+                                            (() => {
+                                                const status = getPasswordValidationStatus(password);
+                                                const getStyle = (pass: any) => ({
+                                                    color: pass ? "green" : "red",
+                                                    fontWeight: "bold",
+                                                });
+
+                                                return (
+                                                    <div style={{ lineHeight: 1.6 }}>
+                                                        <div style={getStyle(status.length)}>• At least 8 characters</div>
+                                                        <div style={getStyle(status.uppercase)}>• One uppercase letter</div>
+                                                        <div style={getStyle(status.lowercase)}>• One lowercase letter</div>
+                                                        <div style={getStyle(status.number)}>• One number</div>
+                                                        <div style={getStyle(status.specialChar)}>• One special character</div>
+                                                    </div>
+                                                );
+                                            })()
+                                        }
+                                        placement="right"
+                                        overlayInnerStyle={{
+                                            backgroundColor: "#f9f9f9",
+                                            color: "#333",
+                                            padding: "10px",
+                                            borderRadius: 6,
+                                            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+                                        }}
+                                    >
+                                        <InfoCircleOutlined style={{ color: "#888", cursor: "pointer" }} />
+                                    </Tooltip>
+
+                                </div>
+                            }
                             name="newPassword"
                             labelCol={{ span: 8, style: { textAlign: "left" } }}
                             wrapperCol={{ span: 16 }}
                             rules={[
                                 { required: true, message: "Please enter a new password!" },
-                                { min: 6, message: "Password must be at least 6 characters!" }
+                                {
+                                    pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/,
+                                    message:
+                                        "Password must contain uppercase, lowercase, number, special char, and be at least 8 characters."
+                                }
                             ]}
                         >
-                            <Input.Password placeholder="Enter new password" />
+                            <Input.Password placeholder="Enter new password" onChange={(e) => setPassword(e.target.value)} />
+                        </Form.Item>
+
+                        <Form.Item noStyle shouldUpdate={(prev, curr) => prev.newPassword !== curr.newPassword}>
+                            {({ getFieldValue }) => {
+                                const strength = getPasswordStrength(getFieldValue("newPassword"));
+                                return strength ? (
+                                    <div className="strength-pill-wrapper">
+                                        <span className={`strength-pill ${strength.toLowerCase()}`}>{strength}</span>
+                                    </div>
+                                ) : null;
+                            }}
                         </Form.Item>
 
                         <Form.Item
@@ -620,10 +764,10 @@ const Profile = () => {
                             </Button>
                         </Form.Item>
                     </Form>
-
-
                 </Modal>
             </div>
+
+            <ToastContainer />
         </>
     );
 };

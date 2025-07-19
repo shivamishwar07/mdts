@@ -1,5 +1,5 @@
 .project-document-cont {
-    padding: 10px 24px 24px 24px;
+    padding: 10px;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f9fafb;
     min-height: 100vh;
@@ -10,6 +10,14 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 10px;
+    outline: 0.5px solid #ddd;
+    padding: 10px 10px;
+    border-radius: 5px;
+
+    h3 {
+        font-size: 20px;
+        color: grey;
+    }
 }
 
 .summary-cards-flex {
@@ -19,10 +27,11 @@
 .summary-card {
     color: #fff;
     text-align: center;
-    padding: 20px 0;
+    padding: 10px 0;
     border-radius: 10px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     transition: transform 0.2s ease;
+
 }
 
 .ant-card-body {
@@ -50,11 +59,12 @@
 }
 
 .bell-notif {
-    font-size: 22px;
+    font-size: 18px;
     color: '#1890ff';
     cursor: pointer;
-    background-color: #ddd;
-    padding: 10px;
+    background-color: #f37921;
+    color: #fff;
+    padding: 7px;
     border-radius: 50%;
 }
 

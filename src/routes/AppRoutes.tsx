@@ -23,6 +23,13 @@ import ViewDocumentPage from "../Components/ViewDocumentPage";
 import ViewUser from "../Components/ViewUser";
 import CreateNotification from "../Components/CreateNotification";
 import LandingPage from "../pages/LandingPage";
+import Pricing from "../pages/Pricing";
+import Services from "../pages/Services";
+import Hero from "../pages/Hero";
+import Contact from "../pages/Contact";
+import SettingsAndPrivacy from "../pages/SettingsAndPrivacy";
+import HelpAndSupport from "../pages/HelpAndSupport";
+import SignInSignUp from "../pages/SignIn";
 
 const AppRoutes = () => {
     const isAuthenticated = !!localStorage.getItem('user');
@@ -34,15 +41,21 @@ const AppRoutes = () => {
                     path="/home"
                     element={
                         isAuthenticated
-                            ? <Navigate to="/landing-page" replace />
+                            ? <Navigate to="/dashboard" replace />
                             : <Home />
                     }
-                />
+                >
+                    <Route index element={<Hero />} />
+                    <Route path="services" element={<Services />} />
+                    <Route path="pricing" element={<Pricing />} />
+                    <Route path="contacts" element={<Contact />} />
+                    <Route path="login" element={<SignInSignUp />} />
+                </Route>
                 <Route
                     path="/"
                     element={
                         isAuthenticated
-                            ? <Navigate to="/landing-page" replace />
+                            ? <Navigate to="/dashboard" replace />
                             : <Navigate to="/home" replace />
                     }
                 />
@@ -54,6 +67,8 @@ const AppRoutes = () => {
                     }
                 >
                     <Route path="/landing-page" element={<LandingPage />} />
+                    <Route path="/settings" element={<SettingsAndPrivacy />} />
+                    <Route path="/helps" element={<HelpAndSupport />} />
                     <Route path="/not-found" element={<NotFound />} />
                     <Route path="/create/register-new-project" element={<RegisterNewProject />} />
                     <Route path="/employee-registration" element={<EmployeeRegistration />} />

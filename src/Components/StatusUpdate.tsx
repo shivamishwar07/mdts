@@ -6,7 +6,7 @@ import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, message } from "antd";
+import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, Tag } from "antd";
 import { ClockCircleOutlined, CloseCircleOutlined, DollarOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
@@ -66,24 +66,27 @@ export const StatusUpdate = () => {
   const [replaneMode, setIsReplanMode] = useState(false);
   const [discardReplaneMode, setIsDiscardReplanMode] = useState(false);
   const [confirmReplan, setConfirmReplan] = useState(false);
-  const userOptions = [
-    { id: '6fa84f42-81e4-49fd-b9fc-1cbced2f1d90', name: 'Amit Sharma' },
-    { id: '2de753d4-1be2-4230-a1ee-ec828ef10f6a', name: 'Priya Verma' },
-    { id: '12fcb989-f9ae-4904-bdcf-9c9d8b63e8cd', name: 'Rahul Mehta' },
-    { id: '9d8f16ee-e21c-4c58-9000-dc3d51f25f2e', name: 'Sneha Reddy' },
-    { id: 'c5c07f70-dbb6-4b02-9cf2-8f9e2d6b3c5f', name: 'Vikram Iyer' },
-    { id: 'a95f34d0-3cf9-4c58-9a70-dcc68a0c32a4', name: 'Neha Kapoor' },
-    { id: 'b4ac3f1b-0591-4435-aabb-b7a7fc5c3456', name: 'Ankit Jaiswal' },
-    { id: 'e7a54111-0a0c-4f91-849c-6816f74e7b12', name: 'Divya Narayan' },
-    { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
-    { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
-  ];
+  const [userOptions, setUserOptions] = useState<any>([]);
   const [openResponsibilityModal, setOpenResponsibilityModal] = useState(false);
   const [raciForm] = Form.useForm();
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isEditUser, setIsEditUser] = useState(false);
+  const [isStatusUpdateMode, setIsStatusUpdateMode] = useState(false);
+  const [editedUserId, setEditedUserId] = useState(selectedProjectTimeline?.assignedUserId);
 
   useEffect(() => {
-    defaultSetup();
+    const fetchUser = async () => {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    };
+    fetchUser();
   }, []);
+
+  useEffect(() => {
+    if (currentUser && currentUser.orgId) {
+      defaultSetup();
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     if (location.state && location.state.currentProject) {
@@ -133,7 +136,7 @@ export const StatusUpdate = () => {
     if (replaneMode) {
       const updated = dataSource.map((item: any) => {
         const recursiveUpdate = (activity: any): any => {
-          if (activity.fin_status === 'yetToStart') {
+          if (activity.fin_status == 'yetToStart') {
             if (activity.actualStart) {
               activity.plannedStart = activity.actualStart;
             }
@@ -183,11 +186,12 @@ export const StatusUpdate = () => {
         );
 
         const timelineId =
-          !latestVersionId || foundTimeline.length === 0
+          !latestVersionId || foundTimeline.length == 0
             ? project.projectTimeline[0].timelineId
             : foundTimeline[0].timelineId;
 
         const timeline = await db.getProjectTimelineById(timelineId);
+        if (timeline[0]?.orgId != currentUser.orgId) return;
         if (!Array.isArray(timeline)) {
           console.warn("Timeline is not an array or is undefined", timeline);
           return [];
@@ -212,16 +216,19 @@ export const StatusUpdate = () => {
 
   const defaultSetup = async () => {
     try {
-      const storedData = (await db.getProjects()).filter((p) => p.projectTimeline);
+      const storedData: any = (await db.getProjects()).filter((p) => p.orgId == currentUser.orgId);
       setAllProjects(storedData);
+
+      const allUsers = (await db.getUsers()).filter((u) => u.orgId == currentUser.orgId);
+      setUserOptions(allUsers);
 
       let selectedProject = null;
       const lastVisitedProjectId = localStorage.getItem("selectedProjectId");
 
-      if (storedData.length === 1) {
+      if (storedData.length == 1) {
         selectedProject = storedData[0];
       } else if (lastVisitedProjectId) {
-        selectedProject = storedData.find((p) => p.id == lastVisitedProjectId) || null;
+        selectedProject = storedData.find((p: any) => p.id == lastVisitedProjectId) || null;
       }
 
       if (selectedProject) {
@@ -237,16 +244,19 @@ export const StatusUpdate = () => {
       const projectTimeline = selectedProject?.projectTimeline || [];
 
       const latestVersionId = localStorage.getItem("latestProjectVersion");
-
       const extractedTimelines = projectTimeline.map((version: any) => ({
         versionId: version.timelineId,
         version: version.version,
         status: version.status,
         addedBy: version.addedBy,
+        addedByUserId: version.userGuiId,
         addedUserEmail: version.addedUserEmail,
         currentStatus: version.currentStatus ? version.currentStatus : '',
         createdAt: version.createdAt || new Date().toISOString(),
         updatedAt: version.updatedAt || new Date().toISOString(),
+        approver: version.approver || null,
+        timelineId: version.timelineId || null,
+        revisedByLog: version.revisedByLog || null,
       }));
 
       setAllVersions(extractedTimelines);
@@ -268,7 +278,7 @@ export const StatusUpdate = () => {
   const handleProjectChange = async (projectId: any) => {
     setSelectedActivityKey(null);
     setSelectedProjectId(projectId);
-    const project = allProjects.find((p) => p.id === projectId);
+    const project = allProjects.find((p) => p.id == projectId);
     localStorage.setItem('selectedProjectId', projectId);
     setSelectedProjectTimeline(project.projectTimeline[0]);
     defaultSetup();
@@ -397,7 +407,7 @@ export const StatusUpdate = () => {
         row.eachCell((cell: any) => {
           Object.assign(cell, dataRowStyle);
         });
-        if (activityIndex % 2 === 0) {
+        if (activityIndex % 2 == 0) {
           row.eachCell((cell: any) => {
             cell.fill = {
               type: "pattern",
@@ -453,7 +463,7 @@ export const StatusUpdate = () => {
 
   const handleApproveTimeline = async () => {
     const updatedProjectTimeline = selectedProject.projectTimeline.map((timeline: any) => {
-      if (timeline.timelineId === selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId) {
+      if (timeline.timelineId == selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId) {
         return { ...timeline, status: "Approved" };
       }
       return timeline;
@@ -475,7 +485,7 @@ export const StatusUpdate = () => {
       let editingRequired = false;
       const finDataSource = libraryItems.map((module: any, moduleIndex: number) => {
         const children = (module.activities || []).map((activity: any, actIndex: number) => {
-          if (activity.activityStatus === "completed" || activity.activityStatus === "inProgress") {
+          if (activity.activityStatus == "completed" || activity.activityStatus == "inProgress") {
             editingRequired = true;
           }
 
@@ -567,7 +577,7 @@ export const StatusUpdate = () => {
         .map((c: string) => c.trim().toLowerCase());
 
       return preReqCodes.some((code: any) => {
-        const act = flatList.find((x) => (x.Code || '').toLowerCase() === code);
+        const act = flatList.find((x) => (x.Code || '').toLowerCase() == code);
         return !act || (act.activityStatus || '').toLowerCase() !== 'completed';
       });
     };
@@ -576,7 +586,7 @@ export const StatusUpdate = () => {
       if (!record.children || !Array.isArray(record.children)) return false;
       return record.children.some((child: any) => {
         const st = (child.activityStatus || '').toLowerCase();
-        return st === 'inprogress' || st === 'completed';
+        return st == 'inprogress' || st == 'completed';
       });
     };
 
@@ -669,10 +679,10 @@ export const StatusUpdate = () => {
           plannedStartDate && plannedFinishDate && actualStartDate &&
           getBusinessDays(actualStartDate, dayjs()) <= getBusinessDays(plannedStartDate, plannedFinishDate);
 
-        if (activityStatus === 'completed') {
+        if (activityStatus == 'completed') {
           const isCompletedOnTime = isStartSame && isFinishSame;
           iconSrc = isCompletedOnTime ? '/images/icons/completed.png' : '/images/icons/overdue.png';
-        } else if (activityStatus === 'inProgress') {
+        } else if (activityStatus == 'inProgress') {
           iconSrc = isWithinPlannedDuration ? '/images/icons/inprogress.png' : '/images/icons/overdue.png';
         } else {
           iconSrc = '/images/icons/yettostart.png';
@@ -683,7 +693,7 @@ export const StatusUpdate = () => {
             style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
             onClick={() => {
               if (record.duration != undefined)
-                setSelectedActivityKey(prevKey => prevKey === record.key ? null : record.key);
+                setSelectedActivityKey(prevKey => prevKey == record.key ? null : record.key);
             }}
           >
             {record.notes?.length > 0 && (
@@ -744,9 +754,9 @@ export const StatusUpdate = () => {
         const displayDuration = expectedDuration ?? calculatedDuration ?? duration;
 
         const isEditable =
-          isEditing &&
+          isEditing && isStatusUpdateMode &&
           !isModule &&
-          activityStatus === "inProgress" &&
+          activityStatus == "inProgress" &&
           !(replaneMode && ["completed", "inProgress"].includes(record.fin_status));
         return isEditable ? (
           <Input
@@ -768,9 +778,9 @@ export const StatusUpdate = () => {
       width: 150,
       align: "center",
       render: (_, record) => {
-        return isEditing && !record.isModule
+        return isEditing && isStatusUpdateMode && !record.isModule
           ? renderStatusSelect(record.activityStatus, record, dataSource, replaneMode)
-          : record.activityStatus;
+          : getStatusTag(record.activityStatus);
       },
 
     },
@@ -790,7 +800,7 @@ export const StatusUpdate = () => {
             if (!preRequisite) return false;
             const preReqCodes = preRequisite.split(',').map((c: string) => c.trim().toLowerCase());
             return preReqCodes.some((code: any) => {
-              const act = flatList.find((x) => (x.Code || '').toLowerCase() === code);
+              const act = flatList.find((x) => (x.Code || '').toLowerCase() == code);
               return !act || (act.activityStatus || '').toLowerCase() !== 'completed';
             });
           };
@@ -799,7 +809,7 @@ export const StatusUpdate = () => {
             if (!children || !Array.isArray(children)) return false;
             return children.some((child: any) => {
               const st = (child.activityStatus || '').toLowerCase();
-              return st === 'inprogress' || st === 'completed';
+              return st == 'inprogress' || st == 'completed';
             });
           };
 
@@ -818,9 +828,9 @@ export const StatusUpdate = () => {
         })();
 
         const shouldDisable =
-          activityStatus === "yetToStart" || (activityStatus === "completed" && isBlocked);
+          activityStatus == "yetToStart" || (activityStatus == "completed" && isBlocked);
 
-        return isEditing && !isModule ? (
+        return isEditing && isStatusUpdateMode && !isModule ? (
           <DatePicker
             format="DD-MM-YYYY"
             value={
@@ -854,7 +864,7 @@ export const StatusUpdate = () => {
             if (!preRequisite) return false;
             const preReqCodes = preRequisite.split(',').map((c: string) => c.trim().toLowerCase());
             return preReqCodes.some((code: any) => {
-              const act = flatList.find((x) => (x.Code || '').toLowerCase() === code);
+              const act = flatList.find((x) => (x.Code || '').toLowerCase() == code);
               return !act || (act.activityStatus || '').toLowerCase() !== 'completed';
             });
           };
@@ -863,7 +873,7 @@ export const StatusUpdate = () => {
             if (!children || !Array.isArray(children)) return false;
             return children.some((child: any) => {
               const st = (child.activityStatus || '').toLowerCase();
-              return st === 'inprogress' || st === 'completed';
+              return st == 'inprogress' || st == 'completed';
             });
           };
 
@@ -882,11 +892,11 @@ export const StatusUpdate = () => {
         })();
 
         const shouldDisable =
-          activityStatus === "yetToStart" ||
-          activityStatus === "inProgress" ||
-          (activityStatus === "completed" && isBlocked);
+          activityStatus == "yetToStart" ||
+          activityStatus == "inProgress" ||
+          (activityStatus == "completed" && isBlocked);
 
-        return isEditing && !isModule ? (
+        return isEditing && isStatusUpdateMode && !isModule ? (
           <DatePicker
             format="DD-MM-YYYY"
             value={
@@ -906,6 +916,19 @@ export const StatusUpdate = () => {
     }
   ];
 
+  const getStatusTag = (status: string) => {
+    switch (status) {
+      case 'yetToStart':
+        return <Tag color="default">Yet to Start</Tag>;
+      case 'inProgress':
+        return <Tag color="blue">In Progress</Tag>;
+      case 'completed':
+        return <Tag color="green">Completed</Tag>;
+      default:
+        return <Tag>{status}</Tag>;
+    }
+  };
+  
   const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
   const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
     setDataSource((prevData: any) => {
@@ -938,7 +961,7 @@ export const StatusUpdate = () => {
 
       const findActivityByCode = (data: any[], code: string): any | null => {
         for (const item of data) {
-          if (item.Code === code) return item;
+          if (item.Code == code) return item;
           if (item.children) {
             const found = findActivityByCode(item.children, code);
             if (found) return found;
@@ -984,7 +1007,7 @@ export const StatusUpdate = () => {
 
             const preReq = activity.preRequisite.split(',').map((c: string) => c.trim());
             const allPresent = preReq.every((code: any) =>
-              flatList.find((x) => x.Code === code && x.actualFinish)
+              flatList.find((x) => x.Code == code && x.actualFinish)
             );
 
             if (allPresent && preReq.some((code: any) => updated.has(code))) {
@@ -1009,23 +1032,23 @@ export const StatusUpdate = () => {
 
       const updatedData = prevData.map((item: any) => {
         const recursiveUpdate = (subItem: any): any => {
-          if (subItem.key === recordKey) {
+          if (subItem.key == recordKey) {
             const plannedStart = parseDate(subItem.plannedStart);
             const plannedFinish = parseDate(subItem.plannedFinish);
             const plannedDuration = subItem.duration ? parseInt(subItem.duration, 10) : 0;
-            if (fieldName === 'activityStatus') {
-              if (value === 'inProgress' || value === 'completed') {
+            if (fieldName == 'activityStatus') {
+              if (value == 'inProgress' || value == 'completed') {
                 if (['inProgress', 'completed'].includes(subItem.fin_status)) {
                   const actualStart = parseDate(subItem.actualStart);
                   const actualFinish = parseDate(subItem.actualFinish);
 
                   if (actualStart && actualStart.isAfter(today, 'day')) {
-                    notify.error(`Cannot mark as '${value}' because actual start date exceeds today's date.`);
+                    notify.error(`Cannot mark as '${value}' because actual start date has not reached today's date.`);
                     return subItem;
                   }
 
                   if (actualFinish && actualFinish.isAfter(today, 'day')) {
-                    notify.error(`Cannot mark as '${value}' because actual finish date exceeds today's date.`);
+                    notify.error(`Cannot mark as '${value}' because actual finish date has not reached today's date.`);
                     return subItem;
                   }
 
@@ -1041,8 +1064,8 @@ export const StatusUpdate = () => {
 
                 if (
                   alreadyHasDates &&
-                  subItem.fin_status === 'completed' &&
-                  value === 'inProgress' &&
+                  subItem.fin_status == 'completed' &&
+                  value == 'inProgress' &&
                   actualStartDate &&
                   actualFinishDate &&
                   actualFinishDate.isBefore(today, 'day')
@@ -1054,7 +1077,7 @@ export const StatusUpdate = () => {
                   return subItem;
                 }
 
-                if (alreadyHasDates && subItem.fin_status === 'completed') {
+                if (alreadyHasDates && subItem.fin_status == 'completed') {
                   subItem.activityStatus = value;
                   updatedCodes.add(subItem.Code);
                   return subItem;
@@ -1070,7 +1093,7 @@ export const StatusUpdate = () => {
 
                 if (
                   (tempStart && tempStart.isAfter(today, 'day')) ||
-                  (value === 'completed' &&
+                  (value == 'completed' &&
                     tempStart &&
                     plannedDuration >= 0 &&
                     addBusinessDays(tempStart, plannedDuration).isAfter(today, 'day'))
@@ -1081,13 +1104,13 @@ export const StatusUpdate = () => {
 
                 subItem.actualStart = tempStart?.format('DD-MM-YYYY') || null;
 
-                if ((value === 'inProgress') && tempStart && tempStart.isBefore(today, 'day')) {
+                if ((value == 'inProgress') && tempStart && tempStart.isBefore(today, 'day')) {
                   const daysTillToday = businessDaysBetween(tempStart, today);
                   const effectiveDuration = Math.max(daysTillToday, plannedDuration);
                   const newFinish = addBusinessDays(tempStart, effectiveDuration);
                   subItem.actualFinish = newFinish.format('DD-MM-YYYY');
                   subItem.expectedDuration = effectiveDuration;
-                } if ((value === 'completed') && tempStart) {
+                } if ((value == 'completed') && tempStart) {
                   const duration = subItem.expectedDuration ?? plannedDuration;
                   const newFinish = addBusinessDays(tempStart, duration);
                   subItem.actualFinish = newFinish.format('DD-MM-YYYY');
@@ -1105,7 +1128,7 @@ export const StatusUpdate = () => {
                 updatedCodes.add(subItem.Code);
               }
 
-              else if (value === 'yetToStart') {
+              else if (value == 'yetToStart') {
                 const alreadyHasDates = subItem.actualStart && subItem.actualFinish;
 
                 subItem.expectedDuration = plannedDuration;
@@ -1118,7 +1141,7 @@ export const StatusUpdate = () => {
                   updatedCodes.add(subItem.Code);
                 }
               }
-            } else if (fieldName === 'actualStart') {
+            } else if (fieldName == 'actualStart') {
               const newStart = parseDate(value);
               const preReqCodes = subItem.preRequisite
                 ? subItem.preRequisite.split(',').map((c: string) => c.trim())
@@ -1139,7 +1162,7 @@ export const StatusUpdate = () => {
                 return subItem;
               }
               if (
-                subItem.activityStatus === 'completed' &&
+                subItem.activityStatus == 'completed' &&
                 newStart &&
                 subItem.expectedDuration != null
               ) {
@@ -1154,7 +1177,7 @@ export const StatusUpdate = () => {
                 subItem.actualFinish = addBusinessDays(newStart, subItem.expectedDuration).format('DD-MM-YYYY');
               }
 
-            } else if (fieldName === 'actualFinish') {
+            } else if (fieldName == 'actualFinish') {
               const newFinish = parseDate(value);
               const existingFinish = parseDate(subItem.actualFinish);
 
@@ -1163,7 +1186,7 @@ export const StatusUpdate = () => {
                 return subItem;
               }
               if (
-                subItem.activityStatus === 'completed' &&
+                subItem.activityStatus == 'completed' &&
                 existingFinish &&
                 newFinish &&
                 newFinish.isBefore(existingFinish, 'day')
@@ -1180,7 +1203,7 @@ export const StatusUpdate = () => {
                 subItem.expectedDuration = dur >= 0 ? dur : null;
               }
 
-            } else if (fieldName === 'expectedDuration') {
+            } else if (fieldName == 'expectedDuration') {
               const duration = parseInt(value, 10);
               subItem.expectedDuration = duration;
 
@@ -1199,7 +1222,7 @@ export const StatusUpdate = () => {
             const actualStart = parseDate(subItem.actualStart);
             const actualFinish = parseDate(subItem.actualFinish);
             if (
-              subItem.activityStatus === 'inProgress' &&
+              subItem.activityStatus == 'inProgress' &&
               actualStart &&
               actualFinish &&
               actualFinish.isBefore(today, 'day')
@@ -1234,6 +1257,7 @@ export const StatusUpdate = () => {
 
   const handleUpdateStatus = () => {
     setIsEditing(true);
+    setIsStatusUpdateMode(true);
   };
 
   const handleSaveStatus = async () => {
@@ -1245,13 +1269,13 @@ export const StatusUpdate = () => {
         return module.children.some((activity: any) => {
           const { activityStatus, actualStart, actualFinish } = activity;
 
-          if (activityStatus === "inProgress" && !actualStart) {
+          if (activityStatus == "inProgress" && !actualStart) {
             errorMessage = `Activity ${activity.keyActivity} is IN-PROGRESS but Actual Start is missing.`;
             isValid = false;
             return true;
           }
 
-          if (activityStatus === "completed") {
+          if (activityStatus == "completed") {
             if (!actualStart && !actualFinish) {
               errorMessage = `Activity ${activity.keyActivity} is COMPLETED but Actual Start and Actual Finish are missing.`;
             } else if (!actualStart) {
@@ -1266,7 +1290,7 @@ export const StatusUpdate = () => {
             }
           }
 
-          // if (activityStatus === "yetToStart" && (actualStart || actualFinish)) {
+          // if (activityStatus == "yetToStart" && (actualStart || actualFinish)) {
           //   errorMessage = `Activity ${activity.keyActivity} is Yet To Start but ${actualStart ? "Actual Start" : "Actual Finish"} is filled incorrectly.`;
           //   isValid = false;
           //   return true;
@@ -1310,6 +1334,7 @@ export const StatusUpdate = () => {
     updatedProject.projectTimeline = updatedSequencedModules;
     await db.updateProjectTimeline(selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId, updatedSequencedModules);
     defaultSetup();
+    setIsStatusUpdateMode(false);
     notify.success(`Status updated successfully!`);
   };
 
@@ -1329,14 +1354,40 @@ export const StatusUpdate = () => {
     handleLibraryChange(timelineData);
   }
 
-  const handleReviseConfirm = () => {
+  const handleReviseConfirm = async () => {
+    const oldUserId = selectedProjectTimeline?.addedByUserId;
+    const newUserId = editedUserId;
+    const revisedLog = {
+      oldUserId,
+      newUserId,
+      revisedBy: currentUser.id,
+      revisedByName: currentUser.name,
+      remarks: reviseRemarks,
+      revisedAt: new Date().toISOString()
+    };
+    const updatedTimeline = {
+      ...selectedProjectTimeline,
+      status: "Revised",
+      revisedByLog: revisedLog,
+      assignedUserId: newUserId,
+      updatedAt: new Date().toISOString()
+    };
+    const updatedProject = {
+      ...selectedProject,
+      projectTimeline: selectedProject.projectTimeline.map((t: any) =>
+        t.timelineId == updatedTimeline.timelineId ? updatedTimeline : t
+      )
+    };
+    await db.updateProject(selectedProjectId, updatedProject);
+    notify.success("Timeline revised and user reassigned");
     setIsReviseModalOpen(false);
+    defaultSetup();
   };
 
   const selectedNotes = useMemo(() => {
     const findNotes = (items: any[]): any[] => {
       for (const item of items) {
-        if (item.key === selectedActivityKey) return item.notes || [];
+        if (item.key == selectedActivityKey) return item.notes || [];
         if (item.children) {
           const found = findNotes(item.children);
           if (found) return found;
@@ -1359,10 +1410,10 @@ export const StatusUpdate = () => {
 
     const updatedDataSource = (prev: any[]): any[] =>
       prev.map(item => {
-        if (item.key === selectedActivityKey) {
+        if (item.key == selectedActivityKey) {
           const notes = item.notes || [];
           const updatedNotes = editNoteId
-            ? notes.map((n: any) => (n.id === editNoteId ? { ...n, ...newNote } : n))
+            ? notes.map((n: any) => (n.id == editNoteId ? { ...n, ...newNote } : n))
             : [...notes, newNote];
           return { ...item, notes: updatedNotes };
         }
@@ -1403,7 +1454,7 @@ export const StatusUpdate = () => {
   const handleDeleteNote = async (noteId: string) => {
     const updatedDataSource = (prev: any[]): any[] =>
       prev.map(item => {
-        if (item.key === selectedActivityKey) {
+        if (item.key == selectedActivityKey) {
           const notes = item.notes?.filter((n: any) => n.id !== noteId) || [];
           return { ...item, notes };
         }
@@ -1477,7 +1528,7 @@ export const StatusUpdate = () => {
 
   const findActivityByKey = (list: any[], key: string): any => {
     for (const item of list) {
-      if (item.key === key) return item;
+      if (item.key == key) return item;
       if (item.children) {
         const result = findActivityByKey(item.children, key);
         if (result) return result;
@@ -1492,7 +1543,7 @@ export const StatusUpdate = () => {
 
       const updatedDataSource = (prev: any[]): any[] =>
         prev.map(item => {
-          if (item.key === selectedActivityKey) {
+          if (item.key == selectedActivityKey) {
             return {
               ...item,
               cost: {
@@ -1549,7 +1600,7 @@ export const StatusUpdate = () => {
 
       const updatedDataSource = (prev: any[]): any[] =>
         prev.map(item => {
-          if (item.key === selectedActivityKey) {
+          if (item.key == selectedActivityKey) {
             return {
               ...item,
               raci: {
@@ -1619,7 +1670,7 @@ export const StatusUpdate = () => {
 
       const updatedSequencedModules = sequencedModules.map((mod: any) => {
         const updatedActivities = mod.activities.map((act: any) => {
-          if (act.fin_status === "yetToStart") {
+          if (act.fin_status == "yetToStart") {
             return {
               ...act,
               start: act.actualStart
@@ -1664,7 +1715,7 @@ export const StatusUpdate = () => {
       };
 
       await db.updateProject(selectedProject.id, updatedProjectWithTimeline);
-      message.success("Replanned timeline saved successfully!");
+      notify.success("Replanned timeline saved successfully!");
       navigate(".", { replace: true });
       setIsReplanMode(false);
       setConfirmReplan(false);
@@ -1672,7 +1723,7 @@ export const StatusUpdate = () => {
 
     } catch (error) {
       console.error("Error saving replanned timeline:", error);
-      message.error("Failed to save replanned timeline. Please try again.");
+      notify.error("Failed to save replanned timeline. Please try again.");
     }
   };
 
@@ -1687,11 +1738,11 @@ export const StatusUpdate = () => {
               <span
                 style={{ fontWeight: 'bold', textTransform: "uppercase" }}
                 className={
-                  selectedProjectTimeline?.status?.toLowerCase() === "approved"
+                  selectedProjectTimeline?.status?.toLowerCase() == "approved"
                     ? "text-approved"
-                    : selectedProjectTimeline?.status?.toLowerCase() === "pending"
+                    : selectedProjectTimeline?.status?.toLowerCase() == "pending"
                       ? "text-warning"
-                      : selectedProjectTimeline?.status?.toLowerCase() === "replanned"
+                      : selectedProjectTimeline?.status?.toLowerCase() == "replanned"
                         ? "text-replanned"
                         : "text-danger"
                 }
@@ -1759,10 +1810,12 @@ export const StatusUpdate = () => {
                         value: selectedVersionId,
                         label: (
                           <>
-                            {selectedProjectTimeline?.status === 'pending' ? (
+                            {selectedProjectTimeline?.status == 'pending' ? (
                               <ClockCircleOutlined style={{ color: 'orange', marginRight: 8 }} />
-                            ) : selectedProjectTimeline?.status === 'replanned' ? (
+                            ) : selectedProjectTimeline?.status == 'replanned' ? (
                               <SyncOutlined style={{ color: '#6f42c1', marginRight: 8 }} />
+                            ) : selectedProjectTimeline?.status == 'Revised' ? (
+                              <EditOutlined style={{ color: '#c00c0cff', marginRight: 8 }} />
                             ) : (
                               <LikeOutlined style={{ color: 'green', marginRight: 8 }} />
                             )}
@@ -1772,7 +1825,7 @@ export const StatusUpdate = () => {
                       }}
                       onChange={(valueObj) => {
                         const value = valueObj.value;
-                        const selectedVersion = allVersions.find((version: any) => version.versionId === value);
+                        const selectedVersion = allVersions.find((version: any) => version.versionId == value);
                         setSelectedProjectTimeline(selectedVersion);
                         setSelectedVersionId(value);
                         handleChangeVersionTimeline(value);
@@ -1785,9 +1838,9 @@ export const StatusUpdate = () => {
                     >
                       {allVersions?.map((version: any) => (
                         <Option key={version.versionId} value={version.versionId}>
-                          {version.status === 'pending' ? (
+                          {version.status == 'pending' ? (
                             <ClockCircleOutlined style={{ color: 'orange', marginRight: 8 }} />
-                          ) : version.status === 'replanned' ? (
+                          ) : version.status == 'replanned' ? (
                             <SyncOutlined style={{ color: 'blue', marginRight: 8 }} />
                           ) : (
                             <LikeOutlined style={{ color: 'green', marginRight: 8 }} />
@@ -1823,7 +1876,7 @@ export const StatusUpdate = () => {
                     cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
                   }}
                 >
-                  RASI
+                  RACI
                 </Button>
 
                 <Button
@@ -1849,17 +1902,38 @@ export const StatusUpdate = () => {
                     Download Timeline
                   </Button>
                 )}
-                {(selectedProjectTimeline?.status != 'replanned' && !replaneMode) && (
-                  <Button
-                    type="primary"
-                    disabled={!selectedProjectId}
-                    icon={selectedProjectTimeline?.status != 'Approved' ? <EditOutlined /> : <ReloadOutlined />}
-                    onClick={selectedProjectTimeline?.status != 'Approved' ? editTimeBuilder : rePlanTimeline}
-                    style={{ backgroundColor: "#FF8A65" }}
-                  >
-                    {selectedProjectTimeline?.status != 'Approved' ? 'Edit Timeline' : 'Replan Timeline'}
-                  </Button>
-                )}
+                {(
+                  selectedProjectTimeline?.status !== 'replanned' &&
+                  !replaneMode &&
+                  getCurrentUser()?.id !== selectedProjectTimeline?.approver?.id &&
+                  (
+                    (selectedProjectTimeline?.revisedByLog?.newUserId === getCurrentUser()?.id &&
+                      selectedProjectTimeline?.status !== 'Pending') ||
+
+                    (!selectedProjectTimeline?.revisedByLog?.newUserId &&
+                      selectedProjectTimeline?.userGuiId === getCurrentUser()?.guiId)
+                  )
+                ) && (
+                    <Button
+                      type="primary"
+                      disabled={!selectedProjectId}
+                      icon={
+                        selectedProjectTimeline?.status !== 'Approved'
+                          ? <EditOutlined />
+                          : <ReloadOutlined />
+                      }
+                      onClick={
+                        selectedProjectTimeline?.status !== 'Approved'
+                          ? editTimeBuilder
+                          : rePlanTimeline
+                      }
+                      style={{ backgroundColor: "#FF8A65" }}
+                    >
+                      {selectedProjectTimeline?.status !== 'Approved'
+                        ? 'Edit Timeline'
+                        : 'Replan Timeline'}
+                    </Button>
+                  )}
 
                 {!replaneMode && (
                   <Button
@@ -1874,19 +1948,19 @@ export const StatusUpdate = () => {
                 )}
                 {(selectedProjectTimeline?.status == 'Approved') && (
                   <Button
-                    type={isEditing ? "primary" : "default"}
+                    type={isStatusUpdateMode ? "primary" : "default"}
                     style={{
-                      backgroundColor: isEditing ? "#AB47BC" : "#5C6BC0",
-                      color: isEditing ? undefined : "#fff",
+                      backgroundColor: isStatusUpdateMode ? "#AB47BC" : "#5C6BC0",
+                      color: isStatusUpdateMode ? undefined : "#fff",
                     }}
-                    icon={isEditing ? <SaveOutlined /> : <FormOutlined />}
-                    onClick={isEditing ? handleSaveStatus : handleUpdateStatus}
+                    icon={isStatusUpdateMode ? <SaveOutlined /> : <FormOutlined />}
+                    onClick={isStatusUpdateMode ? handleSaveStatus : handleUpdateStatus}
                   >
-                    {isEditing ? "Save Status" : "Update Status"}
+                    {(isStatusUpdateMode) ? "Save Status" : "Update Status"}
                   </Button>
                 )}
 
-                {(selectedProjectTimeline?.status != 'Approved' && selectedProjectTimeline?.status != 'replanned') && getCurrentUser().role == 'Admin' && (
+                {(selectedProjectTimeline?.status !== 'Revised' && selectedProjectTimeline?.status != 'Approved' && selectedProjectTimeline?.status != 'replanned') && getCurrentUser()?.id == selectedProjectTimeline?.approver?.id && (
                   <div className="action-btn">
                     <Button
                       type="primary"
@@ -1934,7 +2008,7 @@ export const StatusUpdate = () => {
                   }}
                   rowClassName={(record) => {
                     if (record.isModule) return "module-header";
-                    return record.key === selectedActivityKey ? "activity-row selected-red-row" : "activity-row";
+                    return record.key == selectedActivityKey ? "activity-row selected-red-row" : "activity-row";
                   }}
 
                   bordered
@@ -1971,7 +2045,7 @@ export const StatusUpdate = () => {
           <div className="container-msg">
             <div className="no-project-message">
               <FolderOpenOutlined style={{ fontSize: "50px", color: "grey" }} />
-              {allProjects.length === 0 ? (
+              {allProjects.length == 0 ? (
                 <>
                   <h3>No Projects Timeline Found</h3>
                   <p>You need to create a project for defining a timeline.</p>
@@ -2065,6 +2139,37 @@ export const StatusUpdate = () => {
             onChange={(e) => setReviseRemarks(e.target.value)}
             placeholder="Enter revision notes..."
           />
+          <Button
+            type="link"
+            onClick={() => setIsEditUser(true)}
+            style={{ paddingLeft: 0 }}
+          >
+            Edit User
+          </Button>
+
+          {isEditUser && (
+            <Form.Item label="Reassign User">
+              <Select
+                value={editedUserId}
+                onChange={(value) => setEditedUserId(value)}
+                style={{ width: "100%" }}
+                placeholder="Select a user to reassign"
+              >
+                {userOptions
+                  .filter((user: any) =>
+                    user.id !== selectedProjectTimeline?.approver?.id &&
+                    user.guiId !== selectedProjectTimeline?.addedByUserId
+                  )
+                  .map((user: any) => (
+                    <Select.Option key={user.id} value={user.id}>
+                      {user.name}
+                    </Select.Option>
+                  ))}
+              </Select>
+            </Form.Item>
+
+          )}
+
         </div>
       </Modal>
 
@@ -2225,7 +2330,7 @@ export const StatusUpdate = () => {
                   rules={[{ required: true, message: 'Please select a Responsible person' }]}
                 >
                   <Select placeholder="Select Responsible">
-                    {userOptions.map(user => (
+                    {userOptions.map((user: any) => (
                       <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                     ))}
                   </Select>
@@ -2244,7 +2349,7 @@ export const StatusUpdate = () => {
                   rules={[{ required: true, message: 'Please select an Accountable person' }]}
                 >
                   <Select placeholder="Select Accountable">
-                    {userOptions.map(user => (
+                    {userOptions.map((user: any) => (
                       <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                     ))}
                   </Select>
@@ -2262,7 +2367,7 @@ export const StatusUpdate = () => {
                   noStyle
                 >
                   <Select mode="multiple" placeholder="Select Consulted">
-                    {userOptions.map(user => (
+                    {userOptions.map((user: any) => (
                       <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                     ))}
                   </Select>
@@ -2280,7 +2385,7 @@ export const StatusUpdate = () => {
                   noStyle
                 >
                   <Select mode="multiple" placeholder="Select Informed">
-                    {userOptions.map(user => (
+                    {userOptions.map((user: any) => (
                       <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                     ))}
                   </Select>

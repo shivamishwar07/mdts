@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, Dropdown, Button, Typography, Divider, Modal, Badge, Input } from "antd";
-import { BellOutlined, DownOutlined, LogoutOutlined, QuestionCircleOutlined, SearchOutlined, SettingOutlined } from "@ant-design/icons";
+import { Menu, Dropdown, Button, Typography, Divider, Modal, Badge } from "antd";
+import { BellOutlined, DownOutlined, LogoutOutlined, QuestionCircleOutlined, SettingOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
+import { userStore } from "../Utils/UserStore";
 const { Title } = Typography;
 interface NavItem {
     label: string;
@@ -51,8 +52,6 @@ const Navbar: React.FC = () => {
     const handlePopupOpen = (name: string) => setOpenPopup(name);
     const isActive = (action: string) => location.pathname.startsWith(action);
     const [selectedDropdownKeys, setSelectedDropdownKeys] = useState<{ [key: string]: string }>({});
-    const [recentSearches, setRecentSearches] = useState<string[]>([]);
-
     const showLogoutModal = () => {
         setIsLogoutModalVisible(true);
     };
@@ -67,6 +66,21 @@ const Navbar: React.FC = () => {
         if (storedUser) {
             setUser(JSON.parse(storedUser));
         }
+    }, []);
+
+    useEffect(() => {
+        const updateUser = () => {
+            const updatedUser = userStore.getUser();
+            setUser(updatedUser);
+        };
+
+        updateUser();
+
+        const unsubscribe = userStore.subscribe(updateUser);
+
+        return () => {
+            unsubscribe();
+        };
     }, []);
 
     useEffect(() => {
@@ -148,7 +162,7 @@ const Navbar: React.FC = () => {
                 <hr />
                 <Button onClick={handleSeeAllProfiles} type="text" className="see-profiles-btn">See all profiles</Button>
             </div>
-            <Menu.Item key="/settings" icon={<SettingOutlined />}>
+            <Menu.Item key="/settings" onClick={() => navigate("/settings")} icon={<SettingOutlined />}>
                 Settings & privacy
             </Menu.Item>
             <Menu.Item key="/support" icon={<QuestionCircleOutlined />}>
@@ -179,83 +193,59 @@ const Navbar: React.FC = () => {
                             <p>Tracking System</p>
                         </div>
                     </div>
-                </div>
-                <div className="nav-tab-items">
-                    <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
-                    {navLinks.map((link, index) => (
-                        <div key={index} style={{ margin: "0 5px" }}>
-                            {link.subItems ? (
-                                <div className="nav-dropdown-cust"
-                                    style={{
-                                        position: "relative",
-                                        cursor: "pointer",
-                                        transition: "all 0.3s ease",
-                                        backgroundColor: isActive(link.subItems[0]?.action || "") ? "#424242" : "transparent",
-                                        borderRadius: "4px",
-                                    }}
-                                >
-                                    <Dropdown
-                                        overlay={
-                                            <Menu selectedKeys={[selectedDropdownKeys[link.label] || ""]} style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                                {link.subItems.map((subItem, _subIndex) => (
-                                                    <Menu.Item
-                                                        key={subItem.label}
-                                                        onClick={() => handleDropdownSelect(link.label, subItem)}
-                                                    >
-                                                        {subItem.label}
-                                                    </Menu.Item>
-                                                ))}
-                                            </Menu>
-                                        }
-                                    >
-                                        <Button type="text">
-                                            {link.label} <DownOutlined />
-                                        </Button>
-                                    </Dropdown>
-                                </div>
-                            ) : (
-                                <Button className={`nav-item ${isActive(link.action) ? "active" : ""}`} type="text">
-                                    <Link style={{ color: "inherit", textDecoration: "none" }} to={link.action || "#"} onClick={() => setSelectedDropdownKeys({})}>{link.label}</Link>
-                                </Button>
+                    <div className="search-bar-wrapper" style={{ marginRight: "20px", width: "250px" }}>
+                        <div className="spectacledcoder-search-bar">
+                            <img className="search-icon" width="27" height="27" src="https://img.icons8.com/sf-black/500/000000/search.png" alt="search" />
+                            <input type="text" name="search" placeholder="Search MDTS" className="spectacledcoder-search-input"/>
 
-                            )}
-                            {index < navLinks.length - 1 && !link.subItems && (
-                                <Divider type="vertical" style={{ backgroundColor: "#ddd", height: 20, margin: "0 2px" }} />
-                            )}
                         </div>
-                    ))}
+                    </div>
                 </div>
                 <div className="user-data">
-                    <div className="search-dropdown-wrapper">
-                        <Dropdown
-                            trigger={['click']}
-                            overlay={
-                                <div className="search-dropdown-content">
-                                    <Input.Search
-                                        placeholder="Search MDTS..."
-                                        onSearch={(value) => {
-                                            if (value) {
-                                                setRecentSearches(prev => [value, ...prev.slice(0, 4)]);
-                                            }
+                    <div className="nav-tab-items">
+                        <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
+                        {navLinks.map((link, index) => (
+                            <div key={index} style={{ margin: "0 5px" }}>
+                                {link.subItems ? (
+                                    <div className="nav-dropdown-cust"
+                                        style={{
+                                            position: "relative",
+                                            cursor: "pointer",
+                                            transition: "all 0.3s ease",
+                                            backgroundColor: isActive(link.subItems[0]?.action || "") ? "#424242" : "transparent",
+                                            borderRadius: "4px",
                                         }}
-                                        enterButton
-                                        className="search-input-box"
-                                    />
-                                    <div className="recent-searches">
-                                        {recentSearches.length === 0 ? (
-                                            <div className="no-search-text">No recent searches</div>
-                                        ) : (
-                                            recentSearches.map((item, index) => (
-                                                <div key={index} className="search-item">{item}</div>
-                                            ))
-                                        )}
+                                    >
+                                        <Dropdown
+                                            overlay={
+                                                <Menu selectedKeys={[selectedDropdownKeys[link.label] || ""]} style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                                                    {link.subItems.map((subItem, _subIndex) => (
+                                                        <Menu.Item
+                                                            key={subItem.label}
+                                                            onClick={() => handleDropdownSelect(link.label, subItem)}
+                                                        >
+                                                            {subItem.label}
+                                                        </Menu.Item>
+                                                    ))}
+                                                </Menu>
+                                            }
+                                        >
+                                            <Button type="text">
+                                                {link.label} <DownOutlined />
+                                            </Button>
+                                        </Dropdown>
                                     </div>
-                                </div>
-                            }
-                        >
-                            <SearchOutlined className="search-trigger-icon" />
-                        </Dropdown>
+                                ) : (
+                                    <Button className={`nav-item ${isActive(link.action) ? "active" : ""}`} type="text">
+                                        <Link style={{ color: "inherit", textDecoration: "none" }} to={link.action || "#"} onClick={() => setSelectedDropdownKeys({})}>{link.label}</Link>
+                                    </Button>
 
+                                )}
+                                {index < navLinks.length - 1 && !link.subItems && (
+                                    <Divider type="vertical" style={{ backgroundColor: "#ddd", height: 20, margin: "0 2px" }} />
+                                )}
+                            </div>
+                        ))}
                     </div>
                     <span className="notification-icon-wrapper">
                         <Badge count={5} size="small" offset={[-2, 4]}>
@@ -289,8 +279,9 @@ const Navbar: React.FC = () => {
                 okText={loading ? 'Logging out...' : 'Logout'}
                 cancelText="Cancel"
                 okButtonProps={{ danger: true }}
+                className="modal-container"
             >
-                <p>Are you sure you want to logout?</p>
+                <p style={{ padding: '10px' }}>Are you sure you want to logout?</p>
             </Modal>
         </>
     );

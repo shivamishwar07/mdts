@@ -3,12 +3,15 @@ import { Switch, IconButton, Toolbar, Tooltip, } from "@mui/material";
 import { getCurrentUser } from "../Utils/moduleStorage";
 import { useNavigate } from "react-router-dom";
 import "../styles/user-management.css";
-import { Notifications, DeleteOutlined } from "@mui/icons-material";
-import { Button, Col, Form, Input, message, Modal, Row, Select, Table } from "antd";
+import { Button, Col, Form, Input, Modal, Row, Select, Table } from "antd";
 import { ExclamationCircleOutlined, ReloadOutlined } from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
-
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
+import { v4 as uuidv4 } from 'uuid';
 const { Option } = Select;
+import 'react-phone-input-2/lib/style.css';
+import PhoneInput from 'react-phone-input-2';
 interface Module {
   parentModuleCode: string;
 }
@@ -56,7 +59,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [openAlertModal, setOpenAlertModal] = useState<boolean>(false);
   const [openRACIModal, setOpenRACIModal] = useState<boolean>(false);
-  const [_isRACIValid, _setIsRACIValid] = useState<boolean>(false);
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [_isEditModalVisible, setEditIsModalVisible] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
@@ -68,12 +70,12 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     text: true,
   });
   const [form] = Form.useForm();
-  // const [selectedEmails, setSelectedEmails] = useState<any>([]);
   const [currentUser, setCurrentUser] = useState<any>({});
+  const [dataSource, setDataSource] = useState<any>([]);
 
   useEffect(() => {
     const fetchData = async () => {
-      const allUsers = await db.getUsers();
+      const allUsers = (await db.getUsers()).filter((user: any) => user.orgId == currentUser?.orgId);
       setUsers(allUsers);
       const uniqueModules: any = [];
       allUsers.forEach((user: User) => {
@@ -89,10 +91,8 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       setModules(uniqueModules);
     };
 
-    if (openRACIModal) {
-      fetchData();
-    }
-  }, [openRACIModal]);
+    fetchData();
+  }, [currentUser]);
 
   useEffect(() => {
     setCurrentUser(getCurrentUser());
@@ -100,13 +100,21 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     getAllUsersData();
   }, [])
 
+  useEffect(() => {
+    setDataSource(users.map((user: any, index: any) => ({
+      ...user,
+      key: user.id,
+      serialNumber: index + 1,
+    })));
+  }, [users]);
+
   const saveModulesData = async () => {
-    const savedModules: Module[] = await db.getModules();
+    const savedModules: Module[] = (await db.getModules()).filter((mod: any) => mod.orgId == currentUser?.orgId);
     setModules(savedModules);
   }
 
   const getAllUsersData = async () => {
-    const storedUsers: any = await db.getUsers();
+    const storedUsers = (await db.getUsers()).filter((user: any) => user.orgId == currentUser?.orgId);
     if (storedUsers) {
       const parsedUsers: User[] = storedUsers.map((user: any) => ({
         id: user.id,
@@ -164,64 +172,83 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       : parts[0][0]?.toUpperCase() || "";
   }
 
-  // const invitationSuggestions = [
-  //   { name: 'sudhindra rao', role: 'Founder & COO', email: 'sudhindra@simpro.co.in' },
-  //   { name: 'amit tiwari', role: 'Manager-Business', email: 'amit.tiwari@simpro.co.in' }
-  // ];
-
-  // const handleAddEmail = (email: any) => {
-  //   if (!selectedEmails.includes(email)) {
-  //     setSelectedEmails([...selectedEmails, email]);
-  //   }
-  // };
-
   const handleSendInvites = async () => {
     try {
+      const currentUser = getCurrentUser(); // <-- move this up
+
       const values = await form.validateFields();
+      const { employeeFullName, permissionProfile, emails, mobile, designation } = values;
 
-      const { employeeFullName, permissionProfile, emails } = values;
-
-      if (!employeeFullName || !permissionProfile || !emails) {
-        return message.error("Please fill all required fields");
-      }
-
-      const users = await db.getUsers();
+      const users = (await db.getUsers()).filter((user: any) => user.orgId == currentUser?.orgId);
       const emailExists = users.some((user) => user.email === emails);
-      const currentUser = getCurrentUser();
-
       if (emailExists) {
-        return message.error("Email already registered");
+        return notify.error("Email already registered");
       }
 
       const password = emails.slice(0, 6);
+      const guiId = uuidv4();
+
+      let companyDetails = {};
+      if (currentUser.orgId) {
+        const company = await db.getCompanyByGuiId(currentUser.orgId);
+        if (company) {
+          companyDetails = {
+            company: company.name || "",
+            industryType: company.industryType || "",
+            companyType: company.companyType || "",
+            city: company.city || "",
+            state: company.state || "",
+            country: company.country || "",
+            zipCode: company.zipCode || "",
+            address: company.address || ""
+          };
+        }
+      }
+
       const newUser = {
         id: Date.now(),
+        guiId,
         name: employeeFullName,
-        company: currentUser.company,
-        designation: "",
-        mobile: "",
         email: emails,
+        mobile: mobile || "N/A",
         whatsapp: "",
+        designation: designation || "N/A",
         registeredOn: new Date().toISOString(),
         profilePhoto: "",
         password: password,
         isTempPassword: true,
         role: permissionProfile,
+        orgId: currentUser.orgId || null,
+        addedBy: currentUser.guiId,
+        ...companyDetails
       };
 
       await db.addUsers(newUser);
 
-      message.success("Member added successfully!");
+      if (currentUser.orgId) {
+        const company = await db.getCompanyByGuiId(currentUser.orgId);
+        if (company) {
+          const updatedCompany = {
+            ...company,
+            userGuiIds: Array.from(new Set([...(company.userGuiIds || []), guiId]))
+          };
+          await db.updateCompany(company.id, updatedCompany);
+        }
+      }
+
+      notify.success("Member added successfully!");
       form.resetFields();
       setAddMemberModalVisible(false);
       handleClose();
-      const allUsers = await db.getUsers();
+
+      const allUsers = (await db.getUsers()).filter((user: any) => user.orgId == currentUser?.orgId);
       setUsers(allUsers);
     } catch (error: any) {
       console.error(error);
-      message.error(error.message || "Error adding member!");
+      notify.error(error.message || "Error adding member!");
     }
   };
+
 
   const handleClose = () => {
     setAddMemberModalVisible(false);
@@ -232,24 +259,13 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     setIsDeleteModalVisible(true);
   }
 
-  const [dataSource, setDataSource] = useState<any>([]);
-
-  useEffect(() => {
-    setDataSource(users.map((user: any, index: any) => ({
-      ...user,
-      key: user.id,
-      serialNumber: index + 1,
-    })));
-  }, [users]);
-
-
   const handleRoleChange = async (userId: any, newRole: any) => {
     try {
       const selectedUser = await db.getUserById(userId);
       const updatedUser = { ...selectedUser, role: newRole };
 
       await db.updateUsers(userId, updatedUser);
-      message.success("Role updated successfully.");
+      notify.success("Role updated successfully.");
 
       setDataSource((prev: any) =>
         prev.map((user: any) =>
@@ -258,16 +274,14 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       );
     } catch (error) {
       console.error(error);
-      message.error("Failed to update role.");
+      notify.error("Failed to update role.");
     }
   };
 
-  const handleRefresh = async() => {
-    const allUsers = await db.getUsers();
+  const handleRefresh = async () => {
+    const allUsers = (await db.getUsers()).filter((user: any) => user.orgId == currentUser?.orgId);
     setUsers(allUsers);
   };
-
-
 
   const columns: any = [
     {
@@ -329,7 +343,12 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       dataIndex: "whatsapp",
       key: "whatsapp",
       align: "center",
-    },
+      render: (_: any, record: any) => {
+        return (record.whatsapp && record.whatsapp !== "N/A")
+          ? record.whatsapp
+          : (record.mobile && record.mobile !== "N/A" ? record.mobile : "N/A");
+      },
+    }
   ];
 
   return (
@@ -356,16 +375,16 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
           options?.isToolbar !== false && (
             <Toolbar className="toolbar" style={{ paddingRight: '5px' }}>
               {[
-                {
-                  title: 'Delete User',
-                  icon: <DeleteOutlined style={{ color: 'red' }} />,
-                  action: () => setIsDeleteModalVisible(true),
-                },
-                {
-                  title: 'Alerts',
-                  icon: <Notifications sx={{ color: '#d32f2f' }} />,
-                  action: () => setOpenAlertModal(true),
-                },
+                // {
+                //   title: 'Delete User',
+                //   icon: <DeleteOutlined style={{ color: 'red' }} />,
+                //   action: () => setIsDeleteModalVisible(true),
+                // },
+                // {
+                //   title: 'Alerts',
+                //   icon: <Notifications sx={{ color: '#d32f2f' }} />,
+                //   action: () => setOpenAlertModal(true),
+                // },
                 {
                   title: 'Refresh',
                   icon: <ReloadOutlined style={{ color: '#1890ff' }} />,
@@ -604,42 +623,73 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       </Modal>
 
       <Modal
+        title="Add Member"
         visible={addMemberModalVisible}
         onCancel={handleClose}
         onOk={handleSendInvites}
         okText="Save"
         okButtonProps={{ className: "bg-secondary" }}
         cancelButtonProps={{ className: "bg-tertiary" }}
-        closable={false}
         width={"50%"}
         className="modal-container"
       >
-        <div className="modal-body" style={{ padding: "20px" }}>
-          {/* <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <Text strong style={{ fontSize: "16px" }}>Invite your Team</Text>
-            <Button
-              size="small"
-              className="bg-secondary"
-              style={{ fontSize: "0.75rem", padding: "2px 8px", minWidth: "auto", textTransform: "none" }}
-              onClick={() => navigate("/employee-registration")}
-            >
-              Create Member Manually
-            </Button>
-          </div> */}
-
+        <div className="modal-body" style={{ padding: "0px 10px" }}>
           <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
             <Form.Item
               name="employeeFullName"
               label="Full Name"
+              className="form-item"
               rules={[{ required: true, message: 'Please enter the employee full name!' }]}
             >
-              <Input placeholder="Enter full name" />
+              <Input className="form-item" placeholder="Enter full name" />
+            </Form.Item>
+
+            <Form.Item
+              name="designation"
+              label="Designation"
+              rules={[{ required: true, message: "Please select designation" }]}
+            >
+              <Select placeholder="Select Designation">
+                <Option value="Mining Engineer">Mining Engineer</Option>
+                <Option value="Geologist">Geologist</Option>
+                <Option value="Operations Manager">Operations Manager</Option>
+              </Select>
+            </Form.Item>
+
+            <Form.Item
+              name="mobile"
+              label="Mobile Number"
+              rules={[
+                {
+                  required: true,
+                  message: 'Please enter mobile number!',
+                },
+                {
+                  validator: (_, value) => {
+                    const numeric = value?.replace(/\D/g, '');
+                    if (!numeric || numeric.length < 10) {
+                      return Promise.reject('Enter a valid 10-digit mobile number with country code');
+                    }
+                    return Promise.resolve();
+                  },
+                },
+              ]}
+            >
+              <PhoneInput
+                country="in"
+                inputStyle={{ width: '100%' }}
+                enableSearch
+                countryCodeEditable={false}
+                inputProps={{
+                  name: 'mobile',
+                  required: true,
+                }}
+              />
             </Form.Item>
 
             <Form.Item
               name="permissionProfile"
               label="Set permission profile"
-              className="mt-2"
               rules={[{ required: true, message: 'Please select a permission profile!' }]}
             >
               <Select placeholder="Select...">
@@ -649,27 +699,21 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
               </Select>
             </Form.Item>
 
-            <Form.Item name="emails" className="mt-2" label="Enter email addresses">
+            <Form.Item
+              name="emails"
+              label="Email Address"
+              rules={[
+                { required: true, message: "Email is required" },
+                {
+                  pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+                  message: "Enter a valid email address",
+                },
+              ]}
+            >
               <Input placeholder="Enter email address" />
             </Form.Item>
-          </Form>
 
-          {/* <div style={{ marginTop: 24 }}>
-            <Text strong>Invitation Suggestions</Text>
-            <List
-              dataSource={invitationSuggestions}
-              renderItem={item => (
-                <List.Item
-                  actions={[<Button onClick={() => handleAddEmail(item.email)}>Add</Button>]}
-                >
-                  <List.Item.Meta
-                    title={item.name}
-                    description={`${item.role} | ${item.email}`}
-                  />
-                </List.Item>
-              )}
-            />
-          </div> */}
+          </Form>
         </div>
       </Modal>
 
@@ -693,6 +737,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
         </div>
       </Modal >
 
+      <ToastContainer />
     </div >
   );
 };

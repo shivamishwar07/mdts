@@ -1,8 +1,10 @@
-import { Table, Card, Typography, Tooltip, Row, Col, Modal, Button, Space, message } from "antd";
+import { Table, Card, Typography, Tooltip, Row, Col, Modal, Button, Space } from "antd";
 import { BellOutlined, DeleteOutlined, EyeOutlined } from "@ant-design/icons";
 import "../styles/ProjectDocs.css";
 import { useEffect, useState } from "react";
 import { db } from "../Utils/dataStorege.ts";
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
 const { Text, Title } = Typography;
 
 const ProjectDocs = (project: any) => {
@@ -59,7 +61,7 @@ const ProjectDocs = (project: any) => {
                 setPreviewContent(fileData);
                 setPreviewVisible(true);
             } else {
-                message.error("File not found in IndexedDB.");
+                notify.error("File not found in IndexedDB.");
             }
         }
     };
@@ -189,6 +191,7 @@ const ProjectDocs = (project: any) => {
                     )}
                 </div>
             </Modal>
+            <ToastContainer />
         </div>
     );
 };

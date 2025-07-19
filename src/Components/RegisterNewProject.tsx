@@ -1,32 +1,33 @@
 import "../styles/register-new-project.css";
 import { useEffect, useState } from "react";
-import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, notification, Table, Tooltip, Typography, List } from "antd";
+import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, Table, Tooltip, Typography, List } from "antd";
 import "../styles/register-new-project.css";
 import { CloseCircleOutlined, DownloadOutlined, ExclamationCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
 const { Option } = Select;
-import { useLocation } from "react-router-dom";
-import { saveDocument, updateDocument, getCurrentUser } from "../Utils/moduleStorage";
+import { getCurrentUser } from "../Utils/moduleStorage";
 import { db } from "../Utils/dataStorege.ts";
+import { v4 as uuidv4 } from 'uuid';
 interface DocumentData {
-  id: number;
+  id: any;
   documentName: string;
-  files: string[];
+  files: any[];
   uploadedAt: string;
 }
 
-import { Accept, useDropzone } from "react-dropzone";
-import { message } from "antd";
+import { useDropzone } from "react-dropzone";
 import "../styles/documents.css"
 import MapComponent from "./MapComponent.tsx";
-import ImageContainer from "../Components/ImageContainer"; 
+import ImageContainer from "../Components/ImageContainer";
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
 const { Text } = Typography;
 export const RegisterNewProject: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isModalVisible, setIsModalVisible] = useState(false);
-  const [allLibrariesName, setAllLibrariesName] = useState<any>([]);
   const [formData, setFormData] = useState<{ [key: string]: string }>({});
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
   const [mineTypeOptions, setMineTypeOptions] = useState<string[]>([]);
+  const [allLibrariesName, setAllLibrariesName] = useState<any>([]);
   const initialLibrary = allLibrariesName[0]?.name;
   const [selectedLibrary, setSelectedLibrary] = useState<any>(initialLibrary);
   const [mineTypePopupOpen, setMineTypePopupOpen] = useState<boolean>(false);
@@ -37,19 +38,19 @@ export const RegisterNewProject: React.FC = () => {
     { id: 1, title: "Project Parameters" },
     { id: 2, title: "Locations" },
     { id: 3, title: "Contractual Details" },
-    { id: 4, title: "Initial Status" },
+    // { id: 4, title: "Initial Status" },
   ];
   const [formStepsData, setFormStepsData] = useState<any[]>(() => {
     const savedData = localStorage.getItem("projectFormData");
     return savedData ? JSON.parse(savedData) : [];
   });
-  const location = useLocation();
-  const documentToEdit = location.state?.documentToEdit as DocumentData | undefined;
-  const [documentName, setDocumentName] = useState<any>(null);
+  const [documentName, setDocumentName] = useState<string>("");
   const [files, setFiles] = useState<File[]>([]);
   const [selectedItems, setSelectedItems] = useState(
     allLibrariesName.find((lib: any) => lib.name === initialLibrary)?.items || []
   );
+  const [contractualDocuments, setContractualDocuments] = useState<DocumentData[]>([]);
+  const [isUploadDisabled, setIsUploadDisabled] = useState(true);
   // const requiredFields: { [key: number]: string[] } = {
   //   1: ["companyName", "projectName", "mineral", "typeOfMine", "reserve", "netGeologicalReserve", "extractableReserve", "grade", "stripRatio", "peakCapacity", "mineLife", "totalCoalBlockArea"],
   //   2: ["state", "district", "nearestTown", "nearestAirport", "nearestRailwayStation"],
@@ -62,13 +63,35 @@ export const RegisterNewProject: React.FC = () => {
     clearFormData();
     fetchAllLibrary();
     fetchCompanyName();
-    fetchMineTypes();
   }, []);
 
-  const fetchMineTypes = async () => {
+  useEffect(() => {
+    setIsUploadDisabled(!(documentName && files.length > 0));
+  }, [documentName, files]);
+
+  const fetchMineTypes = async (storedLib: any) => {
     try {
-      const storedOptions: any = await db.getAllMineTypes();
+      let currentUser = getCurrentUser();
+      const storedOptions: any = (await db.getAllMineTypes())?.filter(
+        (type: any) => type.orgId === currentUser.orgId
+      );
       setMineTypeOptions(storedOptions);
+
+      if (storedOptions.length === 1) {
+        const defaultMineType = storedOptions[0].type;
+
+        setFormData((prev) => ({ ...prev, typeOfMine: defaultMineType }));
+        const updatedLibraries = storedLib.filter((lib: any) => lib.mineType == defaultMineType);
+        setAllLibrariesName(storedLib);
+        if (updatedLibraries.length > 0) {
+          const firstLibrary = updatedLibraries[0];
+          setSelectedLibrary(firstLibrary.name);
+          setSelectedItems(firstLibrary.items);
+        } else {
+          setSelectedLibrary(null);
+          setSelectedItems([]);
+        }
+      }
     } catch (error) {
       console.error("Error fetching mine types:", error);
     }
@@ -78,6 +101,7 @@ export const RegisterNewProject: React.FC = () => {
     try {
       const storedLibraries: any = await db.getAllLibraries();
       setAllLibrariesName(storedLibraries);
+      fetchMineTypes(storedLibraries);
     } catch (error) {
       console.error("Error fetching libraries:", error);
     }
@@ -111,34 +135,35 @@ export const RegisterNewProject: React.FC = () => {
 
   const handleSubmit = async () => {
     const loggedInUser = getCurrentUser();
-    const initialDataVal = { library: selectedLibrary, items: selectedItems };
+    const initialDataVal = { library: "", items: [] };
+    // const initialDataVal = { library: selectedLibrary, items: selectedItems };
     if (!loggedInUser.id) {
-      notification.error({
-        message: "Error",
-        description: "No logged-in user found.",
-        duration: 3,
-      });
+      notify.error("Authentication Required! No logged-in user was found. Please log in and try again."
+      );
       return;
     }
     const finalData = Array.isArray(formStepsData) ? [...formStepsData] : [];
     finalData[currentStep - 1] = { ...formData };
+    let currentUser = getCurrentUser();
     const newProject = {
-      id: Date.now().toString(),
+      id: Date.now(),
+      guiId: uuidv4(),
       projectParameters: finalData[0] || {},
       locations: finalData[1] || {},
       contractualDetails: finalData[2] || {},
       initialStatus: initialDataVal || {},
+      documents: contractualDocuments,
+      userGuiId: currentUser?.guiId,
+      orgId: currentUser?.orgId,
+      createdAt: new Date().toISOString()
     };
     try {
       await db.addProject(newProject);
     } catch {
       throw new Error("Failed to save library to database.");
     }
-    notification.success({
-      message: "Project Created Successfully",
-      description: "All form data has been saved and cleared.",
-      duration: 3,
-    });
+
+    notify.success("Project Successfully Registered")
 
     setFormStepsData([]);
     setFormData({});
@@ -165,11 +190,7 @@ export const RegisterNewProject: React.FC = () => {
   const handleNext = () => {
     if (currentStep < steps.length) {
       if (!validateFields(currentStep)) {
-        notification.error({
-          message: "Validation Error",
-          description: "Please fill all required fields before proceeding.",
-          duration: 3,
-        });
+        notify.error("Incomplete Form! Please complete all required fields before proceeding to the next step.")
         return;
       }
       const updatedData = Array.isArray(formStepsData) ? [...formStepsData] : [];
@@ -284,7 +305,7 @@ export const RegisterNewProject: React.FC = () => {
         setNewMineType("");
         setShorthandCode("");
         setMineTypePopupOpen(false);
-        fetchMineTypes();
+        fetchMineTypes(allLibrariesName);
       } catch (error) {
         console.error("Error adding mine type:", error);
       }
@@ -412,7 +433,7 @@ export const RegisterNewProject: React.FC = () => {
                         if (updatedLibraries.length > 0) {
                           setSelectedLibrary(updatedLibraries[0].name);
                           setSelectedItems(updatedLibraries[0].items);
-                          
+
                         } else {
                           setSelectedLibrary(null);
                         }
@@ -573,7 +594,7 @@ export const RegisterNewProject: React.FC = () => {
                       value={selectedLibrary}
                       onChange={(value) => {
                         setSelectedLibrary(value);
-                        const filterdLibrary=allLibrariesName.filter((item:any)=>item.name==value);
+                        const filterdLibrary = allLibrariesName.filter((item: any) => item.name == value);
                         setSelectedItems(filterdLibrary[0].items)
                       }}
                       allowClear={true}
@@ -603,58 +624,54 @@ export const RegisterNewProject: React.FC = () => {
   };
 
   const onDrop = (acceptedFiles: File[]) => {
-    setFiles((prevFiles) => {
-      const newFiles = acceptedFiles.filter(
-        (file) => !prevFiles.some((existingFile) => existingFile.name === file.name)
-      );
+    const newFile = acceptedFiles[0];
 
-      if (newFiles.length < acceptedFiles.length) {
-        message.warning("Some files were already uploaded and were not added again.");
+    setFiles((prevFiles) => {
+      const alreadyExists = prevFiles.some((file) => file.name === newFile.name);
+
+      if (alreadyExists) {
+        notify.warning("This file has already been selected. Please choose a different file.");
+        return prevFiles;
       }
 
-      return [...prevFiles, ...newFiles];
+      return [newFile];
     });
   };
 
+
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    multiple: false,
     onDrop,
-    accept: 'image/*,application/pdf' as unknown as Accept,
-    multiple: true,
   });
 
   const handleSave = () => {
     if (!documentName || files.length === 0) {
-      message.error("Please fill all fields and upload files.");
+      notify.error("Please fill all fields and upload files.");
       return;
     }
 
     const newDocument: DocumentData = {
-      id: Math.floor(Math.random() * (100 - 10 + 1) + 10),
+      id: uuidv4(),
       documentName,
-      files: files.map((file) => file.name),
-      uploadedAt: documentToEdit ? documentToEdit.uploadedAt : new Date().toISOString(),
+      files,
+      uploadedAt: new Date().toISOString(),
     };
 
-    if (documentToEdit) {
-      updateDocument(documentToEdit.id, newDocument);
-      message.success("Document updated successfully!");
-    } else {
-      const isSaved = saveDocument(newDocument);
-      if (isSaved) {
-        message.success("Document saved successfully!");
-      } else {
-        message.error("Failed to save the document. Please try again.");
-      }
-    }
-  };
-
-  const handleCancel = () => {
-    setDocumentName(null);
+    setContractualDocuments((prev) => [...prev, newDocument]);
+    setDocumentName("");
     setFiles([]);
+
+    notify.success("Document has been successfully uploaded.");
+
   };
 
-  const handleRemoveFile = (indexToRemove: number) => {
-    setFiles((prevFiles) => prevFiles.filter((_, index) => index !== indexToRemove));
+  // const handleCancel = () => {
+  //   setDocumentName(null);
+  //   setFiles([]);
+  // };
+
+  const handleRemoveSavedDocument = (id: number) => {
+    setContractualDocuments((prev) => prev.filter((doc: any) => doc.id !== id));
   };
 
   const handleDownloadFile = (file: any) => {
@@ -718,17 +735,17 @@ export const RegisterNewProject: React.FC = () => {
             <div className="contractual-upload-doc-container">
               <div className="contractual-upload-body">
                 <Form.Item
-                  label={<span style={{ textAlign: "left" }}> Contractual File Name </span>}
-                  name="documentName"
-                  rules={[{ required: true, message: "Contractual File Name is required" }]}
+                  label={<span style={{ textAlign: "left" }}>Contractual File Name</span>}
                   labelAlign="left"
                   colon={false}
+                  required
                 >
                   <Input
                     placeholder="Enter file name"
                     value={documentName}
-                    style={{ marginBottom: "15px" }}
                     onChange={(e) => setDocumentName(e.target.value)}
+                    allowClear
+                    style={{ marginBottom: "15px" }}
                   />
                 </Form.Item>
 
@@ -758,40 +775,59 @@ export const RegisterNewProject: React.FC = () => {
                         : "Drag and drop files here, or click to select files"}
                     </Text>
                   </div>
+
+                  {files.length > 0 && (
+                    <div style={{ marginTop: "10px" }}>
+                      <ul style={{ paddingLeft: "20px" }}>
+                        {files.map((file, index) => (
+                          <li key={index}>{file.name}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </Form.Item>
 
-                {/* Display Uploaded Files */}
-                {files.length > 0 && (
-                  <List
-                    dataSource={files}
-                    renderItem={(file, index) => (
-                      <List.Item
-                        actions={[
-                          <DownloadOutlined
-                            key="download"
-                            onClick={() => handleDownloadFile(file)}
-                            style={{ color: "green", fontSize: "18px", cursor: "pointer" }}
-                          />,
-                          <CloseCircleOutlined
-                            key="remove"
-                            onClick={() => handleRemoveFile(index)}
-                            style={{ color: "red", fontSize: "18px", cursor: "pointer" }}
-                          />,
-                        ]}
-                      >
-                        <Text>{file.name}</Text>
-                      </List.Item>
-                    )}
-                  />
+                {contractualDocuments.length > 0 && (
+                  <div style={{ marginTop: "30px" }}>
+                    <Typography.Title level={5}>Uploaded Documents</Typography.Title>
+                    <List
+                      dataSource={contractualDocuments}
+                      bordered
+                      renderItem={(doc) => (
+                        <List.Item
+                          actions={[
+                            <Tooltip title="Download">
+                              <DownloadOutlined
+                                style={{ fontSize: 18, color: "green", cursor: "pointer" }}
+                                onClick={() => handleDownloadFile(doc.files[0])}
+                              />
+                            </Tooltip>,
+                            <Tooltip title="Remove">
+                              <CloseCircleOutlined
+                                style={{ fontSize: 18, color: "red", cursor: "pointer" }}
+                                onClick={() => handleRemoveSavedDocument(doc.id)}
+                              />
+                            </Tooltip>,
+                          ]}
+                        >
+                          <List.Item.Meta
+                            title={doc.documentName}
+                            description={`Uploaded at: ${new Date(doc.uploadedAt).toLocaleString()}`}
+                          />
+                        </List.Item>
+                      )}
+                    />
+                  </div>
                 )}
+
               </div>
               <hr />
-              <div className="action-buttons" style={{ display: "flex", justifyContent: "space-between" }}>
-                <Button onClick={handleCancel} className="bg-tertiary" style={{ width: "45%" }}>
+              <div className="action-buttons" style={{ display: "flex", justifyContent: "end" }}>
+                {/* <Button   disabled={isUploadDisabled} onClick={handleCancel} className="bg-tertiary" style={{ width: "45%" }}>
                   Clear
-                </Button>
-                <Button type="primary" onClick={handleSave} className="bg-secondary" htmlType="submit" style={{ width: "45%" }}>
-                  Save
+                </Button> */}
+                <Button disabled={isUploadDisabled} type="primary" onClick={handleSave} className="bg-secondary" htmlType="submit" style={{ width: "45%" }}>
+                  Upload
                 </Button>
               </div>
             </div>
@@ -818,8 +854,9 @@ export const RegisterNewProject: React.FC = () => {
       >
         <p className="modal-body-item-padding">
           <ExclamationCircleOutlined style={{ color: "red", marginRight: 8 }} />
-          Are you sure you want to submit the form? Once submitted, all data will be cleared.
+          Are you sure you want to submit this form? Submitting will save all data and reset the form.
         </p>
+
       </Modal>
 
       <Modal
@@ -840,10 +877,10 @@ export const RegisterNewProject: React.FC = () => {
             onChange={(e) => handleMineTypeChange(e.target.value)}
             style={{ marginBottom: "10px" }}
           />
-
           <Typography>Shorthand Code: <strong>{shorthandCode}</strong></Typography>
         </div>
       </Modal>
+      <ToastContainer />
     </>
   );
 };

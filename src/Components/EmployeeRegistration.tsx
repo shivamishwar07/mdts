@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { useLocation } from "react-router-dom";
-import { Input, Select, Button, Form, Row, Col, message } from "antd";
+import { Input, Select, Button, Form, Row, Col } from "antd";
 import { ArrowRightOutlined } from "@ant-design/icons";
 import "../styles/employee-registration.css"
-import ImageContainer from "../Components/ImageContainer"; 
+import ImageContainer from "../Components/ImageContainer";
 import { db } from "../Utils/dataStorege.ts";
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
 interface EmployeeData {
   name: string;
   company: string;
@@ -54,8 +56,7 @@ export const EmployeeRegistration = () => {
       const updatedUser = { formData };
       await db.addUsers(updatedUser);
     } catch (error) {
-      console.error("Error updating user profile:", error);
-      message.error("An error occurred while updating profile. Please try again.");
+      notify.error("An error occurred while updating profile. Please try again.");
     }
   };
 
@@ -313,6 +314,7 @@ export const EmployeeRegistration = () => {
           <ImageContainer imageUrl="/images/auths/m7.jpg" />
         </div>
       </div>
+      <ToastContainer />
     </>
   );
 };

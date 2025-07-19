@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { db } from "../Utils/dataStorege.ts";
-import { Card, Col, Form, Input, Row, Timeline, Typography } from "antd";
+import { Card, Col, Form, Input, List, Modal, Row, Timeline, Tooltip, Typography } from "antd";
 import dayjs from "dayjs";
 import '../styles/fdpp.css'
-
+import { CloseCircleOutlined, DownloadOutlined } from "@ant-design/icons";
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify.tsx";
 const { Title } = Typography;
 
 const EDPP = (project: any) => {
@@ -14,7 +16,6 @@ const EDPP = (project: any) => {
       try {
         let storedData = await db.getProjects();
         storedData = storedData.filter((item: any) => item.id === project.code);
-
         if (!Array.isArray(storedData) || storedData.length === 0) {
           console.warn("No projects found.");
           setProjectDetails({});
@@ -38,6 +39,34 @@ const EDPP = (project: any) => {
     }
     return value !== null && value !== undefined ? String(value) : "";
   };
+
+  const handleDeleteDocument = (docId: any) => {
+    Modal.confirm({
+      title: "Delete Document?",
+      content: "Are you sure you want to delete this document? This action cannot be undone.",
+      okText: "Yes, Delete",
+      okButtonProps: { danger: true },
+      cancelText: "Cancel",
+      onOk: async () => {
+        try {
+          const updatedDocs = projectDetails.documents.filter((d: any) => d.id !== docId);
+
+          const updatedProjectDetails = {
+            ...projectDetails,
+            documents: updatedDocs,
+          };
+          await db.updateProject(project.code, updatedProjectDetails);
+          setProjectDetails(updatedProjectDetails);
+
+          notify.success("Document deleted successfully.");
+        } catch (error) {
+          notify.error("Failed to delete document.");
+        }
+      },
+    });
+  };
+
+
   const capitalizeLabel = (label: any) =>
     label
       .replace(/([A-Z])/g, " $1")
@@ -98,6 +127,65 @@ const EDPP = (project: any) => {
               ))}
           </Row>
         </Form>
+        {projectDetails?.documents?.length > 0 && (
+          <div style={{ marginTop: 30 }}>
+            <Title level={5} style={{ marginBottom: 16, fontWeight: "600", color: "#333" }}>
+              📎 Attached Contractual Documents
+            </Title>
+
+            <List
+              dataSource={projectDetails.documents}
+              bordered
+              itemLayout="horizontal"
+              renderItem={(doc: any) => (
+                <List.Item
+                  style={{
+                    padding: "16px 24px",
+                    background: "#f9f9f9",
+                    borderRadius: 8,
+                    marginBottom: 12,
+                    boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
+                  }}
+                  actions={[
+                    <Tooltip title="Download">
+                      <DownloadOutlined
+                        style={{ fontSize: 20, color: "green", cursor: "pointer" }}
+                        onClick={() => {
+                          const file = doc.files[0];
+                          const url = URL.createObjectURL(file);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = file.name;
+                          document.body.appendChild(link);
+                          link.click();
+                          document.body.removeChild(link);
+                          URL.revokeObjectURL(url);
+                        }}
+                      />
+                    </Tooltip>,
+                    <Tooltip title="Delete">
+                      <CloseCircleOutlined
+                        style={{ fontSize: 20, color: "red", cursor: "pointer" }}
+                        onClick={() => handleDeleteDocument(doc.id)}
+                      />
+                    </Tooltip>
+                  ]}
+                >
+                  <List.Item.Meta
+                    title={
+                      <span style={{ fontWeight: 600 }}>{doc.documentName}</span>
+                    }
+                    description={
+                      <span style={{ fontSize: 13, color: "#666" }}>
+                        Uploaded on: {new Date(doc.uploadedAt).toLocaleString()}
+                      </span>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </div>
+        )}
       </Card>
 
       <Card title="Initial Status - Activities" style={{ marginBottom: 20 }}>
@@ -112,7 +200,7 @@ const EDPP = (project: any) => {
           ))}
         </Timeline>
       </Card>
-
+      <ToastContainer />
     </div>
   );
 };

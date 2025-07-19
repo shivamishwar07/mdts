@@ -34,6 +34,8 @@ export class DataStorage extends Dexie {
   projectTimelines!: Table<any, number>;
   documents!: Table<Document, number>;
   diskStorage!: Table<DiskStorage, number>;
+  companies!: Table<any, number>;
+
   constructor() {
     super("MTDS");
     this.version(1).stores({
@@ -46,6 +48,7 @@ export class DataStorage extends Dexie {
       projectTimelines: "++id",
       documents: "++id, name",
       diskStorage: "++id, path",
+      companies: "++id, guiId",
     });
 
     this.mineTypes = this.table("mineTypes");
@@ -57,6 +60,7 @@ export class DataStorage extends Dexie {
     this.projectTimelines = this.table("projectTimelines");
     this.documents = this.table("documents");
     this.diskStorage = this.table("diskStorage");
+    this.companies = this.table("companies");
   }
 
   async addModule(module: any): Promise<number> {
@@ -132,6 +136,8 @@ export class DataStorage extends Dexie {
   }
 
   async addLibrary(library: any): Promise<number> {
+    console.log(library);
+    
     return this.moduleLibrary.add(library);
   }
 
@@ -149,7 +155,6 @@ export class DataStorage extends Dexie {
       if (existingLibrary) {
         const updatedLibrary = { ...newRecord, id };
         await this.moduleLibrary.put(updatedLibrary);
-        message.success(`Library with ID ${id} updated successfully.`);
       } else {
         message.warning(`Library with ID ${id} not found.`);
       }
@@ -163,7 +168,6 @@ export class DataStorage extends Dexie {
       const existingLibrary = await this.moduleLibrary.get(id);
       if (existingLibrary) {
         await this.moduleLibrary.delete(id);
-        message.success(`Library with ID ${id} deleted successfully.`);
       } else {
         message.warning(`Library with ID ${id} not found.`);
       }
@@ -348,6 +352,40 @@ export class DataStorage extends Dexie {
     const entry = await this.diskStorage.where("path").equals(path).first();
     return entry?.content || null;
   }
+
+  //companies
+  async addCompany(company: any): Promise<number> {
+    return this.companies.add(company);
+  }
+
+  async getAllCompanies(): Promise<any[]> {
+    return this.companies.toArray();
+  }
+
+  async getCompanyByGuiId(guiId: string): Promise<any | undefined> {
+    return this.companies.where("guiId").equals(guiId).first();
+  }
+
+  async updateCompany(id: number, updatedCompany: Partial<any>): Promise<void> {
+    const existing = await this.companies.get(id);
+    if (existing) {
+      const updated = { ...existing, ...updatedCompany, id };
+      await this.companies.put(updated);
+    } else {
+      message.warning(`Company with ID ${id} not found.`);
+    }
+  }
+
+  async deleteCompany(id: number): Promise<void> {
+    const existing = await this.companies.get(id);
+    if (existing) {
+      await this.companies.delete(id);
+      message.success(`Company with ID ${id} deleted successfully.`);
+    } else {
+      message.warning(`Company with ID ${id} not found.`);
+    }
+  }
+
 }
 
 export const db = new DataStorage();

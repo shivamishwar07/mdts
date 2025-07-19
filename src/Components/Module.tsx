@@ -4,8 +4,8 @@ import { useLocation } from "react-router-dom";
 import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 import "../styles/module.css"
-import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, message, Form, Switch } from 'antd';
-import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, PlusOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined, DollarOutlined, MinusCircleOutlined, FileTextOutlined } from '@ant-design/icons';
+import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, Form, Switch } from 'antd';
+import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, PlusOutlined, CloseCircleOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined, DollarOutlined, MinusCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 const { Option } = Select;
 import CreateNotification from "./CreateNotification.tsx";
 import UserRolesPage from "./AssignRACI";
@@ -13,7 +13,9 @@ import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUserId } from '../Utils/moduleStorage';
 import { RollbackOutlined } from '@ant-design/icons';
 import { v4 as uuidv4 } from 'uuid';
-
+import { notify } from "../Utils/ToastNotify.tsx";
+import { getCurrentUser } from "../Utils/moduleStorage";
+import { ToastContainer } from "react-toastify";
 const Module = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
@@ -23,9 +25,11 @@ const Module = () => {
     const moduleCode = state?.moduleCode ?? null;
     const [openModal, setOpenModal] = useState<boolean>(false);
     const [selectedRow, setSelectedRow] = useState<any>(null);
+    const [selectedActivityRow, setSelectedActivityRow] = useState<any>(null);
     const [open, setOpen] = useState<boolean>(false);
     const [openPopup, setOpenPopup] = useState<boolean>(false);
     const [openCancelUpdateModulePopup, setOpenCancelUpdateModulePopup] = useState<boolean>(false);
+    const [openCancelModuleCreation, setOpenCancelModuleCreation] = useState<boolean>(false);
     const [newModelName, setNewModelName] = useState<string>("");
     const [selectedOption, setSelectedOption] = useState<string>("");
     const [options, setOptions] = useState<string[]>([]);
@@ -65,18 +69,8 @@ const Module = () => {
     const [formValid, setFormValid] = useState(false);
     const [openResponsibilityModal, setOpenResponsibilityModal] = useState(false);
     const [raciForm] = Form.useForm();
-    const userOptions = [
-        { id: '6fa84f42-81e4-49fd-b9fc-1cbced2f1d90', name: 'Amit Sharma' },
-        { id: '2de753d4-1be2-4230-a1ee-ec828ef10f6a', name: 'Priya Verma' },
-        { id: '12fcb989-f9ae-4904-bdcf-9c9d8b63e8cd', name: 'Rahul Mehta' },
-        { id: '9d8f16ee-e21c-4c58-9000-dc3d51f25f2e', name: 'Sneha Reddy' },
-        { id: 'c5c07f70-dbb6-4b02-9cf2-8f9e2d6b3c5f', name: 'Vikram Iyer' },
-        { id: 'a95f34d0-3cf9-4c58-9a70-dcc68a0c32a4', name: 'Neha Kapoor' },
-        { id: 'b4ac3f1b-0591-4435-aabb-b7a7fc5c3456', name: 'Ankit Jaiswal' },
-        { id: 'e7a54111-0a0c-4f91-849c-6816f74e7b12', name: 'Divya Narayan' },
-        { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
-        { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
-    ];
+    const [userOptions, setUserOptions] = useState<any>([]);
+    const [currentUser, setCurrentUser] = useState<any>(null);
     const pushToUndoStack = (currentState: any) => {
         setUndoStack((prevStack) => {
             const newStack = [...prevStack, currentState];
@@ -87,6 +81,7 @@ const Module = () => {
         });
         setIsOriginalActivitiesStateStored(false);
     };
+
 
     useEffect(() => {
         if (state && state.activities) {
@@ -109,15 +104,22 @@ const Module = () => {
     }, [state]);
 
     useEffect(() => {
-        const fetchMineTypes = async () => {
-            try {
-                const storedOptions: any = await db.getAllMineTypes();
-                setOptions(storedOptions);
-            } catch (error) {
-                console.error("Error fetching mine types:", error);
-            }
+        const init = async () => {
+            const user = await getCurrentUser();
+            setCurrentUser(user);
+
+            const storedOptions: any = (await db.getAllMineTypes())?.filter(
+                (type: any) => type.orgId === user.orgId
+            );
+            setOptions(storedOptions);
+
+            const allUsers = (await db.getUsers())?.filter(
+                (usr: any) => usr.orgId === user.orgId
+            );
+            setUserOptions(allUsers);
         };
-        fetchMineTypes();
+
+        init();
     }, []);
 
     useEffect(() => {
@@ -133,6 +135,51 @@ const Module = () => {
         }
         handleSortModule(sortOrder);
     }, [sortOrder]);
+
+    useEffect(() => {
+        if (openResponsibilityModal && selectedRow?.code) {
+            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            if (activity?.raci) {
+                raciForm.setFieldsValue(activity.raci);
+            }
+        }
+    }, [openResponsibilityModal, selectedRow]);
+
+    useEffect(() => {
+        if (openCostCalcModal && selectedRow?.code) {
+            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            if (activity?.cost) {
+                form.setFieldsValue({
+                    projectCost: activity.cost.projectCost,
+                    opCost: activity.cost.opCost
+                });
+            } else {
+                form.resetFields();
+            }
+        }
+    }, [openCostCalcModal, selectedRow]);
+
+    useEffect(() => {
+        if (openNotificationModal && selectedRow?.code) {
+            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            if (activity?.notifications) {
+                notificationForm.setFieldsValue(activity.notifications);
+            } else {
+                notificationForm.resetFields();
+            }
+        }
+    }, [openNotificationModal, selectedRow]);
+
+    useEffect(() => {
+        if (openDocumentModal && selectedRow?.code) {
+            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            if (activity?.documents) {
+                documentForm.setFieldsValue({ documents: activity.documents });
+            } else {
+                documentForm.resetFields();
+            }
+        }
+    }, [openDocumentModal, selectedRow]);
 
     const handleSaveModuleAndActivity = async () => {
         try {
@@ -182,7 +229,6 @@ const Module = () => {
                 }
             } else {
                 await db.addModule({ ...moduleData, userId });
-                console.log(moduleData);
                 notification.success({
                     message: "Module saved successfully!",
                     duration: 3,
@@ -277,9 +323,9 @@ const Module = () => {
                 try {
                     await db.deleteModule(selectedRow.id);
                     setTimeout(() => navigate(".", { replace: true }), 0);
-                    message.success("Module removed successfully!");
+                    notify.success("Module removed successfully!");
                 } catch (error: any) {
-                    message.error(error);
+                    notify.error(error);
                 }
             }
             else if (selectedRow.parentModuleCode && selectedRow.id) {
@@ -511,7 +557,10 @@ const Module = () => {
                     moduleName: newModelName,
                     level: "L1",
                     mineType: selectedOption,
-                    activities: []
+                    activities: [],
+                    userGuiId: currentUser?.guiId,
+                    orgId: currentUser?.orgId,
+                    createdAt: new Date().toISOString()
                 })
                 setNewModelName("");
                 setSelectedOption("");
@@ -532,15 +581,35 @@ const Module = () => {
 
     const handleAddNewMineType = async () => {
         if (newMineType && shorthandCode) {
+            const isDuplicate = options.some(
+                (opt: any) =>
+                    opt.description.trim().toLowerCase() === newMineType.trim().toLowerCase() ||
+                    opt.type.trim().toLowerCase() === shorthandCode.trim().toLowerCase()
+            );
+
+            if (isDuplicate) {
+                notify.error("Mine type already exists.");
+                return;
+            }
+
             try {
-                const mineTypeData: any = { type: shorthandCode, description: newMineType };
+                const mineTypeData: any = {
+                    type: shorthandCode.trim(),
+                    description: newMineType.trim(),
+                    userGuiId: currentUser?.guiId,
+                    orgId: currentUser?.orgId,
+                    createdAt: new Date().toISOString(),
+                    guiId: uuidv4(),
+                };
+
                 const id = await db.addMineType(mineTypeData);
                 setOptions([...options, { id, ...mineTypeData }]);
                 setNewMineType("");
                 setShorthandCode("");
                 setMineTypePopupOpen(false);
+                notify.success("Added Successfully");
             } catch (error) {
-                console.error("Error adding mine type:", error);
+                notify.error("Error adding mine type");
             }
         }
     };
@@ -590,28 +659,6 @@ const Module = () => {
         });
     };
 
-    // const handleAssignRACI = () => {
-    //     console.log(selectedRow);
-
-    //     if (!selectedRow) {
-    //         notification.warning({
-    //             message: "Please select a row to assign RACI.",
-    //             duration: 3,
-    //         });
-    //         return;
-    //     }
-
-    //     const filteredData = {
-    //         ...moduleData,
-    //         activities: moduleData.activities.filter(
-    //             (activity: any) => activity.code === selectedRow.code
-    //         ),
-    //     };
-    //     setFilteredModuleData(filteredData);
-
-    //     setOpenModal(true);
-    // };
-
     const handleCancelUpdateModule = () => {
         setOpenCancelUpdateModulePopup(false);
 
@@ -630,6 +677,18 @@ const Module = () => {
             isEditing = false;
             setTimeout(() => navigate(".", { replace: true }), 0);
         }
+    }
+
+    const handleCancelModuleCreation = () => {
+        setOpenCancelModuleCreation(false);
+        setModuleData({
+            parentModuleCode: parentModuleCode,
+            moduleName: moduleName,
+            level: "",
+            mineType: mineType,
+            duration: '',
+            activities: state?.activities || []
+        })
     }
 
     const handleCreateNewModule = () => {
@@ -687,15 +746,6 @@ const Module = () => {
         setOpenCostCalcModal(false);
         form.resetFields();
         setFormValid(false);
-    };
-
-    const handleValuesChange = async () => {
-        try {
-            await form.validateFields();
-            setFormValid(true);
-        } catch {
-            setFormValid(false);
-        }
     };
 
     const showNotificationModal = () => setOpenNotificationModal(true);
@@ -858,50 +908,6 @@ const Module = () => {
             console.error("Validation Failed:", err);
         }
     };
-    useEffect(() => {
-        if (openResponsibilityModal && selectedRow?.code) {
-            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
-            if (activity?.raci) {
-                raciForm.setFieldsValue(activity.raci);
-            }
-        }
-    }, [openResponsibilityModal, selectedRow]);
-
-    useEffect(() => {
-        if (openCostCalcModal && selectedRow?.code) {
-            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
-            if (activity?.cost) {
-                form.setFieldsValue({
-                    projectCost: activity.cost.projectCost,
-                    opCost: activity.cost.opCost
-                });
-            } else {
-                form.resetFields();
-            }
-        }
-    }, [openCostCalcModal, selectedRow]);
-
-    useEffect(() => {
-        if (openNotificationModal && selectedRow?.code) {
-            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
-            if (activity?.notifications) {
-                notificationForm.setFieldsValue(activity.notifications);
-            } else {
-                notificationForm.resetFields();
-            }
-        }
-    }, [openNotificationModal, selectedRow]);
-    useEffect(() => {
-        if (openDocumentModal && selectedRow?.code) {
-            const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
-            if (activity?.documents) {
-                documentForm.setFieldsValue({ documents: activity.documents });
-            } else {
-                documentForm.resetFields();
-            }
-        }
-    }, [openDocumentModal, selectedRow]);
-
 
     return (
         <div>
@@ -936,7 +942,7 @@ const Module = () => {
                                                 icon={<FileTextOutlined style={{ color: '#7f8c8d' }} />}
                                                 className="icon-button"
                                                 onClick={showDocumentModal}
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -946,7 +952,7 @@ const Module = () => {
                                                 icon={<DollarOutlined style={{ color: '#52c41a' }} />}
                                                 className="icon-button"
                                                 onClick={handleOpenCostCalcModal}
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -956,7 +962,7 @@ const Module = () => {
                                                 icon={<ArrowDownOutlined />}
                                                 className="icon-button orange"
                                                 onClick={decreaseLevel}
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -966,7 +972,7 @@ const Module = () => {
                                                 icon={<ArrowUpOutlined />}
                                                 className="icon-button orange"
                                                 onClick={increaseLevel}
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -977,7 +983,7 @@ const Module = () => {
                                                 icon={<DeleteOutlined />}
                                                 className="icon-button red"
                                                 onClick={() => setIsDeleteModalVisible(true)}
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                     </Col>
@@ -1003,7 +1009,7 @@ const Module = () => {
                                                 icon={<UserOutlined />}
                                                 onClick={showResponsibilityModal}
                                                 className="icon-button blue"
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                         <Modal
@@ -1027,7 +1033,7 @@ const Module = () => {
                                                 icon={<BellOutlined />}
                                                 onClick={showNotificationModal}
                                                 className="icon-button blue"
-                                                disabled={!selectedRow}
+                                                disabled={!selectedActivityRow}
                                             />
                                         </Tooltip>
                                         <Modal
@@ -1054,18 +1060,20 @@ const Module = () => {
                                         </Tooltip>
                                     </Col>
 
-                                    <Col>
-                                        <Tooltip title="Create New Module">
-                                            <Button
-                                                type="primary"
-                                                onClick={() => handleCreateNewModule()}
-                                                className="add-module-button"
-                                                style={{ height: "30px", fontSize: "14px" }}
-                                            >
-                                                Create New Module
-                                            </Button>
-                                        </Tooltip>
-                                    </Col>
+                                    {!moduleData.parentModuleCode && (
+                                        <Col>
+                                            <Tooltip title="Create New Module">
+                                                <Button
+                                                    type="primary"
+                                                    onClick={() => handleCreateNewModule()}
+                                                    className="add-module-button"
+                                                    style={{ height: "30px", fontSize: "14px" }}
+                                                >
+                                                    Create New Module
+                                                </Button>
+                                            </Tooltip>
+                                        </Col>
+                                    )}
 
                                     {isEditing && (
                                         <Col>
@@ -1105,9 +1113,17 @@ const Module = () => {
                                     <TableRow
                                         hover
                                         selected={selectedRow === moduleData}
-                                        onClick={() => setSelectedRow(moduleData)}
-                                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                        onClick={() => {
+                                            if (moduleData.activities.length === 0 && moduleData.moduleName) {
+                                                setSelectedRow(moduleData);
+                                            }
+                                        }}
+                                        sx={{
+                                            '&:last-child td, &:last-child th': { border: 0 },
+                                            cursor: moduleData.activities.length === 0 ? 'pointer' : 'none',
+                                        }}
                                     >
+
                                         <TableCell
                                             suppressContentEditableWarning
                                             onBlur={(e) => handleEdit('parentModuleCode', e.target.innerText)}
@@ -1120,21 +1136,9 @@ const Module = () => {
                                         >
                                             {moduleData.moduleName}
                                         </TableCell>
-                                        {/* <TableCell
-                                            contentEditable
-                                            suppressContentEditableWarning
-                                            onBlur={(e) => handleEdit('duration', e.target.innerText)}
-                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}
-                                        >{moduleData.duration}
-                                        </TableCell> */}
                                         <TableCell sx={{ padding: '10px', color: '#808080' }}>
                                             {moduleData.duration}
                                         </TableCell>
-                                        {/* <TableCell contentEditable
-                                            suppressContentEditableWarning
-                                            onBlur={(e) => handleEdit('', e.target.innerText)}
-                                            sx={{ cursor: 'text', outline: 'none', padding: '10px' }}></TableCell> */}
-
                                         <TableCell sx={{ padding: '10px', color: '#808080' }}>
                                             {moduleData.prerequisite || ''}
                                         </TableCell>
@@ -1142,13 +1146,15 @@ const Module = () => {
                                         <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{moduleData.level}</TableCell>
                                     </TableRow>
                                     {moduleData.activities
-                                        // .sort((a: any, b: any) => a.code.localeCompare(b.code))
-                                        .map((activity: any, index: any, sortedActivities: any) => (
+                                        .map((activity: any, index: any, _sortedActivities: any) => (
                                             <TableRow
                                                 hover
                                                 key={activity.code}
                                                 selected={selectedRow?.code === activity.code}
-                                                onClick={() => setSelectedRow(activity)}
+                                                onClick={() => {
+                                                    setSelectedRow(activity);
+                                                    setSelectedActivityRow(activity);
+                                                }}
                                                 sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
                                             >
                                                 <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{activity.code}</TableCell>
@@ -1170,13 +1176,16 @@ const Module = () => {
                                                 </TableCell>
                                                 <TableCell sx={{ padding: '10px' }}>
                                                     <AutoComplete
-                                                        value={activity.prerequisite || (index === 0 && activity.level === 'L2' ? "" : (sortedActivities[index - 1]?.code || ""))}
-                                                        options={getAllPrerequisites().map((code: string) => ({ value: code }))}
+                                                        value={activity.prerequisite || ""}
+                                                        options={getAllPrerequisites()
+                                                            .filter((code: any) => code !== activity.code)
+                                                            .map((code: string) => ({ value: code }))}
                                                         onChange={(value) => handlePrerequisiteChange(activity.code, value)}
                                                         filterOption={filterPrerequisites}
                                                         placeholder="Select Prerequisite"
                                                         style={{ width: '100%' }}
                                                         allowClear
+                                                        disabled={index === 0 && activity.level === 'L2'}
                                                     />
                                                 </TableCell>
 
@@ -1189,6 +1198,15 @@ const Module = () => {
                         </Paper>
                     </div>
                     <div className="save-button-container">
+                        <Button
+                            type="primary"
+                            disabled={!moduleData.parentModuleCode}
+                            icon={<CloseCircleOutlined />}
+                            onClick={() => setOpenCancelModuleCreation(true)}
+                            style={{ backgroundColor: "#e74c3c", borderColor: "#e74c3c", marginRight: '20px' }}
+                        >
+                            Discard
+                        </Button>
                         <Button
                             type="primary"
                             className="save-button"
@@ -1335,53 +1353,74 @@ const Module = () => {
                 </Modal >
 
                 <Modal
+                    title="Confirm DIscrad"
+                    visible={openCancelModuleCreation}
+                    onOk={handleCancelModuleCreation}
+                    onCancel={() => setOpenCancelModuleCreation(false)}
+                    okText="Yes Discard"
+                    cancelText="Cancel"
+                    okType="danger"
+                    className="modal-container"
+                >
+                    <div style={{ padding: "0px 10px" }}>
+                        <p>
+                            Are you sure you want to discard the entire module creation process?
+                        </p>
+                    </div>
+                </Modal >
+
+                <Modal
                     title="Define Cost for Delay (₹ / Day)"
                     open={openCostCalcModal}
                     onCancel={handleClose}
-                    onOk={handleCostConfirm}
-                    destroyOnClose
+                    okText="Save"
+                    onOk={() => {
+                        form
+                            .validateFields()
+                            .then((_values) => {
+                                handleCostConfirm();
+                            })
+                            .catch((_err) => {
+                            });
+                    }}
+                    destroyOnClose={false}
                     className="modal-container"
                 >
                     <Form
                         form={form}
                         layout="vertical"
-                        onValuesChange={handleValuesChange}
-                        style={{ padding: "0px 10px", display: 'flex', flexDirection: 'column', gap: '10px' }}
+                        validateTrigger="onChange"
+                        style={{
+                            padding: "0px 10px",
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px',
+                        }}
                     >
-                        <Form.Item
-                            label=""
-                            style={{ marginBottom: 16 }}
-                        >
-                            <Row align="middle" gutter={8}>
-                                <Col flex="150px">Project Cost</Col>
-                                <Col flex="auto">
-                                    <Form.Item
-                                        name="projectCost"
-                                        noStyle
-                                        rules={[{ required: true, message: 'Please enter Project Cost' }]}
-                                    >
-                                        <Input type="number" min={0} placeholder="Enter Project Cost" />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-                        </Form.Item>
+                        <Row align="middle" gutter={8}>
+                            <Col flex="150px">Project Cost</Col>
+                            <Col flex="auto">
+                                <Form.Item
+                                    name="projectCost"
+                                    rules={[{ required: true, message: 'Please enter Project Cost' }]}
+                                >
+                                    <Input type="number" min={0} placeholder="Enter Project Cost" />
+                                </Form.Item>
+                            </Col>
+                        </Row>
 
-                        <Form.Item label="" style={{ marginBottom: 24 }}>
-                            <Row align="middle" gutter={8}>
-                                <Col flex="150px">Opportunity Cost</Col>
-                                <Col flex="auto">
-                                    <Form.Item
-                                        name="opCost"
-                                        noStyle
-                                        rules={[{ required: true, message: 'Please enter OP Cost' }]}
-                                    >
-                                        <Input type="number" min={0} placeholder="Enter OP Cost" />
-                                    </Form.Item>
-                                </Col>
-                            </Row>
-                        </Form.Item>
+                        <Row align="middle" gutter={8}>
+                            <Col flex="150px">Opportunity Cost</Col>
+                            <Col flex="auto">
+                                <Form.Item
+                                    name="opCost"
+                                    rules={[{ required: true, message: 'Please enter OP Cost' }]}
+                                >
+                                    <Input type="number" min={0} placeholder="Enter OP Cost" />
+                                </Form.Item>
+                            </Col>
+                        </Row>
                     </Form>
-
                 </Modal>
 
                 <Modal
@@ -1411,7 +1450,7 @@ const Module = () => {
                                         rules={[{ required: true, message: 'Please select a Responsible person' }]}
                                     >
                                         <Select placeholder="Select Responsible">
-                                            {userOptions.map(user => (
+                                            {userOptions.map((user: any) => (
                                                 <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                                             ))}
                                         </Select>
@@ -1430,7 +1469,7 @@ const Module = () => {
                                         rules={[{ required: true, message: 'Please select an Accountable person' }]}
                                     >
                                         <Select placeholder="Select Accountable">
-                                            {userOptions.map(user => (
+                                            {userOptions.map((user: any) => (
                                                 <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                                             ))}
                                         </Select>
@@ -1448,7 +1487,7 @@ const Module = () => {
                                         noStyle
                                     >
                                         <Select mode="multiple" placeholder="Select Consulted">
-                                            {userOptions.map(user => (
+                                            {userOptions.map((user: any) => (
                                                 <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                                             ))}
                                         </Select>
@@ -1466,7 +1505,7 @@ const Module = () => {
                                         noStyle
                                     >
                                         <Select mode="multiple" placeholder="Select Informed">
-                                            {userOptions.map(user => (
+                                            {userOptions.map((user: any) => (
                                                 <Select.Option key={user.id} value={user.id}>{user.name}</Select.Option>
                                             ))}
                                         </Select>
@@ -1557,6 +1596,7 @@ const Module = () => {
                     maskClosable={false}
                     keyboard={false}
                     destroyOnClose
+                    okText="Save"
                     className="modal-container"
                 >
                     <Form
@@ -1603,6 +1643,7 @@ const Module = () => {
                     </Form>
                 </Modal>
             </div>
+            <ToastContainer />
         </div>
     );
 };
