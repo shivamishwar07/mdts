@@ -3,7 +3,6 @@ import { Switch, IconButton, Toolbar, Tooltip, } from "@mui/material";
 import { getCurrentUser } from "../Utils/moduleStorage";
 import { useNavigate } from "react-router-dom";
 import "../styles/user-management.css";
-import { Notifications, DeleteOutlined } from "@mui/icons-material";
 import { Button, Col, Form, Input, Modal, Row, Select, Table } from "antd";
 import { ExclamationCircleOutlined, ReloadOutlined } from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
