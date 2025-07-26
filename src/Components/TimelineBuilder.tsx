@@ -105,7 +105,7 @@ const TimeBuilder = () => {
   const [isAddHolidayModalVisible, setAddHolidayModalVisible] = useState(false);
   const [libraries, setAllLibraries] = useState<any>([]);
   const [selectedLibraryId, setSelectedLibraryId] = useState(null);
-  const [selectedLibrary, setSelectedLibrary] = useState<any>(null);
+  const [_selectedLibrary, setSelectedLibrary] = useState<any>(null);
   const initialLibrary = libraries[0]?.name;
   const [selectedItems, setSelectedItems] = useState(
     libraries.find((lib: any) => lib.name == initialLibrary)?.items || []
@@ -128,6 +128,8 @@ const TimeBuilder = () => {
   ]);
 
   const [userOptions, setUserOptions] = useState<any>([]);
+  const queryParams = new URLSearchParams(location.search);
+  const projectIdForTimeline = queryParams.get("projectId");
 
   useEffect(() => {
     loadUser();
@@ -151,7 +153,6 @@ const TimeBuilder = () => {
 
     const state = location.state;
     if (!state?.selectedProject || !state?.selectedTimeline) return;
-    console.log(state);
     const fetchData = async () => {
       setIsReplanMode(state.rePlanTimeline || false);
 
@@ -166,15 +167,19 @@ const TimeBuilder = () => {
       setSelectedProjectId(id || "");
       setSelectedProject(selectedProject || {});
       setFinalHolidays(holidays || []);
-      setSelectedLibraryId(initialStatus.id);
+      setSelectedLibraryId(initialStatus?.id);
       setLibraryName(initialStatus?.library || []);
-      setSelectedItems(initialStatus.items);
-      setSelectedGroupName(initialStatus.library);
+      setSelectedItems(initialStatus?.items || []);
+      setSelectedGroupName(initialStatus?.library || "");
 
       if (projectTimeline?.length) {
         setIsSaturdayWorking(projectTimeline[0]?.saturdayWorking || false);
         setIsSundayWorking(projectTimeline[0]?.sundayWorking || false);
         setSelectedProjectMineType(projectParameters?.typeOfMine || "");
+        setIsMenualTimeline(true);
+        alert("bt")
+        handleLibraryChange(initialStatus.items);
+
       } else {
         setLibraryName([]);
       }
@@ -318,6 +323,34 @@ const TimeBuilder = () => {
     }
   }, [currentStep, finalData]);
 
+  useEffect(() => {
+    if (currentStep !== 1) return;
+    const updateProject = async () => {
+      const updatedProjects = allProjects.map((proj) => {
+        if (proj.id == selectedProjectId) {
+          return {
+            ...proj,
+            initialStatus: {
+              ...proj.initialStatus,
+              library: selectedGroupName,
+              items: selectedItems,
+            },
+          };
+        }
+        return proj;
+      });
+      setAllProjects(updatedProjects);
+      const updatedProject = updatedProjects.find((p) => p.id == selectedProjectId);
+      if (updatedProject) {
+        await db.updateProject(selectedProjectId, updatedProject);
+        defaultSetup(libraries);
+      }
+    };
+
+    updateProject();
+    fetchHolidays();
+  }, [currentStep == 1]);
+
   const getProjectTimeline = async (timelineId: any) => {
     if (timelineId) {
       try {
@@ -340,77 +373,84 @@ const TimeBuilder = () => {
   };
 
   const defaultSetup = async (allFoundlibrary: any = []) => {
-    try {
-      const allUsers = await db.getUsers();
-      setUserOptions(allUsers);
-      const allProjects = (await db.getProjects())
-        .filter((p: any) => p.orgId == currentUser.orgId);
-      const frestTimelineProject = allProjects.filter((item: any) => item.projectTimeline == undefined);
-      setAllProjectsTimelines(allProjects.filter((item: any) => item.projectTimeline != undefined))
-      if (!Array.isArray(frestTimelineProject) || frestTimelineProject.length == 0) {
-        setAllProjects([]);
-        return;
-      }
-      setAllProjects(frestTimelineProject);
-      if (frestTimelineProject && Array.isArray(frestTimelineProject) && frestTimelineProject.length == 1) {
-        const firstProject = frestTimelineProject[0];
-        if (firstProject && firstProject.id) {
-          setSelectedProjectId(firstProject.id);
-          setSelectedProject(frestTimelineProject[0]);
-          const project = frestTimelineProject.find((p) => p?.id == firstProject.id);
-          const selectedProjectLibrary = project.initialStatus;
-          setLibraryName(selectedProjectLibrary);
-          const FilteredLibrary = (allFoundlibrary || [])
-            .filter((lib: any) => lib.mineType == project.projectParameters.typeOfMine)
-          setAllLibraries(FilteredLibrary);
-          if (selectedProjectLibrary) {
+    if (!isUpdateMode) {
+      try {
+        const allUsers = await db.getUsers();
+        setUserOptions(allUsers);
+        const allProjects = (await db.getProjects()).filter((p: any) => p.orgId == currentUser.orgId);
+
+        let frestTimelineProject: any = [];
+        setAllProjectsTimelines(allProjects.filter((item: any) => item.projectTimeline != undefined));
+
+        if (projectIdForTimeline) {
+          frestTimelineProject = allProjects.filter((item: any) => item.id == projectIdForTimeline);
+        } else {
+          frestTimelineProject = allProjects.filter((item: any) => item.projectTimeline == undefined);
+        }
+
+        if (!Array.isArray(frestTimelineProject) || frestTimelineProject.length == 0) {
+          setAllProjects([]);
+          return;
+        }
+
+        setAllProjects(frestTimelineProject);
+
+        if (frestTimelineProject && Array.isArray(frestTimelineProject) && frestTimelineProject.length == 1) {
+          const firstProject = frestTimelineProject[0];
+          if (firstProject && firstProject.id) {
+            setSelectedProjectId(firstProject.id);
+            setSelectedProject(frestTimelineProject[0]);
+            const project = frestTimelineProject.find((p) => p?.id == firstProject.id);
+            const selectedProjectLibrary = project.initialStatus;
+            setLibraryName(selectedProjectLibrary);
+            const FilteredLibrary = (allFoundlibrary || []).filter(
+              (lib: any) => lib.mineType == project.projectParameters.typeOfMine
+            );
+            setAllLibraries(FilteredLibrary);
+
             if (selectedProjectLibrary) {
               setSelectedLibraryId(selectedProjectLibrary.id);
               setSelectedLibrary(selectedProjectLibrary);
-              setSelectedItems((selectedProjectLibrary.items).filter((item: any) => item.status != 'Completed'));
+              setSelectedItems(selectedProjectLibrary.items.filter((item: any) => item.status != 'Completed'));
               setSelectedGroupName(selectedProjectLibrary.name);
             } else {
               console.error("Library not found:", selectedProjectLibrary);
             }
-          }
 
-          if (project && project.projectTimeline) {
-            if (project.projectParameters) {
-              setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
-            }
-            setIsSaturdayWorking(project.projectTimeline[0].saturdayWorking)
-            setIsSundayWorking(project.projectTimeline[0].sundayWorking)
+            if (project && project.projectTimeline) {
+              if (project.projectParameters) {
+                setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
+              }
+              setIsSaturdayWorking(project.projectTimeline[0].saturdayWorking);
+              setIsSundayWorking(project.projectTimeline[0].sundayWorking);
 
-            if (Array.isArray(project.projectTimeline)) {
-              handleLibraryChange(project.projectTimeline);
+              if (Array.isArray(project.projectTimeline)) {
+                handleLibraryChange(project.projectTimeline);
+              } else {
+                handleLibraryChange([]);
+              }
+            } else if (project && project.initialStatus) {
+              if (project.projectParameters) {
+                setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
+              }
+
+              if (Array.isArray(project.initialStatus.items)) {
+                handleLibraryChange(
+                  project.initialStatus.items.filter((item: any) => item?.status?.toLowerCase() !== "completed")
+                );
+              } else {
+                handleLibraryChange([]);
+              }
             } else {
-              handleLibraryChange([]);
+              setLibraryName([]);
             }
-          }
-          else if (project && project.initialStatus) {
-            if (project.projectParameters) {
-              setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
-            }
-
-            if (Array.isArray(project.initialStatus.items)) {
-              handleLibraryChange(
-                project.initialStatus.items.filter(
-                  (item: any) => item?.status?.toLowerCase() !== "completed"
-                )
-              );
-            } else {
-              handleLibraryChange([]);
-            }
-          } else {
-            setLibraryName([]);
           }
         }
+      } catch (error) {
+        console.error("An unexpected error occurred while fetching projects:", error);
       }
-
-    } catch (error) {
-      console.error("An unexpected error occurred while fetching projects:", error);
     }
-  }
+  };
 
   const toggleCheckbox = (key: string) => {
     setSelected((prev) => {
@@ -870,59 +910,6 @@ const TimeBuilder = () => {
     setSelectedActivities((prevSelected) => [...prevSelected, activityCode]);
   }
 
-  // const handleProjectChange = (projectId: any) => {
-  //   setCurrentStep(0);
-  //   setSelectedProjectId(projectId);
-  //   const project = allProjects.find((p) => p.id == projectId);
-  //   setSelectedProject(project);
-
-  //   if (project) {
-  //     const selectedProjectLibrary = project.initialStatus?.library || null;
-  //     setLibraryName(selectedProjectLibrary || null);
-  //     const filteredLibraries = libraries?.filter((lib: any) => lib.mineType == project.projectParameters.typeOfMine);
-  //     setAllLibraries(filteredLibraries);
-  //     if (project.projectParameters) {
-  //       setSelectedProjectMineType(project.projectParameters.typeOfMine || "");
-  //     } else {
-  //       setSelectedProjectMineType("");
-  //     }
-
-  //     if (selectedProjectLibrary) {
-  //       const FilteredLibrary = (libraries || [])
-  //         .filter((lib: any) => lib.mineType == project.projectParameters.typeOfMine)
-  //       setAllLibraries(FilteredLibrary);
-  //       const matchedLibrary = (libraries || [])
-  //         .filter((lib: any) => lib.mineType == project.projectParameters.typeOfMine)
-  //       if (matchedLibrary) {
-  //         setSelectedLibraryId(matchedLibrary[0].id);
-  //         setSelectedLibrary(matchedLibrary[0]);
-  //         setSelectedItems((matchedLibrary[0]?.items)?.filter((item: any) => item.status != 'Completed'));
-  //         setSelectedGroupName(matchedLibrary[0].name);
-  //       } else {
-  //         setSelectedLibraryId(null);
-  //         setSelectedLibrary(null);
-  //       }
-  //     } else {
-  //       setSelectedLibraryId(null);
-  //       setSelectedLibrary(null);
-  //     }
-  //     if (Array.isArray(project.initialStatus?.items)) {
-  //       const filteredItems = project.initialStatus.items.filter(
-  //         (item: any) => item.status?.toLowerCase() !== "completed"
-  //       );
-  //       handleLibraryChange(filteredItems);
-  //     } else {
-  //       handleLibraryChange([]);
-  //     }
-
-  //   } else {
-  //     setLibraryName(null);
-  //     setSelectedProjectMineType("");
-  //     setSelectedLibraryId(null);
-  //     setSelectedLibrary(null);
-  //     handleLibraryChange([]);
-  //   }
-  // };
   const handleProjectChange = (projectId: any) => {
     setCurrentStep(0);
     setSelectedProjectId(projectId);
@@ -977,6 +964,7 @@ const TimeBuilder = () => {
   };
 
   const handleLibraryChange = (libraryItems: any) => {
+    console.log(libraryItems);
     if (libraryItems) {
       setSequencedModules(libraryItems);
       setModules(libraryItems);
@@ -1058,7 +1046,22 @@ const TimeBuilder = () => {
 
         await db.updateProject(selectedProjectId, updatedProjectWithTimeline);
       } else {
+        const timelineToUpdate = selectedProject.projectTimeline?.find(
+          (t: any) => t.timelineId === selectedTimelineId
+        );
+
+        if (timelineToUpdate) {
+          timelineToUpdate.status = "amendment pending";
+          timelineToUpdate.updatedAt = currentTimestamp;
+        }
+
         await db.updateProjectTimeline(selectedTimelineId, sequencedModules);
+        await db.updateProject(selectedProjectId, {
+          ...selectedProject,
+          projectTimeline: selectedProject.projectTimeline,
+          processedTimelineData: sequencedModules,
+        });
+
       }
 
       setTimeout(() => navigate(".", { replace: true }), 0);
@@ -1887,7 +1890,7 @@ const TimeBuilder = () => {
     setNewHoliday(updatedHoliday);
   };
 
-  const handleModalSave = async () => {
+  const handleHolidaySave = async () => {
     const { from, to, holiday, module } = newHoliday;
 
     if (!from || !to || !holiday.trim() || module.length == 0) {
@@ -1899,8 +1902,11 @@ const TimeBuilder = () => {
       const holidayEntry = {
         ...newHoliday,
         id: Date.now().toString(),
+        projectId: selectedProject.id,
+        userGuiId: currentUser.guiId,
+        orgId: currentUser.orgId,
+        createdAt: new Date().toISOString()
       };
-
       await db.addHolidays(holidayEntry);
       setRows((prev: any) => [...prev, { ...holidayEntry, editing: false }]);
       setAddHolidayModalVisible(false);
@@ -2050,34 +2056,6 @@ const TimeBuilder = () => {
     );
   };
 
-  useEffect(() => {
-    if (currentStep !== 1) return;
-    const updateProject = async () => {
-      const updatedProjects = allProjects.map((proj) => {
-        if (proj.id == selectedProjectId) {
-          return {
-            ...proj,
-            initialStatus: {
-              ...proj.initialStatus,
-              library: selectedGroupName,
-              items: selectedItems,
-            },
-          };
-        }
-        return proj;
-      });
-      setAllProjects(updatedProjects);
-      const updatedProject = updatedProjects.find((p) => p.id == selectedProjectId);
-      if (updatedProject) {
-        await db.updateProject(selectedProjectId, updatedProject);
-        defaultSetup(libraries);
-      }
-    };
-
-    updateProject();
-    fetchHolidays();
-  }, [currentStep == 1]);
-
   const handleGroupNameChange = async (newGroupName: string | undefined) => {
     try {
       if (!newGroupName) return;
@@ -2153,6 +2131,11 @@ const TimeBuilder = () => {
       notify.error("An error occurred while linking group.");
     }
   };
+
+  useEffect(() => {
+    console.log(currentStep);
+
+  }, [currentStep])
 
   return (
     <>
@@ -2337,7 +2320,6 @@ const TimeBuilder = () => {
                           <Button type="primary" className="bg-secondary" size="small" onClick={() => {
                             setNewHoliday(prev => ({
                               ...prev,
-                              projectId: selectedProject.id,
                               userGuiId: currentUser?.guiId,
                               orgId: currentUser?.orgId,
                               createdAt: new Date().toISOString()
@@ -2449,7 +2431,7 @@ const TimeBuilder = () => {
                   disabled={selectedProjectId == null || !isNextStepAllowed()}
                   className="bg-secondary"
                   onClick={() => {
-                    if (currentStep == 7) {
+                    if (currentStep == 7 && !isUpdateMode) {
                       setIsReviewModalVisible(true);
                     } else {
                       handleNext();
@@ -2458,11 +2440,11 @@ const TimeBuilder = () => {
                   type="primary"
                   size="small"
                 >
-                  {currentStep == 8
+                  {currentStep == 7
                     ? isUpdateMode
                       ? "Update"
                       : "Save"
-                    : currentStep == 7
+                    : currentStep == 7 && !isUpdateMode
                       ? "Send For Review"
                       : "Next"}
                 </Button>
@@ -2507,7 +2489,7 @@ const TimeBuilder = () => {
                     </Button>
                     <Button
                       type="primary"
-                      disabled={!selectedProjectId || !selectedLibrary}
+                      disabled={!selectedGroupName}
                       icon={<FolderOpenOutlined />}
                       onClick={() => setIsMenualTimeline(true)}
                       style={{ marginLeft: "15px", backgroundColor: "#D35400", borderColor: "#FF9800" }}
@@ -2595,7 +2577,7 @@ const TimeBuilder = () => {
         title="Add New Holiday"
         visible={isAddHolidayModalVisible}
         onCancel={() => setAddHolidayModalVisible(false)}
-        onOk={handleModalSave}
+        onOk={handleHolidaySave}
         okText="Save"
         cancelText="Cancel"
         className="modal-container"
@@ -2680,7 +2662,7 @@ const TimeBuilder = () => {
             }
           >
             {userOptions
-              .filter((user: any) => user.id !== currentUser.id && user.orgId==currentUser.orgId)
+              .filter((user: any) => user.id !== currentUser.id && user.orgId == currentUser.orgId)
               .map((user: any) => (
                 <Option key={user.id} value={user.id}>
                   {user.name}

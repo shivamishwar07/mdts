@@ -313,8 +313,8 @@
     margin: auto;
     background-color: white;
     display: flex;
-    border-radius: 0% 30px 30px 30px;
-    width: 400px;
+    border-radius:5px;
+    width: 350px;
     margin-top: -15px;
     position: fixed;
 }

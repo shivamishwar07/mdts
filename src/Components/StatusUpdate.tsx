@@ -280,9 +280,17 @@ export const StatusUpdate = () => {
     setSelectedProjectId(projectId);
     const project = allProjects.find((p) => p.id == projectId);
     localStorage.setItem('selectedProjectId', projectId);
-    setSelectedProjectTimeline(project.projectTimeline[0]);
+    if (project?.projectTimeline?.length > 0) {
+      setSelectedProjectTimeline(project.projectTimeline[0]);
+    }
+
     defaultSetup();
+    if (!project?.projectTimeline?.length) {
+      return;
+    }
+
     const timelineId = project.projectTimeline[0].timelineId;
+
     const timeline = await db.getProjectTimelineById(timelineId);
     const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
     setSelectedProject(project);
@@ -928,7 +936,7 @@ export const StatusUpdate = () => {
         return <Tag>{status}</Tag>;
     }
   };
-  
+
   const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
   const handleFieldChange = (value: any, recordKey: any, fieldName: any) => {
     setDataSource((prevData: any) => {
@@ -1356,7 +1364,7 @@ export const StatusUpdate = () => {
 
   const handleReviseConfirm = async () => {
     const oldUserId = selectedProjectTimeline?.addedByUserId;
-    const newUserId = editedUserId;
+    const newUserId = editedUserId ? editedUserId : oldUserId;
     const revisedLog = {
       oldUserId,
       newUserId,
@@ -1732,7 +1740,7 @@ export const StatusUpdate = () => {
       <div className="status-heading">
         <div className="status-update-header">
           <p>Project Timeline</p>
-          {allProjects.length != 0 && (
+          {selectedProject?.projectTimeline != null && (
             <div style={{ display: "flex", gap: "10px" }}>
               <span>Approval Status:</span>
               <span
@@ -1751,7 +1759,7 @@ export const StatusUpdate = () => {
               </span>
             </div>
           )}
-          {allProjects.length != 0 && (
+          {selectedProject?.projectTimeline != null && (
             <div className="times-stamps" style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
               <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                 <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created&nbsp;/&nbsp;Updated By</p>
@@ -1852,140 +1860,140 @@ export const StatusUpdate = () => {
                   </div>
                 )}
               </div>
-              <div className="actions">
-                <Button
-                  icon={<DollarOutlined />}
-                  disabled={!selectedActivityKey}
-                  onClick={handleOpenCostCalcModal}
-                  style={{
-                    backgroundColor: selectedActivityKey ? '#e67e22' : '#f5f5f5',
-                    color: selectedActivityKey ? '#fff' : '#bfbfbf',
-                    cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
-                  }}
-                >
-                  Cost
-                </Button>
-
-                <Button
-                  icon={<UserOutlined />}
-                  disabled={!selectedActivityKey}
-                  onClick={showResponsibilityModal}
-                  style={{
-                    backgroundColor: selectedActivityKey ? '#2c3e50' : '#f5f5f5',
-                    color: selectedActivityKey ? '#fff' : '#bfbfbf',
-                    cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
-                  }}
-                >
-                  RACI
-                </Button>
-
-                <Button
-                  icon={<FormOutlined />}
-                  disabled={!selectedActivityKey}
-                  onClick={() => setNoteModalVisible(true)}
-                  style={{
-                    backgroundColor: selectedActivityKey ? '#990000' : '#f5f5f5',
-                    color: selectedActivityKey ? '#fff' : '#bfbfbf',
-                    cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
-                  }}
-                >
-                  Note
-                </Button>
-                {!replaneMode && (
+              {selectedProject?.projectTimeline != null && (
+                <div className="actions">
                   <Button
-                    type="primary"
-                    disabled={!selectedProjectId}
-                    icon={<DownloadOutlined />}
-                    onClick={handleDownload}
-                    style={{ backgroundColor: "#4CAF50" }}
+                    icon={<DollarOutlined />}
+                    disabled={!selectedActivityKey}
+                    onClick={handleOpenCostCalcModal}
+                    style={{
+                      backgroundColor: selectedActivityKey ? '#e67e22' : '#f5f5f5',
+                      color: selectedActivityKey ? '#fff' : '#bfbfbf',
+                      cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
+                    }}
                   >
-                    Download Timeline
+                    Cost
                   </Button>
-                )}
-                {(
-                  selectedProjectTimeline?.status !== 'replanned' &&
-                  !replaneMode &&
-                  getCurrentUser()?.id !== selectedProjectTimeline?.approver?.id &&
-                  (
-                    (selectedProjectTimeline?.revisedByLog?.newUserId === getCurrentUser()?.id &&
-                      selectedProjectTimeline?.status !== 'Pending') ||
 
-                    (!selectedProjectTimeline?.revisedByLog?.newUserId &&
-                      selectedProjectTimeline?.userGuiId === getCurrentUser()?.guiId)
-                  )
-                ) && (
+                  <Button
+                    icon={<UserOutlined />}
+                    disabled={!selectedActivityKey}
+                    onClick={showResponsibilityModal}
+                    style={{
+                      backgroundColor: selectedActivityKey ? '#2c3e50' : '#f5f5f5',
+                      color: selectedActivityKey ? '#fff' : '#bfbfbf',
+                      cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
+                    }}
+                  >
+                    RACI
+                  </Button>
+
+                  <Button
+                    icon={<FormOutlined />}
+                    disabled={!selectedActivityKey}
+                    onClick={() => setNoteModalVisible(true)}
+                    style={{
+                      backgroundColor: selectedActivityKey ? '#990000' : '#f5f5f5',
+                      color: selectedActivityKey ? '#fff' : '#bfbfbf',
+                      cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
+                    }}
+                  >
+                    Note
+                  </Button>
+                  {!replaneMode && (
                     <Button
                       type="primary"
                       disabled={!selectedProjectId}
-                      icon={
-                        selectedProjectTimeline?.status !== 'Approved'
-                          ? <EditOutlined />
-                          : <ReloadOutlined />
-                      }
-                      onClick={
-                        selectedProjectTimeline?.status !== 'Approved'
-                          ? editTimeBuilder
-                          : rePlanTimeline
-                      }
-                      style={{ backgroundColor: "#FF8A65" }}
+                      icon={<DownloadOutlined />}
+                      onClick={handleDownload}
+                      style={{ backgroundColor: "#4CAF50" }}
                     >
-                      {selectedProjectTimeline?.status !== 'Approved'
-                        ? 'Edit Timeline'
-                        : 'Replan Timeline'}
+                      Download Timeline
+                    </Button>
+                  )}
+                  {(
+                    selectedProjectTimeline?.status !== 'replanned' &&
+                    !replaneMode &&
+                    getCurrentUser()?.id !== selectedProjectTimeline?.approver?.id &&
+                    (
+                      (selectedProjectTimeline?.revisedByLog?.newUserId == (getCurrentUser()?.id)||(getCurrentUser()?.guiId) &&
+                        selectedProjectTimeline?.status !== 'Pending')
+                     || (!selectedProjectTimeline?.revisedByLog?.newUserId && selectedProjectTimeline?.userGuiId == getCurrentUser()?.guiId)
+                    )
+                  ) && (
+                      <Button
+                        type="primary"
+                        disabled={!selectedProjectId}
+                        icon={
+                          selectedProjectTimeline?.status !== 'Approved'
+                            ? <EditOutlined />
+                            : <ReloadOutlined />
+                        }
+                        onClick={
+                          selectedProjectTimeline?.status !== 'Approved'
+                            ? editTimeBuilder
+                            : rePlanTimeline
+                        }
+                        style={{ backgroundColor: "#715147ff" }}
+                      >
+                        {selectedProjectTimeline?.status !== 'Approved'
+                          ? 'Edit Timeline'
+                          : 'Replan Timeline'}
+                      </Button>
+                    )}
+
+                  {!replaneMode && (
+                    <Button
+                      type="primary"
+                      disabled={!selectedProjectId}
+                      icon={<ShareAltOutlined />}
+                      onClick={showModal}
+                      style={{ backgroundColor: "#00BFA6" }}
+                    >
+                      Share
+                    </Button>
+                  )}
+                  {(selectedProjectTimeline?.status == 'Approved') && (
+                    <Button
+                      type={isStatusUpdateMode ? "primary" : "default"}
+                      style={{
+                        backgroundColor: isStatusUpdateMode ? "#AB47BC" : "#5C6BC0",
+                        color: isStatusUpdateMode ? undefined : "#fff",
+                      }}
+                      icon={isStatusUpdateMode ? <SaveOutlined /> : <FormOutlined />}
+                      onClick={isStatusUpdateMode ? handleSaveStatus : handleUpdateStatus}
+                    >
+                      {(isStatusUpdateMode) ? "Save Status" : "Update Status"}
                     </Button>
                   )}
 
-                {!replaneMode && (
-                  <Button
-                    type="primary"
-                    disabled={!selectedProjectId}
-                    icon={<ShareAltOutlined />}
-                    onClick={showModal}
-                    style={{ backgroundColor: "#00BFA6" }}
-                  >
-                    Share
-                  </Button>
-                )}
-                {(selectedProjectTimeline?.status == 'Approved') && (
-                  <Button
-                    type={isStatusUpdateMode ? "primary" : "default"}
-                    style={{
-                      backgroundColor: isStatusUpdateMode ? "#AB47BC" : "#5C6BC0",
-                      color: isStatusUpdateMode ? undefined : "#fff",
-                    }}
-                    icon={isStatusUpdateMode ? <SaveOutlined /> : <FormOutlined />}
-                    onClick={isStatusUpdateMode ? handleSaveStatus : handleUpdateStatus}
-                  >
-                    {(isStatusUpdateMode) ? "Save Status" : "Update Status"}
-                  </Button>
-                )}
-
-                {(selectedProjectTimeline?.status !== 'Revised' && selectedProjectTimeline?.status != 'Approved' && selectedProjectTimeline?.status != 'replanned') && getCurrentUser()?.id == selectedProjectTimeline?.approver?.id && (
-                  <div className="action-btn">
-                    <Button
-                      type="primary"
-                      disabled={!selectedProjectId}
-                      style={{ backgroundColor: "#E57373" }}
-                      onClick={() => setIsReviseModalOpen(true)}
-                    >
-                      Revise
-                    </Button>
-                    <Button
-                      type="primary"
-                      disabled={!selectedProjectId}
-                      onClick={() => setIsApproveModalOpen(true)}
-                      style={{ backgroundColor: "#258780" }}
-                    >
-                      Approve
-                    </Button>
-                  </div>
-                )}
-              </div>
+                  {(selectedProjectTimeline?.status !== 'Revised' && selectedProjectTimeline?.status != 'Approved' && selectedProjectTimeline?.status != 'replanned') && getCurrentUser()?.id == selectedProjectTimeline?.approver?.id && (
+                    <div className="action-btn">
+                      <Button
+                        type="primary"
+                        disabled={!selectedProjectId}
+                        style={{ backgroundColor: "#E57373" }}
+                        onClick={() => setIsReviseModalOpen(true)}
+                      >
+                        Revise
+                      </Button>
+                      <Button
+                        type="primary"
+                        disabled={!selectedProjectId}
+                        onClick={() => setIsApproveModalOpen(true)}
+                        style={{ backgroundColor: "#258780" }}
+                      >
+                        Approve
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <hr />
           </>
         )}
-        {selectedProject != null ? (
+        {selectedProject?.projectTimeline != null ? (
           <>
             <div className="status-update-items">
               <div className="status-update-table">
@@ -2045,14 +2053,18 @@ export const StatusUpdate = () => {
           <div className="container-msg">
             <div className="no-project-message">
               <FolderOpenOutlined style={{ fontSize: "50px", color: "grey" }} />
-              {allProjects.length == 0 ? (
+              {selectedProject?.projectTimeline == null ? (
                 <>
                   <h3>No Projects Timeline Found</h3>
                   <p>You need to create a project for defining a timeline.</p>
-                  <button onClick={() => {
-                    eventBus.emit("updateTab", "/create/register-new-project");
-                    navigate("/create/timeline-builder");
-                  }}>Create Project Timeline</button>
+                  <button
+                    onClick={() => {
+                      eventBus.emit("updateTab", "/create/register-new-project");
+                      navigate(`/create/timeline-builder`);
+                    }}
+                  >
+                    Create Project Timeline
+                  </button>
                 </>
               ) : (
                 <>
