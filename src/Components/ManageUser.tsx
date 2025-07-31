@@ -220,6 +220,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
         role: permissionProfile,
         orgId: currentUser.orgId || null,
         addedBy: currentUser.guiId,
+        userType: "IND",
         ...companyDetails
       };
 

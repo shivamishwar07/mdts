@@ -6,8 +6,8 @@ import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, Tag } from "antd";
-import { ClockCircleOutlined, CloseCircleOutlined, DollarOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined } from "@ant-design/icons";
+import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, Tag, Space } from "antd";
+import { ClockCircleOutlined, CloseCircleOutlined, DollarOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined, UploadOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -56,7 +56,7 @@ export const StatusUpdate = () => {
   const [allVersions, setAllVersions] = useState<any>();
   const [isReviseModalOpen, setIsReviseModalOpen] = useState(false);
   const [reviseRemarks, setReviseRemarks] = useState("");
-  const [selectedActivityKey, setSelectedActivityKey] = useState<string | null>(null);
+  const [selectedActivityKey, setSelectedActivityKey] = useState<any>(null);
   const [noteModalVisible, setNoteModalVisible] = useState(false);
   const [noteInput, setNoteInput] = useState('');
   const [editNoteId, setEditNoteId] = useState<string | null>(null);
@@ -519,7 +519,7 @@ export const StatusUpdate = () => {
             notes: activity.notes || [],
             raci: activity.raci || {},
             cost: activity.cost || {},
-
+            documents: activity.documents || {},
           };
         });
 
@@ -701,7 +701,7 @@ export const StatusUpdate = () => {
             style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
             onClick={() => {
               if (record.duration != undefined)
-                setSelectedActivityKey(prevKey => prevKey == record.key ? null : record.key);
+                setSelectedActivityKey((prevKey: any) => prevKey == record.key ? null : record.key);
             }}
           >
             {record.notes?.length > 0 && (
@@ -1735,6 +1735,195 @@ export const StatusUpdate = () => {
     }
   };
 
+  const [docModalVisible, setDocModalVisible] = useState(false);
+  const [docName, setDocName] = useState("");
+  const [docType, setDocType] = useState("");
+  const [docDescription, setDocDescription] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [selectedActivityDocs, setSelectedActivityDocs] = useState<any[]>([]);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewContent, setPreviewContent] = useState<string | null>(null);
+
+
+  const handleOpenDocumentsModal = (activityKey: string) => {
+    const activity = findActivityByKey(dataSource, activityKey);
+    if (activity?.documents) {
+      setSelectedActivityDocs(activity.documents);
+    } else {
+      setSelectedActivityDocs([]);
+    }
+    setDocModalVisible(true);
+  };
+
+
+  const handleSaveDocument = async () => {
+    if (!docFile || !docName || !docType || !selectedActivityKey || !selectedProjectId) {
+      notify.error("All fields and file upload are required.");
+      return;
+    }
+
+    const fileId = Date.now().toString();
+    const filePath = `documents/${fileId}`;
+    await saveFileToDisk(docFile, fileId);
+
+    const activity = findActivityByKey(dataSource, selectedActivityKey);
+    if (!activity) return;
+
+    const newDoc = {
+      id: fileId,
+      projectId: selectedProjectId,
+      moduleCode: activity.SrNo,
+      milestone: activity.SrNo,
+      activityCode: activity.Code,
+      linkedActivity: activity.keyActivity,
+      documentName: docName,
+      description: docType,
+      fileName: docFile.name,
+      filePath,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: currentUser?.name || "Unknown"
+    };
+
+    // Update activity in dataSource
+    const updatedDataSource = dataSource.map((module: any) => {
+      if (module.children) {
+        module.children = module.children.map((child: any) => {
+          if (child.key === selectedActivityKey) {
+            const documents = child.documents || [];
+            return { ...child, documents: [...documents, newDoc] };
+          }
+          return child;
+        });
+      }
+      return module;
+    });
+
+    setDataSource(updatedDataSource);
+
+    // Map to reconstruct activity->documents relation
+    const updatedMap = new Map();
+    updatedDataSource.forEach((module: any) => {
+      module.children.forEach((activity: any) => {
+        if (activity.documents) {
+          updatedMap.set(activity.Code, activity.documents);
+        }
+      });
+    });
+
+    // Update sequencedModules
+    const updatedSequencedModules = sequencedModules.map((module) => ({
+      ...module,
+      activities: module.activities.map((activity) => ({
+        ...activity,
+        ...(updatedMap.has(activity.code) ? { documents: updatedMap.get(activity.code) } : {})
+      }))
+    }));
+
+    setSequencedModules(updatedSequencedModules);
+
+    // Persist to timeline table
+    await db.updateProjectTimeline(
+      selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId,
+      updatedSequencedModules
+    );
+
+    // ✅ Persist to parent project timeline (so it loads after refresh)
+    const updatedProjectTimeline = selectedProject.projectTimeline.map((timeline: any) => {
+      if ((timeline.versionId || timeline.timelineId) === (selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId)) {
+        return {
+          ...timeline,
+          data: updatedSequencedModules, // assuming this holds the timeline's activity/module data
+        };
+      }
+      return timeline;
+    });
+
+    const updatedProject = {
+      ...selectedProject,
+      projectTimeline: updatedProjectTimeline
+    };
+
+    await db.updateProject(selectedProjectId, updatedProject);
+
+    notify.success("Document uploaded successfully!");
+
+    setDocName("");
+    setDocType("");
+    setDocDescription("");
+    setDocFile(null);
+    setSelectedActivityDocs(updatedMap.get(activity.Code) || []);
+  };
+
+
+
+  const handleDeleteDocument = async (docId: string) => {
+    const updatedDocs = selectedActivityDocs.filter((doc) => doc.id !== docId);
+    setSelectedActivityDocs(updatedDocs);
+
+    const updatedDataSource = dataSource.map((module: any) => {
+      if (module.children) {
+        module.children = module.children.map((child: any) => {
+          if (child.key === selectedActivityKey) {
+            return { ...child, documents: updatedDocs };
+          }
+          return child;
+        });
+      }
+      return module;
+    });
+
+    setDataSource(updatedDataSource);
+
+    const updatedMap = new Map();
+    updatedDataSource.forEach((module: any) => {
+      module.children.forEach((activity: any) => {
+        if (activity.documents) {
+          updatedMap.set(activity.Code, activity.documents);
+        }
+      });
+    });
+
+    const updatedSequencedModules = sequencedModules.map((module) => ({
+      ...module,
+      activities: module.activities.map((activity) => ({
+        ...activity,
+        ...(updatedMap.has(activity.code) ? { documents: updatedMap.get(activity.code) } : {})
+      }))
+    }));
+
+    await db.updateProjectTimeline(selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId, updatedSequencedModules);
+    setSequencedModules(updatedSequencedModules);
+
+    notify.success("Document deleted.");
+  };
+
+
+  const handlePreviewDocument = async (doc: any) => {
+    const file: any = await db.diskStorage.where("path").equals(doc.filePath).first();
+    if (file?.content) {
+      setPreviewContent(file.content);
+      setPreviewVisible(true);
+    } else {
+      notify.error("Preview failed. File not found.");
+    }
+  };
+
+
+  async function saveFileToDisk(file: File, fileId: string) {
+    const reader = new FileReader();
+    reader.onload = async function () {
+      const base64 = reader.result as string;
+      const filePath = `documents/${fileId}`;
+
+      const existing = await db.diskStorage.where("path").equals(filePath).first();
+      if (!existing) {
+        await db.diskStorage.add({ path: filePath, content: base64 });
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+
   return (
     <>
       <div className="status-heading">
@@ -1863,6 +2052,19 @@ export const StatusUpdate = () => {
               {selectedProject?.projectTimeline != null && (
                 <div className="actions">
                   <Button
+                    icon={<UploadOutlined />}
+                    disabled={!selectedActivityKey}
+                    onClick={() => handleOpenDocumentsModal(selectedActivityKey)}
+                    style={{
+                      backgroundColor: selectedActivityKey ? '#0050b3' : '#f5f5f5',
+                      color: selectedActivityKey ? '#fff' : '#bfbfbf',
+                      marginLeft: 8,
+                    }}
+                  >
+                    Documents
+                  </Button>
+
+                  <Button
                     icon={<DollarOutlined />}
                     disabled={!selectedActivityKey}
                     onClick={handleOpenCostCalcModal}
@@ -1916,9 +2118,9 @@ export const StatusUpdate = () => {
                     !replaneMode &&
                     getCurrentUser()?.id !== selectedProjectTimeline?.approver?.id &&
                     (
-                      (selectedProjectTimeline?.revisedByLog?.newUserId == (getCurrentUser()?.id)||(getCurrentUser()?.guiId) &&
+                      (selectedProjectTimeline?.revisedByLog?.newUserId == (getCurrentUser()?.id) || (getCurrentUser()?.guiId) &&
                         selectedProjectTimeline?.status !== 'Pending')
-                     || (!selectedProjectTimeline?.revisedByLog?.newUserId && selectedProjectTimeline?.userGuiId == getCurrentUser()?.guiId)
+                      || (!selectedProjectTimeline?.revisedByLog?.newUserId && selectedProjectTimeline?.userGuiId == getCurrentUser()?.guiId)
                     )
                   ) && (
                       <Button
@@ -2447,6 +2649,63 @@ export const StatusUpdate = () => {
           Are you sure you want to submit?
         </p>
       </Modal>
+
+      <Modal
+        title="Activity Documents"
+        open={docModalVisible}
+        onCancel={() => setDocModalVisible(false)}
+        footer={null}
+        width="65%"
+        
+      >
+        <Form layout="vertical" onFinish={handleSaveDocument}>
+          <Form.Item label="Document Name" required>
+            <Input value={docName} onChange={(e) => setDocName(e.target.value)} />
+          </Form.Item>
+          <Form.Item label="Description" required>
+            <Input value={docType} onChange={(e) => setDocType(e.target.value)} />
+          </Form.Item>
+          <Form.Item label="Upload File" required>
+            <input type="file" onChange={(e) => setDocFile(e.target.files?.[0] || null)} />
+          </Form.Item>
+          <Button type="primary" htmlType="submit">Add Document</Button>
+        </Form>
+
+        <Table
+          dataSource={selectedActivityDocs}
+          rowKey="id"
+          pagination={false}
+          columns={[
+            { title: "Type", dataIndex: "description" },
+            { title: "Name", dataIndex: "documentName" },
+            {
+              title: "Actions",
+              render: (_, record) => (
+                <Space>
+                  <a onClick={() => handlePreviewDocument(record)}>Preview</a>
+                  <a onClick={() => handleDeleteDocument(record.id)}>Delete</a>
+                </Space>
+              ),
+            },
+          ]}
+          style={{ marginTop: 20 }}
+        />
+      </Modal>
+
+      <Modal
+        title="Preview Document"
+        open={previewVisible}
+        onCancel={() => setPreviewVisible(false)}
+        footer={null}
+        width="80%"
+      >
+        {previewContent?.startsWith("data:image") ? (
+          <img src={previewContent ?? undefined} alt="preview" style={{ maxWidth: "100%" }} />
+        ) : (
+          <iframe src={previewContent ?? undefined} title="preview" width="100%" height="600px" />
+        )}
+      </Modal>
+
     </>
   );
 };

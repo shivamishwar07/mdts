@@ -263,3 +263,17 @@ input[type="file"] {
     color: #389e0d;
     border: 1px solid #b7eb8f;
 }
+
+.custom-phone-container {
+    width: 100%;
+}
+
+.custom-phone-input {
+    padding-left: 65px !important;
+    /* creates space for flag + dial code */
+    width: 100%;
+}
+
+.custom-phone-button {
+    left: 10px !important;
+}

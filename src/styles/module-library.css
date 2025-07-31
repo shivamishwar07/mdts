@@ -5,15 +5,15 @@
 }
 
 .module-list-page {
-    width: 35%;
+    width: 45%;
 }
 
 .create-library-section {
-    width: 30%;
+    width: 25%;
 }
 
 .library-details {
-    width: 35%;
+    width: 30%;
 }
 
 .module-list-page,
@@ -60,7 +60,7 @@
 }
 
 .heading-one {
-    flex: 3.5;
+    flex: 5.2;
     text-align: left;
 
     span {

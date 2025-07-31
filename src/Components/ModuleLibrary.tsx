@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, IconButton, TablePagination } from "@mui/material";
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, IconButton, TablePagination, Tooltip } from "@mui/material";
 import { FilterList } from "@mui/icons-material";
 import { Select, Input, Button, Typography, Modal } from "antd";
-import { SearchOutlined, DeleteOutlined, RobotOutlined, ExclamationCircleOutlined } from "@ant-design/icons";
+import { SearchOutlined, DeleteOutlined, RobotOutlined, ExclamationCircleOutlined, ApartmentOutlined, ClusterOutlined, UserOutlined, RetweetOutlined } from "@ant-design/icons";
 import "../styles/module-library.css";
 import { Link } from "react-router-dom";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -12,6 +12,7 @@ import { db } from "../Utils/dataStorege.ts";
 import { notify } from "../Utils/ToastNotify.tsx";
 import { ToastContainer } from "react-toastify";
 import { v4 as uuidv4 } from 'uuid';
+import dayjs from "dayjs";
 interface Activity {
   code: string;
   activityName: string;
@@ -30,6 +31,8 @@ interface Module {
   duration?: string;
   orgId: string;
   userGuiId: string;
+  moduleType: string;
+  createdAt: string;
 }
 
 interface Library {
@@ -69,7 +72,8 @@ const ModuleLibrary = () => {
   const [filteredModules, setFilteredModules] = useState<Module[]>(modulesData);
   const [librarySearchTerm, setLibrarySearchTerm] = useState("");
   const [filteredLibraries, setFilteredLibraries] = useState<Library[]>(libraries);
-
+  const [isConvertModalVisible, setIsConvertModalVisible] = useState(false);
+  const [selectedModuleToConvert, setSelectedModuleToConvert] = useState<Module | null>(null);
   useEffect(() => {
     setCurrentUser(getCurrentUser());
   }, []);
@@ -84,11 +88,14 @@ const ModuleLibrary = () => {
         });
 
       db.getModules()
-        .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId == currentUser.orgId)))
+        .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId == currentUser.orgId && mod.moduleType != 'MDTS')))
         .catch((err) => {
           console.error("Error fetching modules:", err);
           setModulesData([]);
         });
+
+      console.log();
+
 
       db.getAllMineTypes()
         .then((mine) => setMineTypes(mine.filter((item: any) => item.orgId == currentUser.orgId)))
@@ -315,6 +322,64 @@ const ModuleLibrary = () => {
     setFilteredLibraries(filtered);
   }, [librarySearchTerm, libraries]);
 
+  const renderModuleType = (type: string) => {
+    let icon = null;
+    let tooltip = "";
+
+    switch (type?.toUpperCase()) {
+      case "PERSONAL":
+        icon = <UserOutlined style={{ color: "#1890ff" }} />;
+        tooltip = "Personal Module";
+        break;
+      case "ORG":
+        icon = <ClusterOutlined style={{ color: "#52c41a" }} />;
+        tooltip = "Organization Module";
+        break;
+      case "MDTS":
+        icon = <ApartmentOutlined style={{ color: "#faad14" }} />;
+        tooltip = "MDTS Standard Module";
+        break;
+      default:
+        return type;
+    }
+
+    return (
+      <Tooltip title={tooltip}>
+        <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "5px" }}>
+          {icon}
+        </span>
+      </Tooltip>
+    );
+  };
+
+  const handleConvertToOrgClick = (e: React.MouseEvent, module: Module) => {
+    e.stopPropagation();
+    setSelectedModuleToConvert(module);
+    setIsConvertModalVisible(true);
+  };
+
+  const handleConfirmConvertToOrg = async () => {
+    if (!selectedModuleToConvert) return;
+    try {
+      const updatedCount = await db.modules.update(selectedModuleToConvert.id, {
+        ...selectedModuleToConvert,
+        moduleType: "ORG",
+      });
+      if (updatedCount) {
+        notify.success("Module successfully converted to Organizational type.");
+        db.getModules().then(setModulesData);
+      } else {
+        notify.error("Conversion failed. No changes were made.");
+      }
+    } catch (error) {
+      console.error("Error converting module:", error);
+      notify.error("Error converting module.");
+    } finally {
+      setIsConvertModalVisible(false);
+      setSelectedModuleToConvert(null);
+    }
+  };
+
   return (
     <>
       <div className="page-heading-module-library">
@@ -334,7 +399,6 @@ const ModuleLibrary = () => {
       </div>
 
       <Box className="main-section">
-
         <div className="module-list-page">
           <Box sx={{ flex: 3 }}>
             <Box sx={{ display: "flex", justifyContent: "space-between", gap: "10px", padding: "10px" }}>
@@ -380,20 +444,23 @@ const ModuleLibrary = () => {
                 <FilterList />
               </IconButton>
             </Box>
+
             <hr style={{ margin: 0, marginBottom: "8px" }} />
 
             <TableContainer component={Paper} style={{ marginTop: "5px" }}>
               <Table>
                 <TableHead style={{ display: "block", background: "#258790", color: "white" }}>
                   <TableRow style={{ display: "flex", width: "100%" }}>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 25%", padding: "5px 10px" }}>Module Code</TableCell>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 35%", padding: "5px 10px" }}>Module Name</TableCell>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 20%", textAlign: "center", padding: "5px 10px" }}>Mine Type</TableCell>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 20%", textAlign: "center", padding: "5px 10px" }}>Actions</TableCell>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 15%", padding: "5px 10px" }}>Code</TableCell>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 32%", padding: "5px 10px" }}>Name</TableCell>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 8%", textAlign: "center", padding: "5px 10px" }}>Type</TableCell>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 20%", textAlign: "center", padding: "5px 10px" }}>Created On</TableCell>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 15%", textAlign: "center", padding: "5px 10px" }}>Mine Type</TableCell>
+                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 10%", textAlign: "center", padding: "5px 10px" }}>Actions</TableCell>
                   </TableRow>
                 </TableHead>
 
-                <TableBody style={{ display: "block", overflowY: "auto", maxHeight: "calc(100vh - 269px)" }}>
+                <TableBody style={{ display: "block", overflowY: "auto", overflowX: "hidden", maxHeight: "calc(100vh - 269px)" }}>
                   {modulesData.length > 0 ? (
                     filteredModules.map((module, index) => (
                       <TableRow
@@ -403,17 +470,43 @@ const ModuleLibrary = () => {
                         onClick={() => handleModuleClick(module)}
                         style={{ display: "flex", width: "100%", cursor: "grab" }}
                       >
-                        <TableCell style={{ flex: "0 0 25%", padding: "8px" }}>{module.parentModuleCode}</TableCell>
-                        <TableCell style={{ flex: "0 0 35%", padding: "8px" }}>{module.moduleName}</TableCell>
-                        <TableCell style={{ flex: "0 0 20%", padding: "8px", textAlign: "center" }}>{module.mineType}</TableCell>
+                        <TableCell style={{ flex: "0 0 15%", padding: "8px" }}>{module.parentModuleCode}</TableCell>
+                        <TableCell style={{ flex: "0 0 32%", padding: "8px" }}>{module.moduleName}</TableCell>
+                        <TableCell style={{ flex: "0 0 8%", padding: "8px", textAlign: "center" }}>
+                          {renderModuleType(module.moduleType)}
+                        </TableCell>
                         <TableCell style={{ flex: "0 0 20%", padding: "8px", textAlign: "center" }}>
-                          <Button icon={<DeleteOutlined />} type="primary" danger size="small" onClick={(e) => {
-                            e.stopPropagation();
-                            setIsDeleteModuleModalVisible(true); setSelectedModuleId(module.id)
-                          }}>
-                          </Button>
+                          {dayjs(module.createdAt).format("DD MMM YYYY")}
+                        </TableCell>
+                        <TableCell style={{ flex: "0 0 15%", padding: "8px", textAlign: "center" }}>{module.mineType}</TableCell>
+                        <TableCell style={{ flex: "0 0 10%", padding: "8px 12px", display: "flex", alignItems: "center" }}>
+                          {module.moduleType == 'PERSONAL' && (
+                            <Button
+                              icon={<DeleteOutlined />}
+                              type="primary"
+                              danger
+                              size="small"
+                              style={{ marginRight: module.moduleType === "PERSONAL" ? 8 : 0 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setIsDeleteModuleModalVisible(true);
+                                setSelectedModuleId(module.id);
+                              }}
+                            />
+                          )}
+                          {module.moduleType === "PERSONAL" && (
+                            <Tooltip title="Convert to Organizational Module">
+                              <Button
+                                icon={<RetweetOutlined />}
+                                type="default"
+                                size="small"
+                                onClick={(e) => handleConvertToOrgClick(e, module)}
+                              />
+                            </Tooltip>
+                          )}
                         </TableCell>
                       </TableRow>
+
                     ))
                   ) : (
                     <div style={{ padding: "10px", fontSize: "12px", color: "grey", display: "flex", justifyContent: "center" }}>
@@ -640,6 +733,26 @@ const ModuleLibrary = () => {
           </p>
         </div>
       </Modal >
+
+      <Modal
+        title="Convert to Organizational Module"
+        visible={isConvertModalVisible}
+        onOk={handleConfirmConvertToOrg}
+        onCancel={() => setIsConvertModalVisible(false)}
+        okText="Convert"
+        cancelText="Cancel"
+        okType="primary"
+        width="45%"
+        className="modal-container"
+        centered
+      >
+        <div style={{ padding: "0px 10px" }}>
+          <p>
+            <ExclamationCircleOutlined style={{ color: "#faad14", marginRight: "8px" }} />
+            Are you sure you want to convert this module to an Organizational Module?
+          </p>
+        </div>
+      </Modal>
 
       <ToastContainer />
     </>

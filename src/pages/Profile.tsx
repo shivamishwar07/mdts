@@ -237,7 +237,8 @@ const Profile = () => {
                 ...formData,
                 profilePhoto: existingUser?.profilePhoto || "",
                 isTempPassword: false,
-                orgId
+                orgId,
+                userType: 'MDTS'
             };
 
             await db.updateUsers(currentUser.id, updatedUser);

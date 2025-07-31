@@ -6,7 +6,6 @@ import { useNavigate } from 'react-router-dom';
 import "../styles/module.css"
 import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, Form, Switch } from 'antd';
 import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, PlusOutlined, CloseCircleOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined, DollarOutlined, MinusCircleOutlined, FileTextOutlined } from '@ant-design/icons';
-const { Option } = Select;
 import CreateNotification from "./CreateNotification.tsx";
 import UserRolesPage from "./AssignRACI";
 import { db } from "../Utils/dataStorege.ts";
@@ -52,9 +51,7 @@ const Module = () => {
         activities: state?.activities || []
     });
     let isEditing = !!state;
-    const [moduleType, setModuleType] = useState("custom");
-    const [selectedMDTSModule, setSelectedMDTSModule] = useState(null);
-    const mdtsModules = ["MDTS-001", "MDTS-002", "MDTS-003"];
+    const [moduleType, setModuleType] = useState("PERSONAL");
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [discardEditByCreating, setDiscardEditByCreating] = useState(false);
     const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'original'>('original');
@@ -81,7 +78,16 @@ const Module = () => {
         });
         setIsOriginalActivitiesStateStored(false);
     };
+    const [allModules, setAllModules] = useState<any>([]);
+    const [importableModules, setImportableModules] = useState<any[]>([]);
+    const [isMDTSCreation, setIsMDTSCreation] = useState(false);
 
+    useEffect(() => {
+        (async () => {
+            const user = await getCurrentUser();
+            setCurrentUser(user);
+        })();
+    }, []);
 
     useEffect(() => {
         if (state && state.activities) {
@@ -104,23 +110,50 @@ const Module = () => {
     }, [state]);
 
     useEffect(() => {
-        const init = async () => {
-            const user = await getCurrentUser();
-            setCurrentUser(user);
+        if (currentUser) {
+            const init = async () => {
+                const storedOptions: any = (await db.getAllMineTypes())?.filter(
+                    (type: any) => type.orgId == currentUser.orgId
+                );
+                setOptions(storedOptions);
 
-            const storedOptions: any = (await db.getAllMineTypes())?.filter(
-                (type: any) => type.orgId === user.orgId
-            );
-            setOptions(storedOptions);
+                const allUsers = (await db.getUsers())?.filter(
+                    (usr: any) => usr.orgId === currentUser.orgId
+                );
+                setUserOptions(allUsers);
 
-            const allUsers = (await db.getUsers())?.filter(
-                (usr: any) => usr.orgId === user.orgId
-            );
-            setUserOptions(allUsers);
-        };
+                db.getModules()
+                    .then((mods) => setAllModules(mods.filter((mod: any) => mod.orgId == currentUser.orgId)))
+                    .catch((err) => {
+                        console.error("Error fetching modules:", err);
+                        setAllModules([]);
+                    });
+                console.log(allModules);
 
-        init();
-    }, []);
+            };
+
+            init();
+        }
+    }, [currentUser]);
+
+    useEffect(() => {
+        if (!moduleType || !selectedOption) {
+            setImportableModules([]);
+            return;
+        }
+
+        const allowedTypes = moduleType === "PERSONAL"
+            ? ["MDTS", "ORG"]
+            : moduleType === "ORG"
+                ? ["MDTS"]
+                : [];
+
+        const filtered = allModules.filter((mod: any) =>
+            allowedTypes.includes(mod.moduleType) && mod.mineType === selectedOption
+        );
+
+        setImportableModules(filtered);
+    }, [moduleType, selectedOption, allModules]);
 
     useEffect(() => {
         if (moduleData.activities.length > 0) {
@@ -549,6 +582,12 @@ const Module = () => {
         if (newModelName && selectedOption) {
             if (newModelName.trim()) {
                 const generatedId = uuidv4();
+
+                // Detect if user imported a module and it has activities
+                const clonedActivities = moduleData.activities?.length
+                    ? JSON.parse(JSON.stringify(moduleData.activities))
+                    : [];
+
                 setModuleData({
                     guiId: generatedId,
                     parentModuleCode: moduleCodeName
@@ -557,20 +596,21 @@ const Module = () => {
                     moduleName: newModelName,
                     level: "L1",
                     mineType: selectedOption,
-                    activities: [],
+                    activities: clonedActivities,
                     userGuiId: currentUser?.guiId,
                     orgId: currentUser?.orgId,
-                    createdAt: new Date().toISOString()
-                })
+                    createdAt: new Date().toISOString(),
+                    moduleType: moduleType
+                });
+
                 setNewModelName("");
                 setSelectedOption("");
                 setOpenPopup(false);
             }
+        } else {
+            notify.warning("Missing Required Fields");
         }
-        else {
-            console.error("Module Added Error:", { newModelName, selectedOption, moduleCode });
-        }
-    }
+    };
 
     const generateShorthand = (input: string): string => {
         return input
@@ -698,6 +738,18 @@ const Module = () => {
         }
         else {
             setOpenPopup(true)
+        }
+    }
+
+    const handleCreateMDTSNewModule = () => {
+        if (isEditing) {
+            setDiscardEditByCreating(true);
+            setOpenCancelUpdateModulePopup(true);
+        }
+        else {
+            setOpenPopup(true)
+            setIsMDTSCreation(true);
+            setModuleType("MDTS")
         }
     }
 
@@ -908,6 +960,8 @@ const Module = () => {
             console.error("Validation Failed:", err);
         }
     };
+    const [importFromType, setImportFromType] = useState("");
+    const [selectedImportModule, setSelectedImportModule] = useState(null);
 
     return (
         <div>
@@ -936,6 +990,20 @@ const Module = () => {
                         <Row justify="space-between" align="middle">
                             <Col>
                                 <Row gutter={16}>
+                                    {!moduleData.parentModuleCode && (
+                                        <Col>
+                                            <Tooltip title="Create New Module">
+                                                <Button
+                                                    type="primary"
+                                                    onClick={() => handleCreateMDTSNewModule()}
+                                                    className="add-module-button"
+                                                    style={{ height: "30px", fontSize: "14px" }}
+                                                >
+                                                    Create MDTS Module
+                                                </Button>
+                                            </Tooltip>
+                                        </Col>
+                                    )}
                                     <Col>
                                         <Tooltip title="Define Activity Cost">
                                             <Button
@@ -1198,15 +1266,17 @@ const Module = () => {
                         </Paper>
                     </div>
                     <div className="save-button-container">
-                        <Button
-                            type="primary"
-                            disabled={!moduleData.parentModuleCode}
-                            icon={<CloseCircleOutlined />}
-                            onClick={() => setOpenCancelModuleCreation(true)}
-                            style={{ backgroundColor: "#e74c3c", borderColor: "#e74c3c", marginRight: '20px' }}
-                        >
-                            Discard
-                        </Button>
+                        {!isEditing && (
+                            <Button
+                                type="primary"
+                                disabled={!moduleData.parentModuleCode}
+                                icon={<CloseCircleOutlined />}
+                                onClick={() => setOpenCancelModuleCreation(true)}
+                                style={{ backgroundColor: "#e74c3c", borderColor: "#e74c3c", marginRight: '20px' }}
+                            >
+                                Discard
+                            </Button>
+                        )}
                         <Button
                             type="primary"
                             className="save-button"
@@ -1219,74 +1289,192 @@ const Module = () => {
                 </div>
 
                 <Modal
-                    title="Create New Module"
+                    title={isMDTSCreation ? "Create New MDTS Module" : "Create New Module"}
                     open={openPopup}
-                    onCancel={() => setOpenPopup(false)}
+                    onCancel={() => {
+                        setOpenPopup(false);
+                        setIsMDTSCreation(false);
+                        setModuleType("PERSONAL")
+                    }}
                     onOk={handleModulePlus}
                     okButtonProps={{ className: "bg-secondary" }}
                     cancelButtonProps={{ className: "bg-tertiary" }}
                     maskClosable={false}
                     keyboard={false}
                     className="modal-container"
-                    style={{ marginBottom: "10px !important" }}
                 >
                     <div className="modal-body-item-padding">
-                        <Radio.Group
-                            value={moduleType}
-                            onChange={(e) => setModuleType(e.target.value)}
-                            style={{ marginBottom: "10px" }}
-                        >
-                            <Radio value="custom">Custom Module</Radio>
-                            <Radio value="mdts">MDTS Module</Radio>
-                        </Radio.Group>
+                        <Form>
+                            <Row gutter={[16, 12]}>
+                                {!isMDTSCreation && (
+                                    <Col span={24}>
+                                        <Row align="middle">
+                                            <Col span={8}><label>Module Type</label></Col>
+                                            <Col span={16}>
+                                                <Radio.Group
+                                                    value={moduleType}
+                                                    onChange={(e) => {
+                                                        setModuleType(e.target.value);
+                                                        setImportFromType("");
+                                                        setSelectedImportModule(null);
+                                                    }}
+                                                >
+                                                    <Radio value="PERSONAL">Personal</Radio>
+                                                    <Radio value="ORG">Organization</Radio>
+                                                    <Radio value="MDTS">MDTS</Radio>
+                                                </Radio.Group>
+                                            </Col>
+                                        </Row>
+                                    </Col>
+                                )}
 
-                        <div style={{ display: "flex", gap: "10px" }}>
-                            <Select
-                                style={{ width: "100%", marginBottom: "10px" }}
-                                value={selectedOption || undefined}
-                                onChange={setSelectedOption}
-                                placeholder="Select mine type"
-                            >
-                                {options.map((option: any, index) => (
-                                    <Option key={index} value={option.type}>
-                                        {option.type}
-                                    </Option>
-                                ))}
-                            </Select>
-                            <Button
-                                type="dashed"
-                                icon={<PlusOutlined />}
-                                onClick={() => setMineTypePopupOpen(true)}
-                            />
-                        </div>
+                                {/* Mine Type */}
+                                <Col span={24}>
+                                    <Row align="middle">
+                                        <Col span={8}><label>Mine Type</label></Col>
+                                        <Col span={16}>
+                                            <div style={{ display: "flex", gap: "10px" }}>
+                                                <Select
+                                                    style={{ flex: 1 }}
+                                                    value={selectedOption || undefined}
+                                                    onChange={setSelectedOption}
+                                                    placeholder="Select mine type"
+                                                >
+                                                    {options.map((option: any, index) => (
+                                                        <Select.Option key={index} value={option.type}>
+                                                            {option.type}
+                                                        </Select.Option>
+                                                    ))}
+                                                </Select>
+                                                <Button
+                                                    type="dashed"
+                                                    icon={<PlusOutlined />}
+                                                    onClick={() => setMineTypePopupOpen(true)}
+                                                />
+                                            </div>
+                                        </Col>
+                                    </Row>
+                                </Col>
 
-                        {moduleType === "custom" ? (
-                            <Input
-                                placeholder="Module Name"
-                                value={newModelName}
-                                onChange={(e) => setNewModelName(e.target.value)}
-                                style={{ marginBottom: "10px" }}
-                            />
-                        ) : (
-                            <Select
-                                style={{ width: "100%", marginBottom: "10px" }}
-                                value={selectedMDTSModule || undefined}
-                                onChange={setSelectedMDTSModule}
-                                placeholder="Select MDTS Module"
-                            >
-                                {mdtsModules.map((module, index) => (
-                                    <Option key={index} value={module}>
-                                        {module}
-                                    </Option>
-                                ))}
-                            </Select>
-                        )}
-                        <Input
-                            placeholder="Module Code"
-                            value={moduleCodeName}
-                            onChange={(e) => setModuleCodeName(e.target.value)}
-                            style={{ marginBottom: "10px" }}
-                        />
+                                {(moduleType === "PERSONAL" || moduleType === "ORG") && (
+                                    <>
+                                        {/* Import From */}
+                                        <Col span={24}>
+                                            <Row align="middle">
+                                                <Col span={8}><label>Import From</label></Col>
+                                                <Col span={16}>
+                                                    <Select
+                                                        placeholder="Select module type"
+                                                        value={importFromType}
+                                                        style={{ width: '100%' }}
+                                                        onChange={(val) => {
+                                                            setImportFromType(val);
+                                                            setSelectedImportModule(null);
+                                                        }}
+                                                    >
+                                                        {moduleType === "PERSONAL" && (
+                                                            <>
+                                                                <Select.Option value="ORG">Organization Module</Select.Option>
+                                                                <Select.Option value="MDTS">MDTS Module</Select.Option>
+                                                            </>
+                                                        )}
+                                                        {moduleType === "ORG" && (
+                                                            <Select.Option value="MDTS">MDTS Module</Select.Option>
+                                                        )}
+                                                    </Select>
+                                                </Col>
+                                            </Row>
+                                        </Col>
+
+                                        <Col span={24}>
+                                            <Row align="middle">
+                                                <Col span={8}><label>Select Module</label></Col>
+                                                <Col span={16}>
+                                                    <Select
+                                                        placeholder="Select module"
+                                                        value={selectedImportModule}
+                                                        style={{ width: '100%' }}
+                                                        onChange={(value) => {
+                                                            const selected = importableModules.find((m) => m.guiId === value);
+                                                            setSelectedImportModule(value);
+                                                            if (selected) {
+                                                                const clonedActivities = JSON.parse(JSON.stringify(selected.activities || []));
+                                                                const newGuiId = uuidv4();
+                                                                const newModuleCode = moduleCodeName || generateTwoLetterAcronym(selected.moduleName, existingAcronyms);
+
+                                                                setNewModelName(selected.moduleName);
+                                                                setSelectedOption(selected.mineType);
+                                                                setModuleCodeName(newModuleCode);
+
+                                                                setModuleData({
+                                                                    guiId: newGuiId,
+                                                                    parentModuleCode: newModuleCode,
+                                                                    moduleName: selected.moduleName,
+                                                                    mineType: selected.mineType,
+                                                                    level: "L1",
+                                                                    moduleType: moduleType,
+                                                                    userGuiId: currentUser?.guiId,
+                                                                    orgId: currentUser?.orgId,
+                                                                    createdAt: new Date().toISOString(),
+                                                                    activities: clonedActivities,
+                                                                });
+
+                                                                notify.success("Module imported successfully");
+                                                            }
+
+                                                        }}
+                                                        disabled={!importFromType || !selectedOption}
+                                                        showSearch
+                                                        filterOption={(input, option: any) =>
+                                                            option?.children?.toLowerCase().includes(input.toLowerCase())
+                                                        }
+                                                    >
+                                                        {importableModules
+                                                            .filter(
+                                                                (mod) =>
+                                                                    mod.moduleType === importFromType &&
+                                                                    mod.mineType === selectedOption
+                                                            )
+                                                            .map((mod) => (
+                                                                <Select.Option key={mod.guiId} value={mod.guiId}>
+                                                                    {mod.moduleName}
+                                                                </Select.Option>
+                                                            ))}
+                                                    </Select>
+                                                </Col>
+                                            </Row>
+                                        </Col>
+
+                                    </>
+                                )}
+
+                                <Col span={24}>
+                                    <Row align="middle">
+                                        <Col span={8}><label>Module Name</label></Col>
+                                        <Col span={16}>
+                                            <Input
+                                                placeholder="Enter module name"
+                                                value={newModelName}
+                                                onChange={(e) => setNewModelName(e.target.value)}
+                                            />
+                                        </Col>
+                                    </Row>
+                                </Col>
+                                <Col span={24}>
+                                    <Row align="middle">
+                                        <Col span={8}><label>Module Code</label></Col>
+                                        <Col span={16}>
+                                            <Input
+                                                placeholder="Enter module code"
+                                                value={moduleCodeName}
+                                                onChange={(e) => setModuleCodeName(e.target.value)}
+                                            />
+                                        </Col>
+                                    </Row>
+                                </Col>
+                            </Row>
+                        </Form>
+
                     </div>
                 </Modal>
 
@@ -1353,7 +1541,7 @@ const Module = () => {
                 </Modal >
 
                 <Modal
-                    title="Confirm DIscrad"
+                    title="Confirm Discrad"
                     visible={openCancelModuleCreation}
                     onOk={handleCancelModuleCreation}
                     onCancel={() => setOpenCancelModuleCreation(false)}

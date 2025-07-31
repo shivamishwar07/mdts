@@ -57,12 +57,26 @@ export const RegisterNewProject: React.FC = () => {
   //   3: ["mineOwner", "dateOfH1Bidder", "cbdpaDate", "vestingOrderDate", "pbgAmount"],
   //   4: Object.values(allLibrariesName).map((moduleName: any) => moduleName)
   // };
-
+  const [currentUser, setCurrentUser] = useState<any>(null);
   useEffect(() => {
     setFormData({});
     clearFormData();
     fetchAllLibrary();
     fetchCompanyName();
+  }, []);
+
+  useEffect(() => {
+    const init = async () => {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+
+      const storedOptions: any = (await db.getAllMineTypes())?.filter(
+        (type: any) => type.orgId === user.orgId
+      );
+      setOptions(storedOptions);
+    };
+
+    init();
   }, []);
 
   useEffect(() => {
@@ -298,16 +312,35 @@ export const RegisterNewProject: React.FC = () => {
 
   const handleAddNewMineType = async () => {
     if (newMineType && shorthandCode) {
+      const isDuplicate = options.some(
+        (opt: any) =>
+          opt.description.trim().toLowerCase() === newMineType.trim().toLowerCase() ||
+          opt.type.trim().toLowerCase() === shorthandCode.trim().toLowerCase()
+      );
+
+      if (isDuplicate) {
+        notify.error("Mine type already exists.");
+        return;
+      }
+
       try {
-        const mineTypeData: any = { type: shorthandCode, description: newMineType };
+        const mineTypeData: any = {
+          type: shorthandCode.trim(),
+          description: newMineType.trim(),
+          userGuiId: currentUser?.guiId,
+          orgId: currentUser?.orgId,
+          createdAt: new Date().toISOString(),
+          guiId: uuidv4(),
+        };
+
         const id = await db.addMineType(mineTypeData);
         setOptions([...options, { id, ...mineTypeData }]);
         setNewMineType("");
         setShorthandCode("");
         setMineTypePopupOpen(false);
-        fetchMineTypes(allLibrariesName);
+        notify.success("Added Successfully");
       } catch (error) {
-        console.error("Error adding mine type:", error);
+        notify.error("Error adding mine type");
       }
     }
   };
@@ -859,6 +892,28 @@ export const RegisterNewProject: React.FC = () => {
 
       </Modal>
 
+      {/* <Modal
+        title="Add Mine Type"
+        open={mineTypePopupOpen}
+        onCancel={() => setMineTypePopupOpen(false)}
+        onOk={handleAddNewMineType}
+        okButtonProps={{ className: "bg-secondary" }}
+        cancelButtonProps={{ className: "bg-tertiary" }}
+        maskClosable={false}
+        keyboard={false}
+        className="modal-container"
+      >
+        <div className="modal-body-item-padding">
+          <Input
+            placeholder="Enter Mine Type"
+            value={newMineType}
+            onChange={(e) => handleMineTypeChange(e.target.value)}
+            style={{ marginBottom: "10px" }}
+          />
+          <Typography>Shorthand Code: <strong>{shorthandCode}</strong></Typography>
+        </div>
+      </Modal> */}
+
       <Modal
         title="Add Mine Type"
         open={mineTypePopupOpen}
@@ -877,6 +932,7 @@ export const RegisterNewProject: React.FC = () => {
             onChange={(e) => handleMineTypeChange(e.target.value)}
             style={{ marginBottom: "10px" }}
           />
+
           <Typography>Shorthand Code: <strong>{shorthandCode}</strong></Typography>
         </div>
       </Modal>
