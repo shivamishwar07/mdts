@@ -30,7 +30,7 @@ import Contact from "../pages/Contact";
 import SettingsAndPrivacy from "../pages/SettingsAndPrivacy";
 import HelpAndSupport from "../pages/HelpAndSupport";
 import SignInSignUp from "../pages/SignIn";
-import DelayCostCalculator from "../Components/DelayCostCalculator";
+// import DelayCostCalculator from "../Components/DelayCostCalculator";
 
 const AppRoutes = () => {
     const isAuthenticated = !!localStorage.getItem('user');
@@ -90,7 +90,7 @@ const AppRoutes = () => {
                     <Route path="/knowledge-center" element={<KnowledgeCenter />} />
                     <Route path="/document" element={<Document />} />
                     <Route path="/create/notification" element={<CreateNotification />} />
-                    <Route path="/create/delay-cost-calculator" element={<DelayCostCalculator />} />
+                    {/* <Route path="/create/delay-cost-calculator" element={<DelayCostCalculator />} /> */}
                     <Route path="*" element={<Navigate to="/not-found" replace />} />
                 </Route>
             </Routes>
