@@ -236,6 +236,8 @@ export const StatusUpdate = () => {
         setSelectedProject(selectedProject);
 
         const timelineData = await getProjectTimeline(selectedProject);
+        console.log(selectedProject);
+
         handleLibraryChange(timelineData);
       } else {
         handleLibraryChange([]);
@@ -489,9 +491,11 @@ export const StatusUpdate = () => {
 
   const handleLibraryChange = (libraryItems: any) => {
     console.log(libraryItems);
-    
+
     if (libraryItems) {
       setSequencedModules(libraryItems);
+      console.log(libraryItems);
+
       let editingRequired = false;
       const finDataSource = libraryItems.map((module: any, moduleIndex: number) => {
         const children = (module.activities || []).map((activity: any, actIndex: number) => {
@@ -1340,7 +1344,7 @@ export const StatusUpdate = () => {
     }));
 
     console.log(updatedSequencedModules);
-    
+
 
     setSequencedModules(updatedSequencedModules);
     let updatedProject = selectedProject;
@@ -1743,7 +1747,7 @@ export const StatusUpdate = () => {
   const [docModalVisible, setDocModalVisible] = useState(false);
   const [docName, setDocName] = useState("");
   const [docType, setDocType] = useState("");
-  const [docDescription, setDocDescription] = useState("");
+  const [_docDescription, setDocDescription] = useState("");
   const [docFile, setDocFile] = useState<File | null>(null);
   const [selectedActivityDocs, setSelectedActivityDocs] = useState<any[]>([]);
   const [previewVisible, setPreviewVisible] = useState(false);
@@ -1751,14 +1755,27 @@ export const StatusUpdate = () => {
 
 
   const handleOpenDocumentsModal = (activityKey: string) => {
-    const activity = findActivityByKey(dataSource, activityKey);
-    if (activity?.documents) {
-      setSelectedActivityDocs(activity.documents);
+    if (!activityKey || typeof activityKey !== 'string') {
+      setSelectedActivityDocs([]);
+      setDocModalVisible(true);
+      return;
+    }
+
+    const activity = Array.isArray(dataSource)
+      ? dataSource.find((item) => item?.key === activityKey)
+      : null;
+
+    const documents = activity?.documents;
+
+    if (Array.isArray(documents)) {
+      setSelectedActivityDocs(documents);
     } else {
       setSelectedActivityDocs([]);
     }
+
     setDocModalVisible(true);
   };
+
 
 
   const handleSaveDocument = async () => {
@@ -2661,7 +2678,7 @@ export const StatusUpdate = () => {
         onCancel={() => setDocModalVisible(false)}
         footer={null}
         width="65%"
-        
+
       >
         <Form layout="vertical" onFinish={handleSaveDocument}>
           <Form.Item label="Document Name" required>

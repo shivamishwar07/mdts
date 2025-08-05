@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import "../styles/sign-in.css";
 import { useNavigate } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
-import { GoogleOutlined, WindowsOutlined, KeyOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
+// import { GoogleOutlined, WindowsOutlined, KeyOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
 import { v4 as uuidv4 } from 'uuid';
@@ -16,7 +16,7 @@ const SignInSignUp: React.FC = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isSignUp, setIsSignUp] = useState(false);
-    const [showPassword, setShowPassword] = useState(false);
+    const [showPassword, _setShowPassword] = useState(false);
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(0);
     const [form] = Form.useForm();

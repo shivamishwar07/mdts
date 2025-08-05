@@ -5,7 +5,7 @@ import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/ma
 import { useNavigate } from 'react-router-dom';
 import "../styles/module.css"
 import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, AutoComplete, Radio, Form, Switch } from 'antd';
-import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, PlusOutlined, CloseCircleOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined, DollarOutlined, MinusCircleOutlined, FileTextOutlined } from '@ant-design/icons';
+import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, PlusOutlined, CloseCircleOutlined, ExclamationCircleOutlined, DollarOutlined, MinusCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 import CreateNotification from "./CreateNotification.tsx";
 import UserRolesPage from "./AssignRACI";
 import { db } from "../Utils/dataStorege.ts";
@@ -54,7 +54,7 @@ const Module = () => {
     const [moduleType, setModuleType] = useState("PERSONAL");
     const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
     const [discardEditByCreating, setDiscardEditByCreating] = useState(false);
-    const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | 'original'>('original');
+    const [sortOrder, _setSortOrder] = useState<'asc' | 'desc' | 'original'>('original');
     const [originalActivities, setOriginalActivities] = useState<any[]>(moduleData.activities);
     const [isOriginalActivitiesStateStored, setIsOriginalActivitiesStateStored] = useState(false);
     const [openNotificationModal, setOpenNotificationModal] = useState(false);
@@ -774,16 +774,16 @@ const Module = () => {
         }));
     };
 
-    const toggleSortOrder = () => {
-        const newOrder = sortOrder === 'original' ? 'asc' : sortOrder === 'asc' ? 'desc' : 'original';
-        setSortOrder(newOrder);
-    };
+    // const toggleSortOrder = () => {
+    //     const newOrder = sortOrder === 'original' ? 'asc' : sortOrder === 'asc' ? 'desc' : 'original';
+    //     setSortOrder(newOrder);
+    // };
 
-    const getSortIcon = () => {
-        if (sortOrder === 'asc') return <SortAscendingOutlined />;
-        if (sortOrder === 'desc') return <SortDescendingOutlined />;
-        return <ReloadOutlined />;
-    };
+    // const getSortIcon = () => {
+    //     if (sortOrder === 'asc') return <SortAscendingOutlined />;
+    //     if (sortOrder === 'desc') return <SortDescendingOutlined />;
+    //     return <ReloadOutlined />;
+    // };
 
     const handleUndo = () => {
         if (undoStack.length === 0) return;

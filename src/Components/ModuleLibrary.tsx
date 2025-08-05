@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from 'react-router-dom';
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, IconButton, TablePagination, Tooltip } from "@mui/material";
+import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Box, IconButton, Tooltip } from "@mui/material";
 import { FilterList } from "@mui/icons-material";
 import { Select, Input, Button, Typography, Modal } from "antd";
 import { SearchOutlined, DeleteOutlined, RobotOutlined, ExclamationCircleOutlined, ApartmentOutlined, ClusterOutlined, UserOutlined, RetweetOutlined } from "@ant-design/icons";
@@ -19,6 +19,9 @@ interface Activity {
   duration: number | string;
   prerequisite: string;
   level: string;
+  cost: any;
+  notifications: any;
+  rasi: any;
 }
 
 interface Module {
@@ -50,8 +53,8 @@ interface Library {
 const ModuleLibrary = () => {
   const [searchTerm, setSearchTerm] = useState<string>("");
   const navigate = useNavigate();
-  const [page, setPage] = useState<number>(0);
-  const rowsPerPage = 10;
+  // const [_page, setPage] = useState<number>(0);
+  // const _rowsPerPage = 10;
   const [selectedOption, setSelectedOption] = useState<string>("");
   const [newLibraryName, setNewLibraryName] = useState<string>("");
   const [newLibraryMineType, setNewLibraryMineType] = useState<string>("");
@@ -65,7 +68,7 @@ const ModuleLibrary = () => {
   const [allProjects, setAllProjects] = useState<string[]>([]);
   const [_selectedProject, setSelectedProject] = useState<string | undefined>(undefined);
   const [mineTypes, setMineTypes] = useState<any>([]);
-  const [moduleTypes, _setModuleTypes] = useState<any>(["Organizational Module", "Personal Module"]);
+  const [_moduleTypes, _setModuleTypes] = useState<any>(["Organizational Module", "Personal Module"]);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isDeleteModuleModalVisible, setIsDeleteModuleModalVisible] = useState(false);
   const [selectedLibrryId, setSelectedLibraryId] = useState<any>();
@@ -95,9 +98,6 @@ const ModuleLibrary = () => {
           setModulesData([]);
         });
 
-      console.log();
-
-
       db.getAllMineTypes()
         .then((mine) => setMineTypes(mine.filter((item: any) => item.orgId == currentUser.orgId)))
         .catch((err) => {
@@ -121,6 +121,11 @@ const ModuleLibrary = () => {
           setAllProjects([]);
           setProjects([]);
         });
+
+      console.log(modulesData);
+      console.log(libraries);
+
+
     }
   }, [currentUser]);
 
@@ -164,9 +169,9 @@ const ModuleLibrary = () => {
     setNewLibraryMineTypeFilter(value);
   };
 
-  const handleChangePage = (_: any, newPage: number) => {
-    setPage(newPage);
-  };
+  // const handleChangePage = (_: any, newPage: number) => {
+  //   setPage(newPage);
+  // };
 
   const handleProjectChange = (value: string) => {
     setSelectedProject(value);
