@@ -197,3 +197,11 @@
 .project-timeline-table .selected-red-row>td {
     background-color: #e0e3f2 !important;
 }
+
+.row-high-delay {
+  background-color: #fff1f0 !important;
+}
+
+.row-medium-delay {
+  background-color: #fffbe6 !important;
+}

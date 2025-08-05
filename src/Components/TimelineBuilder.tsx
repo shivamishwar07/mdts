@@ -645,8 +645,8 @@ const TimeBuilder = () => {
           const duration = parseInt(activity.duration, 10) || 0;
           const { date: endDate, holidays } = addBusinessDays(date, duration);
 
-          activity.start = date;
-          activity.end = endDate;
+          activity.start = new Date(date).getTime();
+          activity.end = new Date(endDate).getTime();
           activity.holidays = holidays;
           activity.saturdayWorking = isSaturdayWorking;
           activity.sundayWorking = isSundayWorking;
@@ -2131,11 +2131,6 @@ const TimeBuilder = () => {
       notify.error("An error occurred while linking group.");
     }
   };
-
-  useEffect(() => {
-    console.log(currentStep);
-
-  }, [currentStep])
 
   return (
     <>
