@@ -404,9 +404,162 @@ const DelayCostCalculator = () => {
           "opCost": 3000
         },
         "delay": 10
+      },
+      {
+        "code": "RD/30",
+        "activityName": "Testing and Quality Assurance",
+        "prerequisite": "RD/20",
+        "start": "16-07-2025",
+        "end": "30-07-2025",
+        "actualStart": "26-07-2025",
+        "actualFinish": "10-08-2025",
+        "cost": {
+          "projectCost": 1200,
+          "opCost": 1500
+        },
+        "delay": 11
+      },
+      {
+        "code": "RD/40",
+        "activityName": "Deployment and Go-Live",
+        "prerequisite": "RD/30",
+        "start": "01-08-2025",
+        "end": "10-08-2025",
+        "actualStart": "11-08-2025",
+        "actualFinish": "20-08-2025",
+        "cost": {
+          "projectCost": 500,
+          "opCost": 800
+        },
+        "delay": 10
+      },
+      {
+        "code": "PL/10",
+        "activityName": "Project Planning and Scoping",
+        "prerequisite": null,
+        "start": "01-04-2025",
+        "end": "30-04-2025",
+        "actualStart": "01-04-2025",
+        "actualFinish": "30-04-2025",
+        "cost": {
+          "projectCost": 2000,
+          "opCost": 1000
+        },
+        "delay": 0
+      },
+      {
+        "code": "PL/20",
+        "activityName": "Resource Allocation",
+        "prerequisite": "PL/10",
+        "start": "01-05-2025",
+        "end": "15-05-2025",
+        "actualStart": "01-05-2025",
+        "actualFinish": "15-05-2025",
+        "cost": {
+          "projectCost": 800,
+          "opCost": 400
+        },
+        "delay": 0
+      },
+      {
+        "code": "PL/30",
+        "activityName": "Risk Assessment and Mitigation",
+        "prerequisite": "PL/20",
+        "start": "16-05-2025",
+        "end": "31-05-2025",
+        "actualStart": "16-05-2025",
+        "actualFinish": "31-05-2025",
+        "cost": {
+          "projectCost": 1500,
+          "opCost": 700
+        },
+        "delay": 0
+      },
+      {
+        "code": "DE/10",
+        "activityName": "Initial Design & Architecture",
+        "prerequisite": "PL/30",
+        "start": "01-06-2025",
+        "end": "30-06-2025",
+        "actualStart": "05-06-2025",
+        "actualFinish": "05-07-2025",
+        "cost": {
+          "projectCost": 3000,
+          "opCost": 2000
+        },
+        "delay": 5
+      },
+      {
+        "code": "DE/20",
+        "activityName": "Backend Development",
+        "prerequisite": "DE/10",
+        "start": "01-07-2025",
+        "end": "31-08-2025",
+        "actualStart": "06-07-2025",
+        "actualFinish": "10-09-2025",
+        "cost": {
+          "projectCost": 5000,
+          "opCost": 4000
+        },
+        "delay": 10
+      },
+      {
+        "code": "DE/30",
+        "activityName": "Frontend Development",
+        "prerequisite": "DE/10",
+        "start": "01-07-2025",
+        "end": "31-08-2025",
+        "actualStart": "06-07-2025",
+        "actualFinish": "15-09-2025",
+        "cost": {
+          "projectCost": 4500,
+          "opCost": 3500
+        },
+        "delay": 15
+      },
+      {
+        "code": "DE/40",
+        "activityName": "Database Integration",
+        "prerequisite": "DE/20",
+        "start": "01-09-2025",
+        "end": "30-09-2025",
+        "actualStart": "11-09-2025",
+        "actualFinish": "15-10-2025",
+        "cost": {
+          "projectCost": 2000,
+          "opCost": 1500
+        },
+        "delay": 15
+      },
+      {
+        "code": "OP/10",
+        "activityName": "System Maintenance",
+        "prerequisite": "DE/40",
+        "start": "01-10-2025",
+        "end": "31-12-2025",
+        "actualStart": "16-10-2025",
+        "actualFinish": "15-01-2026",
+        "cost": {
+          "projectCost": 2500,
+          "opCost": 2500
+        },
+        "delay": 15
+      },
+      {
+        "code": "OP/20",
+        "activityName": "User Training",
+        "prerequisite": "DE/40",
+        "start": "01-10-2025",
+        "end": "31-10-2025",
+        "actualStart": "16-10-2025",
+        "actualFinish": "20-11-2025",
+        "cost": {
+          "projectCost": 1000,
+          "opCost": 800
+        },
+        "delay": 20
       }
     ]
-
     const parseDate = (dateString: string) => {
       const [day, month, year] = dateString.split('-').map(Number);
       return new Date(year, month - 1, day);
