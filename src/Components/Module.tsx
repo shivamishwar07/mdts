@@ -4,7 +4,7 @@ import { useLocation } from "react-router-dom";
 import { Paper, Table, TableBody, TableCell, TableHead, TableRow } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
 import "../styles/module.css"
-import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, notification, AutoComplete, Radio, Form, Switch } from 'antd';
+import { Input, Button, Tooltip, Row, Col, Typography, Modal, Select, AutoComplete, Radio, Form, Switch } from 'antd';
 import { SearchOutlined, ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, UserOutlined, BellOutlined, PlusOutlined, CloseCircleOutlined, ExclamationCircleOutlined, ReloadOutlined, SortAscendingOutlined, SortDescendingOutlined, DollarOutlined, MinusCircleOutlined, FileTextOutlined } from '@ant-design/icons';
 import CreateNotification from "./CreateNotification.tsx";
 import UserRolesPage from "./AssignRACI";
@@ -81,6 +81,7 @@ const Module = () => {
     const [allModules, setAllModules] = useState<any>([]);
     const [importableModules, setImportableModules] = useState<any[]>([]);
     const [isMDTSCreation, setIsMDTSCreation] = useState(false);
+    const [moduleCreationMode, setModuleCreationMode] = useState<"MANUAL" | "IMPORT">("MANUAL");
 
     useEffect(() => {
         (async () => {
@@ -128,8 +129,6 @@ const Module = () => {
                         console.error("Error fetching modules:", err);
                         setAllModules([]);
                     });
-                console.log(allModules);
-
             };
 
             init();
@@ -156,7 +155,7 @@ const Module = () => {
     }, [moduleType, selectedOption, allModules]);
 
     useEffect(() => {
-        if (moduleData.activities.length > 0) {
+        if (moduleData?.activities?.length > 0) {
             //handlePrerequisite();
         }
     }, [moduleData.activities]);
@@ -218,19 +217,13 @@ const Module = () => {
         try {
             const userId = getCurrentUserId();
             if (!moduleData || Object.keys(moduleData).length === 0 || !moduleData.parentModuleCode) {
-                notification.error({
-                    message: "Module data is empty or missing required fields.",
-                    duration: 3,
-                });
+                notify.error("Module data is empty or missing required fields.");
                 return;
             }
 
             if (isEditing) {
                 if (!moduleData.id || typeof moduleData.id !== "number") {
-                    notification.error({
-                        message: "Invalid module ID. Unable to update module.",
-                        duration: 3,
-                    });
+                    notify.error("Invalid module ID. Unable to update module.");
                     return;
                 }
 
@@ -243,38 +236,22 @@ const Module = () => {
                     });
 
                     if (updatedCount) {
-                        notification.success({
-                            message: "Module updated successfully!",
-                            duration: 3,
-                        });
+                        notify.success("Module updated successfully!")
                         navigate('/create/module-library');
                     } else {
-                        notification.error({
-                            message: "Module update failed. No changes detected.",
-                            duration: 3,
-                        });
+                        notify.error("Module update failed. No changes detected.");
                     }
                 } else {
-                    notification.error({
-                        message: "Module not found in IndexedDB.",
-                        duration: 3,
-                    });
+                    notify.error("Module not found in IndexedDB.");
                 }
             } else {
                 await db.addModule({ ...moduleData, userId });
-                notification.success({
-                    message: "Module saved successfully!",
-                    duration: 3,
-                });
+                notify.success("Module saved successfully!");
             }
 
             navigate('/create/module-library');
         } catch (error) {
-            notification.error({
-                message: "Failed to save/update module.",
-                description: "Check the console for details.",
-                duration: 3,
-            });
+            notify.error("Failed to save/update module.");
         }
     };
 
@@ -579,37 +556,59 @@ const Module = () => {
     };
 
     const handleModulePlus = () => {
-        if (newModelName && selectedOption) {
-            if (newModelName.trim()) {
-                const generatedId = uuidv4();
-
-                // Detect if user imported a module and it has activities
-                const clonedActivities = moduleData.activities?.length
-                    ? JSON.parse(JSON.stringify(moduleData.activities))
-                    : [];
-
-                setModuleData({
-                    guiId: generatedId,
-                    parentModuleCode: moduleCodeName
-                        ? moduleCodeName
-                        : generateTwoLetterAcronym(newModelName, existingAcronyms),
-                    moduleName: newModelName,
-                    level: "L1",
-                    mineType: selectedOption,
-                    activities: clonedActivities,
-                    userGuiId: currentUser?.guiId,
-                    orgId: currentUser?.orgId,
-                    createdAt: new Date().toISOString(),
-                    moduleType: moduleType
-                });
-
-                setNewModelName("");
-                setSelectedOption("");
-                setOpenPopup(false);
-            }
-        } else {
+        if (!newModelName || !selectedOption) {
             notify.warning("Missing Required Fields");
+            return;
         }
+
+        if (!newModelName.trim()) {
+            notify.warning("Module Name cannot be empty");
+            return;
+        }
+
+        // Additional check for IMPORT mode
+        if (moduleCreationMode === "IMPORT") {
+            if (!importFromType || !selectedImportModule) {
+                notify.warning("Please select a module type and module to import");
+                return;
+            }
+        }
+
+        const generatedId = uuidv4();
+
+        const clonedActivities = moduleData.activities?.length
+            ? JSON.parse(JSON.stringify(moduleData.activities))
+            : [];
+
+        setModuleData({
+            guiId: generatedId,
+            parentModuleCode: moduleCodeName
+                ? moduleCodeName
+                : generateTwoLetterAcronym(newModelName, existingAcronyms),
+            moduleName: newModelName,
+            level: "L1",
+            mineType: selectedOption,
+            activities: clonedActivities,
+            userGuiId: currentUser?.guiId,
+            orgId: currentUser?.orgId,
+            createdAt: new Date().toISOString(),
+            moduleType: moduleType
+        });
+
+        setNewModelName("");
+        setSelectedOption("");
+        setOpenPopup(false);
+    };
+
+
+    const resetModuleForm = () => {
+        setNewModelName("");
+        setSelectedOption("");
+        setImportFromType("");
+        setSelectedImportModule(null);
+        setModuleCodeName("");
+        setModuleData({});
+        setModuleCreationMode("MANUAL");
     };
 
     const generateShorthand = (input: string): string => {
@@ -1066,11 +1065,11 @@ const Module = () => {
                                         </Tooltip>
                                     </Col>
 
-                                    <Col>
+                                    {/* <Col>
                                         <Tooltip title={`${sortOrder.toUpperCase()}`}>
-                                            <Button onClick={toggleSortOrder} icon={getSortIcon()} disabled={moduleData.activities.length == 0} className="icon-button blue" />
+                                            <Button onClick={toggleSortOrder} icon={getSortIcon()} disabled={moduleData.activities?.length == 0} className="icon-button blue" />
                                         </Tooltip>
-                                    </Col>
+                                    </Col> */}
                                     <Col>
                                         <Tooltip title="Assign RACI">
                                             <Button
@@ -1188,7 +1187,7 @@ const Module = () => {
                                         }}
                                         sx={{
                                             '&:last-child td, &:last-child th': { border: 0 },
-                                            cursor: moduleData.activities.length === 0 ? 'pointer' : 'none',
+                                            cursor: moduleData.activities?.length == 0 ? 'pointer' : 'none',
                                         }}
                                     >
 
@@ -1213,8 +1212,8 @@ const Module = () => {
 
                                         <TableCell sx={{ padding: '10px', cursor: "pointer" }}>{moduleData.level}</TableCell>
                                     </TableRow>
-                                    {moduleData.activities
-                                        .map((activity: any, index: any, _sortedActivities: any) => (
+                                    {Array.isArray(moduleData.activities) &&
+                                        moduleData.activities.map((activity: any, index: any, _sortedActivities: any) => (
                                             <TableRow
                                                 hover
                                                 key={activity.code}
@@ -1294,7 +1293,8 @@ const Module = () => {
                     onCancel={() => {
                         setOpenPopup(false);
                         setIsMDTSCreation(false);
-                        setModuleType("PERSONAL")
+                        setModuleType("PERSONAL");
+                        resetModuleForm();
                     }}
                     onOk={handleModulePlus}
                     okButtonProps={{ className: "bg-secondary" }}
@@ -1306,7 +1306,7 @@ const Module = () => {
                     <div className="modal-body-item-padding">
                         <Form>
                             <Row gutter={[16, 12]}>
-                                {!isMDTSCreation && (
+                                {/* {!isMDTSCreation && (
                                     <Col span={24}>
                                         <Row align="middle">
                                             <Col span={8}><label>Module Type</label></Col>
@@ -1326,12 +1326,37 @@ const Module = () => {
                                             </Col>
                                         </Row>
                                     </Col>
-                                )}
+                                )} */}
 
                                 {/* Mine Type */}
                                 <Col span={24}>
                                     <Row align="middle">
-                                        <Col span={8}><label>Mine Type</label></Col>
+                                        <Col span={8}><label>Module Creation Type</label></Col>
+                                        <Col span={16}>
+                                            <Radio.Group
+                                                value={moduleCreationMode}
+                                                onChange={(e) => {
+                                                    setModuleCreationMode(e.target.value);
+                                                    if (e.target.value !== "IMPORT") {
+                                                        setImportFromType("");
+                                                        setSelectedImportModule(null);
+                                                    }
+                                                }}
+                                            >
+                                                <Radio value="MANUAL">MANUALLY</Radio>
+                                                <Radio value="IMPORT">IMPORT</Radio>
+                                            </Radio.Group>
+                                        </Col>
+                                    </Row>
+                                </Col>
+
+                                <Col span={24}>
+                                    <Row align="middle">
+                                        <Col span={8}>
+                                            <label>
+                                                Mine Type <span style={{ color: "red" }}>*</span>
+                                            </label>
+                                        </Col>
                                         <Col span={16}>
                                             <div style={{ display: "flex", gap: "10px" }}>
                                                 <Select
@@ -1356,12 +1381,11 @@ const Module = () => {
                                     </Row>
                                 </Col>
 
-                                {(moduleType === "PERSONAL" || moduleType === "ORG") && (
+                                {moduleCreationMode == "IMPORT" && (moduleType === "PERSONAL" || moduleType === "ORG") && (
                                     <>
-                                        {/* Import From */}
                                         <Col span={24}>
                                             <Row align="middle">
-                                                <Col span={8}><label>Import From</label></Col>
+                                                <Col span={8}><label>Import From <span style={{ color: "red" }}>*</span></label></Col>
                                                 <Col span={16}>
                                                     <Select
                                                         placeholder="Select module type"
@@ -1388,7 +1412,13 @@ const Module = () => {
 
                                         <Col span={24}>
                                             <Row align="middle">
-                                                <Col span={8}><label>Select Module</label></Col>
+                                                <Col span={8}>
+                                                    <label>
+                                                        Select Module{" "}
+                                                        <span style={{ color: "red" }}>*</span>
+                                                    </label>
+                                                </Col>
+
                                                 <Col span={16}>
                                                     <Select
                                                         placeholder="Select module"
@@ -1421,13 +1451,7 @@ const Module = () => {
 
                                                                 notify.success("Module imported successfully");
                                                             }
-
                                                         }}
-                                                        disabled={!importFromType || !selectedOption}
-                                                        showSearch
-                                                        filterOption={(input, option: any) =>
-                                                            option?.children?.toLowerCase().includes(input.toLowerCase())
-                                                        }
                                                     >
                                                         {importableModules
                                                             .filter(
@@ -1450,7 +1474,15 @@ const Module = () => {
 
                                 <Col span={24}>
                                     <Row align="middle">
-                                        <Col span={8}><label>Module Name</label></Col>
+                                        <Col span={8}>
+                                            <label>
+                                                Module Name
+                                                {moduleCreationMode != "IMPORT" && (
+                                                    <span style={{ color: "red" }}>*</span>
+                                                )}
+                                            </label>
+                                        </Col>
+
                                         <Col span={16}>
                                             <Input
                                                 placeholder="Enter module name"
@@ -1621,6 +1653,7 @@ const Module = () => {
                     className="modal-container"
                     maskClosable={false}
                     keyboard={false}
+                    width={"50%"}
                 >
                     <Form
                         form={raciForm}

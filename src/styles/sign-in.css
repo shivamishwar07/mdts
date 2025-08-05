@@ -1,4 +1,4 @@
-.auth-container {
+/* .auth-container {
   margin-top: 30px;
   height: 100vh;
   width: 100%;
@@ -309,5 +309,240 @@ input {
   .ant-picker input {
     background-color: #fff !important;
     color: #000 !important;
+  }
+} */
+
+
+
+
+
+
+.signup-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  padding: 2rem;
+  margin-top: 80px;
+  
+  .signup-left {
+    flex: 1;
+    max-width: 750px;
+    height: 95vh;
+    border-radius: 20px 0 0 20px;
+  }
+  
+  .signup-right {
+    flex: 1;
+    max-width: 600px;
+    height: 95vh;
+    border-radius: 0 20px 20px 0;
+  }
+  
+  .signup-left {
+    background: linear-gradient(135deg, #eaf6ff, #b3cdff);
+    padding: 3rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .promo-text h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: #1f2937;
+  }
+  
+  .promo-text p {
+    font-size: 1rem;
+    color: #6b7280;
+  }
+  
+  .footer-links {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+  
+  .language {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  
+  .links a {
+    margin: 0 0.5rem;
+    color: #258790;
+    text-decoration: none;
+    font-weight: 500;
+  }
+  
+  .signup-right {
+    background: white;
+    padding: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  }
+  
+  .form-card {
+    width: 100%;
+    max-width: 600px;
+  }
+  
+  .form-card h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+  }
+  
+  form input[type='email'],
+  form input[type='password'],
+  .ant-input,
+  .ant-select-selector {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 1rem;
+    border-radius: 0.5rem;
+    border: 1px solid #d1d5db;
+    font-size: 1rem;
+    background-color: #f9fafb;
+  }
+  
+  form small {
+    font-size: 0.75rem;
+    color: #6b7280;
+    display: block;
+    margin-bottom: 1rem;
+  }
+  
+  .checkbox {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    font-size: 0.85rem;
+    color: #4b5563;
+  }
+  
+  .checkbox input {
+    margin-right: 0.5rem;
+  }
+  
+  .social-buttons {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .social-buttons button {
+    flex: 1;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 10px;
+  }
+  
+  .google::before {
+    content: url("https://upload.wikimedia.org/wikipedia/commons/5/53/Google_%22G%22_Logo.svg");
+    width: 16px;
+    height: 16px;
+  }
+  
+  .apple::before {
+    content: url("https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg");
+    width: 16px;
+    height: 16px;
+  }
+  
+  .submit {
+    width: 100%;
+    background-color: #258790;
+    color: white;
+    padding: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    margin-bottom: 1rem;
+  }
+  
+  .submit:hover {
+    background-color: #258780;
+  }
+  
+  .signin-link {
+    font-size: 0.9rem;
+    text-align: center;
+    color: #6b7280;
+  }
+  
+  .signin-link a {
+    color: #2563eb !important;
+    text-decoration: none;
+    font-weight: 500;
+    cursor: pointer;
+  }
+  
+  .form-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 24px;
+  }
+  
+  .form-actions .ant-btn:last-child {
+    margin-left: auto;
+  }
+  
+  .form-actions .ant-btn {
+    min-width: 100px;
+    font-size: 14px;
+    padding: 6px 16px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+  }
+  
+  .step-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+  
+  .step-title .step-label {
+    font-weight: 600;
+    color: #050202
+  }
+  
+  .step-lines {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .step-line {
+    width: 40px;
+    height: 6px;
+    border-radius: 4px;
+    background-color: #ddd;
+    opacity: 0.8;
+  }
+  
+  .step-line.active {
+    background-color: #d84c15;
+  }
+  
+  .step-line.completed {
+    background-color: #258790;
   }
 }

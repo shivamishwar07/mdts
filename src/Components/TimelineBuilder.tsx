@@ -2662,7 +2662,7 @@ const TimeBuilder = () => {
             }
           >
             {userOptions
-              .filter((user: any) => user.id !== currentUser.id && user.orgId == currentUser.orgId)
+              .filter((user: any) => user.orgId == currentUser.orgId)
               .map((user: any) => (
                 <Option key={user.id} value={user.id}>
                   {user.name}

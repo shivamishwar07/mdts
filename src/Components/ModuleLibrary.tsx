@@ -33,6 +33,7 @@ interface Module {
   userGuiId: string;
   moduleType: string;
   createdAt: string;
+  guiId?: string
 }
 
 interface Library {
@@ -64,7 +65,7 @@ const ModuleLibrary = () => {
   const [allProjects, setAllProjects] = useState<string[]>([]);
   const [_selectedProject, setSelectedProject] = useState<string | undefined>(undefined);
   const [mineTypes, setMineTypes] = useState<any>([]);
-  const [moduleTypes, _setModuleTypes] = useState<any>(["MDTS Module", "Organizational Module", "Personal Module"]);
+  const [moduleTypes, _setModuleTypes] = useState<any>(["Organizational Module", "Personal Module"]);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [isDeleteModuleModalVisible, setIsDeleteModuleModalVisible] = useState(false);
   const [selectedLibrryId, setSelectedLibraryId] = useState<any>();
@@ -125,31 +126,31 @@ const ModuleLibrary = () => {
 
   useEffect(() => {
     const filtered = modulesData.filter((module) => {
-      const isPersonalized = currentUser.guiId == module.userGuiId;
-      const isOrganizational = currentUser.orgId == module.orgId;
-      const isMDTS = !isPersonalized && !isOrganizational;
-
-      const moduleTypeMatches =
-        !selectedOption ||
-        (selectedOption == "Personal Module" && isPersonalized) ||
-        (selectedOption == "Organizational Module" && isOrganizational) ||
-        (selectedOption == "MDTS Module" && isMDTS);
-
-      const mineTypeMatches =
-        !newLibraryMineTypeFilter || module.mineType == newLibraryMineTypeFilter;
-
       const searchLower = searchTerm.toLowerCase();
+      const typeLabel =
+        module.moduleType === "PERSONAL"
+          ? "personal module"
+          : module.moduleType === "ORG"
+            ? "organizational module"
+            : "";
+      const formattedDate = dayjs(module.createdAt).format("DD MMM YYYY").toLowerCase();
+
       const searchMatches =
         !searchTerm ||
         module.moduleName.toLowerCase().includes(searchLower) ||
         module.parentModuleCode.toLowerCase().includes(searchLower) ||
-        module.mineType.toLowerCase().includes(searchLower);
+        module.mineType.toLowerCase().includes(searchLower) ||
+        typeLabel.includes(searchLower) ||
+        formattedDate.includes(searchLower);
+
+      const moduleTypeMatches = !selectedOption || module.moduleType === selectedOption;
+      const mineTypeMatches = !newLibraryMineTypeFilter || module.mineType === newLibraryMineTypeFilter;
 
       return moduleTypeMatches && mineTypeMatches && searchMatches;
     });
 
     setFilteredModules(filtered);
-  }, [searchTerm, selectedOption, newLibraryMineTypeFilter, modulesData, currentUser]);
+  }, [searchTerm, selectedOption, newLibraryMineTypeFilter, modulesData]);
 
   const handleModuleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -157,10 +158,6 @@ const ModuleLibrary = () => {
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLibrarySearchTerm(e.target.value);
-  };
-
-  const handleModuleTypeChange = (value: any) => {
-    setSelectedOption(value);
   };
 
   const handleMineTypeChange = (value: string) => {
@@ -193,7 +190,7 @@ const ModuleLibrary = () => {
       );
       return;
     }
-    if (selectedLibrary.items.some(item => item.moduleName == moduleData.moduleName)) {
+    if (selectedLibrary.items.some((item: any) => item.guiId == moduleData.guiId)) {
       notify.info("Module already exists in this library.");
       return;
     }
@@ -203,7 +200,9 @@ const ModuleLibrary = () => {
   };
 
   const handleModuleClick = (module: Module) => {
-    navigate('/modules', { state: module });
+    if (canEditModule(module)) {
+      navigate('/modules', { state: module });
+    }
   };
 
   const handleDeleteModule = (modIndex: number) => {
@@ -233,7 +232,12 @@ const ModuleLibrary = () => {
     if (!selectedModuleId) return;
     try {
       await db.deleteModule(selectedModuleId);
-      db.getModules().then(setModulesData);
+      db.getModules()
+        .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId == currentUser.orgId && mod.moduleType != 'MDTS')))
+        .catch((err) => {
+          console.error("Error fetching modules:", err);
+          setModulesData([]);
+        });
     } catch (error) {
       notify.error("Error deleting module.");
     }
@@ -358,6 +362,10 @@ const ModuleLibrary = () => {
     setIsConvertModalVisible(true);
   };
 
+  const canEditModule = (module: Module) => {
+    return module.moduleType == "PERSONAL" && currentUser?.guiId === module.userGuiId;
+  };
+
   const handleConfirmConvertToOrg = async () => {
     if (!selectedModuleToConvert) return;
     try {
@@ -367,7 +375,12 @@ const ModuleLibrary = () => {
       });
       if (updatedCount) {
         notify.success("Module successfully converted to Organizational type.");
-        db.getModules().then(setModulesData);
+        db.getModules()
+          .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId == currentUser.orgId && mod.moduleType != 'MDTS')))
+          .catch((err) => {
+            console.error("Error fetching modules:", err);
+            setModulesData([]);
+          });
       } else {
         notify.error("Conversion failed. No changes were made.");
       }
@@ -411,17 +424,14 @@ const ModuleLibrary = () => {
               />
               <Select
                 value={selectedOption || undefined}
-                onChange={handleModuleTypeChange}
+                onChange={setSelectedOption}
                 allowClear
                 size="small"
                 placeholder="Select Module Type"
                 style={{ width: "100%", height: "26px", fontSize: "12px" }}
               >
-                {moduleTypes?.map((type: any) => (
-                  <Option key={type} value={type}>
-                    {type}
-                  </Option>
-                ))}
+                <Option value="PERSONAL">Personal Module</Option>
+                <Option value="ORG">Organizational Module</Option>
               </Select>
 
               <Select
@@ -460,7 +470,7 @@ const ModuleLibrary = () => {
                   </TableRow>
                 </TableHead>
 
-                <TableBody style={{ display: "block", overflowY: "auto", overflowX: "hidden", maxHeight: "calc(100vh - 269px)" }}>
+                <TableBody style={{ display: "block", overflowY: "auto", overflowX: "hidden", maxHeight: "calc(100vh - 245px)" }}>
                   {modulesData.length > 0 ? (
                     filteredModules.map((module, index) => (
                       <TableRow
@@ -468,7 +478,7 @@ const ModuleLibrary = () => {
                         draggable
                         onDragStart={(e) => handleDragStart(e, module)}
                         onClick={() => handleModuleClick(module)}
-                        style={{ display: "flex", width: "100%", cursor: "grab" }}
+                        style={{ display: "flex", width: "100%", cursor: canEditModule(module) ? "pointer" : "default" }}
                       >
                         <TableCell style={{ flex: "0 0 15%", padding: "8px" }}>{module.parentModuleCode}</TableCell>
                         <TableCell style={{ flex: "0 0 32%", padding: "8px" }}>{module.moduleName}</TableCell>
@@ -506,7 +516,6 @@ const ModuleLibrary = () => {
                           )}
                         </TableCell>
                       </TableRow>
-
                     ))
                   ) : (
                     <div style={{ padding: "10px", fontSize: "12px", color: "grey", display: "flex", justifyContent: "center" }}>
@@ -529,7 +538,7 @@ const ModuleLibrary = () => {
               </Table>
             </TableContainer>
 
-            <TablePagination
+            {/* <TablePagination
               component="div"
               count={modulesData.length}
               page={page}
@@ -537,7 +546,7 @@ const ModuleLibrary = () => {
               onPageChange={handleChangePage}
               rowsPerPageOptions={[]}
               sx={{ mt: 2 }}
-            />
+            /> */}
           </Box>
         </div>
 

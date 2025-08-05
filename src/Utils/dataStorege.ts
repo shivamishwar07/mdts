@@ -282,6 +282,8 @@ export class DataStorage extends Dexie {
   }
 
   async updateProjectTimeline(id: number, newRecord: any): Promise<void> {
+    console.log(newRecord);
+    
     try {
       const existingProjectTimeline = await this.projectTimelines.get(id);
       if (existingProjectTimeline) {
@@ -289,6 +291,8 @@ export class DataStorage extends Dexie {
         sanitizedRecord['id'] = id;
 
         await this.projectTimelines.put(sanitizedRecord);
+        console.log(sanitizedRecord);
+        
       } else {
         message.warning(`Project Timeline with ID ${id} not found.`);
       }

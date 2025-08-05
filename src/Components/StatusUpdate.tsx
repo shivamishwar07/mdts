@@ -488,6 +488,8 @@ export const StatusUpdate = () => {
   };
 
   const handleLibraryChange = (libraryItems: any) => {
+    console.log(libraryItems);
+    
     if (libraryItems) {
       setSequencedModules(libraryItems);
       let editingRequired = false;
@@ -1336,6 +1338,9 @@ export const StatusUpdate = () => {
         ...(updatedActivityMap.has(activity.code) ? updatedActivityMap.get(activity.code) : {}),
       })),
     }));
+
+    console.log(updatedSequencedModules);
+    
 
     setSequencedModules(updatedSequencedModules);
     let updatedProject = selectedProject;
