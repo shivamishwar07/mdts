@@ -100,11 +100,6 @@ const Projects = () => {
 
         try {
             const storedData = await db.getProjects();
-            console.log(storedData);
-            console.log(currentUser);
-
-
-
             const orgProjects = storedData?.filter((proj: any) => proj.orgId == currentUser.orgId) || [];
 
             if (orgProjects.length === 0) {

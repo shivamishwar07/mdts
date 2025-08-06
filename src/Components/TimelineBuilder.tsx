@@ -645,8 +645,8 @@ const TimeBuilder = () => {
           const duration = parseInt(activity.duration, 10) || 0;
           const { date: endDate, holidays } = addBusinessDays(date, duration);
 
-          activity.start = new Date(date).getTime();
-          activity.end = new Date(endDate).getTime();
+          activity.start = new Date(date).toISOString();
+          activity.end = new Date(endDate).toISOString();
           activity.holidays = holidays;
           activity.saturdayWorking = isSaturdayWorking;
           activity.sundayWorking = isSundayWorking;
@@ -964,7 +964,6 @@ const TimeBuilder = () => {
   };
 
   const handleLibraryChange = (libraryItems: any) => {
-    console.log(libraryItems);
     if (libraryItems) {
       setSequencedModules(libraryItems);
       setModules(libraryItems);
