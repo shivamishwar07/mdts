@@ -236,8 +236,6 @@ export const StatusUpdate = () => {
         setSelectedProject(selectedProject);
 
         const timelineData = await getProjectTimeline(selectedProject);
-        console.log(selectedProject);
-
         handleLibraryChange(timelineData);
       } else {
         handleLibraryChange([]);
@@ -490,12 +488,8 @@ export const StatusUpdate = () => {
   };
 
   const handleLibraryChange = (libraryItems: any) => {
-    console.log(libraryItems);
-
     if (libraryItems) {
       setSequencedModules(libraryItems);
-      console.log(libraryItems);
-
       let editingRequired = false;
       const finDataSource = libraryItems.map((module: any, moduleIndex: number) => {
         const children = (module.activities || []).map((activity: any, actIndex: number) => {
@@ -1342,9 +1336,6 @@ export const StatusUpdate = () => {
         ...(updatedActivityMap.has(activity.code) ? updatedActivityMap.get(activity.code) : {}),
       })),
     }));
-
-    console.log(updatedSequencedModules);
-
 
     setSequencedModules(updatedSequencedModules);
     let updatedProject = selectedProject;

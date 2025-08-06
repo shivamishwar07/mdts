@@ -121,11 +121,6 @@ const ModuleLibrary = () => {
           setAllProjects([]);
           setProjects([]);
         });
-
-      console.log(modulesData);
-      console.log(libraries);
-
-
     }
   }, [currentUser]);
 

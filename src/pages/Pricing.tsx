@@ -3,93 +3,94 @@ import "../styles/pricing.css";
 import { useNavigate } from "react-router-dom";
 const monthlyPlans = [
     {
-        title: "Free",
+        title: "Explorer",
         price: "$0",
         description: "Per user/month, billed monthly",
         features: [
-            "Free e-mail alerts",
-            "3-minute checks",
-            "Automatic data enrichment",
-            "10 monitors",
-            "Up to 3 seats"
+            "Project & module creation (limited)",
+            "Up to 5 activities per module",
+            "Basic reporting & dashboards",
+            "Community support",
+            "Up to 2 team members"
         ],
-        button: "Get started for free",
+        button: "Start Free",
         key: "free"
     },
     {
-        title: "Pro",
-        price: "$99",
+        title: "Miner",
+        price: "$149",
         description: "Per user/month, billed monthly",
         features: [
-            "Unlimited phone calls",
-            "30 second checks",
-            "Single-user account",
-            "20 monitors",
-            "Up to 6 seats"
+            "Unlimited modules and activities",
+            "Advanced reports (CSV, PDF export)",
+            "Real-time site tracking",
+            "Role-based access control",
+            "Up to 10 team members"
         ],
-        button: "Get started with Pro",
+        button: "Get Started with Miner",
         key: "pro"
     },
     {
         title: "Enterprise",
         price: "Custom",
-        description: "Per user/month, billed monthly",
+        description: "Tailored pricing for large teams and custom integrations",
         features: [
-            "Everything in Pro",
-            "Up to 5 team members",
-            "100 monitors",
-            "15 status pages",
-            "200+ integrations"
+            "Everything in Miner",
+            "Unlimited team members",
+            "On-premise or private cloud deployment",
+            "Dedicated success manager",
+            "API access and integrations (SAP, AutoCAD, etc.)"
         ],
-        button: "Get started with Enterprise",
+        button: "Contact Sales",
         key: "enterprise"
     }
 ];
 
 const annualPlans = [
     {
-        title: "Free",
+        title: "Explorer",
         price: "$0",
         description: "Per user/month, billed annually",
         features: [
-            "Free e-mail alerts",
-            "3-minute checks",
-            "Automatic data enrichment",
-            "10 monitors",
-            "Up to 3 seats"
+            "Project & module creation (limited)",
+            "Up to 5 activities per module",
+            "Basic reporting & dashboards",
+            "Community support",
+            "Up to 2 team members"
         ],
-        button: "Get started for free",
+        button: "Start Free",
         key: "free"
     },
     {
-        title: "Pro",
-        price: "$85",
+        title: "Miner",
+        price: "$129",
         description: "Per user/month, billed annually",
         features: [
-            "Unlimited phone calls",
-            "30 second checks",
-            "Single-user account",
-            "20 monitors",
-            "Up to 6 seats"
+            "Unlimited modules and activities",
+            "Advanced reports (CSV, PDF export)",
+            "Real-time site tracking",
+            "Role-based access control",
+            "Up to 10 team members"
         ],
-        button: "Get started with Pro",
+        button: "Start with Miner",
         key: "pro"
     },
     {
         title: "Enterprise",
         price: "Custom",
-        description: "Per user/month, billed annually",
+        description: "Tailored pricing for large teams and custom integrations",
         features: [
-            "Everything in Pro",
-            "Up to 5 team members",
-            "100 monitors",
-            "15 status pages",
-            "200+ integrations"
+            "Everything in Miner",
+            "Unlimited team members",
+            "On-premise or private cloud deployment",
+            "Dedicated success manager",
+            "API access and integrations (SAP, AutoCAD, etc.)"
         ],
-        button: "Get started with Enterprise",
+        button: "Contact Sales",
         key: "enterprise"
     }
 ];
+
 
 const Pricing = () => {
     const [activePlan, setActivePlan] = useState("annual");

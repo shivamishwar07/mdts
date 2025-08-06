@@ -2,15 +2,13 @@ import React, { useEffect, useState } from "react";
 import "../styles/sign-in.css";
 import { useNavigate } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
-// import { GoogleOutlined, WindowsOutlined, KeyOutlined, EyeOutlined, EyeInvisibleOutlined } from '@ant-design/icons';
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
 import { v4 as uuidv4 } from 'uuid';
 import { Form, Input, Button, Select, Row, Col } from "antd";
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
-
-// const { Title, Text } = Typography;
+import { GoogleOutlined, AppleOutlined } from '@ant-design/icons';
 const { Option } = Select;
 const SignInSignUp: React.FC = () => {
     const [email, setEmail] = useState("");
@@ -290,131 +288,19 @@ const SignInSignUp: React.FC = () => {
     }, []);
 
     return (
-        // <div className="auth-container">
-        //     <div className={isSignUp ? 'auth-card signup-w' : 'auth-card login-w'}>
-        //         {isSignUp ? (
-        //             <>
-        //                 <div className="auth-header">
-        //                     <div className="registration-title">
-        //                         <h2>Company Registration</h2>
-        //                         <p>Secure your organization’s access</p>
-        //                     </div>
-        //                     <div></div>
-        //                 </div>
-        //             </>
-        //         ) : (
-        //             <>
-        //                 <div className="auth-header">
-        //                     <div style={{ display: 'flex', justifyContent: 'center' }}>
-        //                         <img src="/images/logos/main-logo.png" alt="App Logo" className="auth-logo logo-sections" />
-        //                     </div>
-        //                     <h2>Mine Development Tracking System</h2>
-        //                     <p>{isSignUp ? 'Sign up to get started' : 'Sign in to continue'}</p>
-        //                 </div>
-        //             </>
-        //         )}
-        //         <div className="auth-form">
-        //             {isSignUp ? (
-        //                 <>
-        //                     {/* <input type="email" placeholder="Work Email" value={workEmail} onChange={(e) => setWorkEmail(e.target.value)} />
-        //                     <button onClick={handleSignUp}>Sign Up</button> */}
-        //                     <div className="form-body">
-        //                         <div className="step-header">
-        //                             <div className="step-title">
-        //                                 <span className="step-label">{steps[currentStep].title}</span>
-        //                             </div>
-        //                             <div className="step-lines">
-        //                                 {steps.map((_, idx) => (
-        //                                     <div
-        //                                         key={idx}
-        //                                         className={`step-line ${idx === currentStep ? "active" : ""} ${idx < currentStep ? "completed" : ""}`}
-        //                                     ></div>
-        //                                 ))}
-        //                             </div>
-        //                         </div>
-
-        //                         <div className="form-section">
-        //                             <Form layout="vertical" form={form} onFinish={handleFinish}>
-        //                                 {steps.map((step, idx) => (
-        //                                     <div key={idx} style={{ display: idx === currentStep ? 'block' : 'none' }}>
-        //                                         {step.content}
-        //                                     </div>
-        //                                 ))}
-
-        //                                 <div className="form-actions">
-        //                                     {currentStep > 0 && <Button onClick={handlePrev}>Prev</Button>}
-        //                                     {currentStep < steps.length - 1 ? (
-        //                                         <Button type="primary" onClick={handleNext}>Next</Button>
-        //                                     ) : (
-        //                                         <Button type="primary" htmlType="submit">Submit</Button>
-        //                                     )}
-        //                                 </div>
-        //                             </Form>
-
-        //                         </div>
-        //                     </div>
-
-        //                 </>
-        //             ) : (
-        //                 <>
-        //                     <div className="signin-cont">
-        //                         <input type="email" placeholder="Email Address" value={email} onChange={(e) => setEmail(e.target.value)} />
-        //                         <div className="password-input-wrapper">
-        //                             <input
-        //                                 type={showPassword ? "text" : "password"}
-        //                                 placeholder="Password"
-        //                                 value={password}
-        //                                 onChange={(e) => setPassword(e.target.value)}
-        //                             />
-        //                             {password && (
-        //                                 <span
-        //                                     onClick={() => setShowPassword((prev) => !prev)}
-        //                                     className="toggle-password"
-        //                                 >
-        //                                     {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
-        //                                 </span>
-        //                             )}
-        //                         </div>
-        //                         <button onClick={handleLogin}>Login</button>
-        //                     </div>
-        //                 </>
-        //             )}
-
-        //             <div className="switch-auth">
-        //                 {isSignUp ? (
-        //                     <p>Already have an account? <span onClick={() => setIsSignUp(false)}>Sign in</span></p>
-        //                 ) : (
-        //                     <p>New here? <span onClick={() => setIsSignUp(true)}>Sign up</span></p>
-        //                 )}
-        //             </div>
-
-        //             {!isSignUp && (
-        //                 <>
-        //                     <div className="divider"><span>or continue with</span></div>
-
-        //                     <div className="social-buttons">
-        //                         <Button type="default" block icon={<GoogleOutlined />} className="google">
-        //                             Google
-        //                         </Button>
-        //                         <Button type="default" block icon={<WindowsOutlined />} className="microsoft">
-        //                             Microsoft
-        //                         </Button>
-        //                         <Button type="default" block icon={<KeyOutlined />} className="otp">
-        //                             OTP
-        //                         </Button>
-        //                     </div>
-        //                 </>
-        //             )}
-        //         </div>
-        //     </div>
-        //     <ToastContainer />
-        // </div>
         <div className="signup-container">
-            <div className="signup-left">
-                <div className="promo-text">
-                    <h1>Fast, Efficient and Productive</h1>
-                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed</p>
+            <div className={isSignUp ? 'signup-left signup-adjust' : 'signup-left signin-adjust'}>
+                <div className="vector-image">
+                    <img src="/images/auths/signin.png" alt="Mining Management Illustration" />
                 </div>
+
+                <div className="promo-text">
+                    <h1>Mining Simplified, Productivity Amplified</h1>
+                    <p>
+                        Manage your mining operations with confidence. Track activities, assign teams, and gain insights — all in one platform built for mining professionals.
+                    </p>
+                </div>
+
                 <div className="footer-links">
                     <div className="language">
                         <img src="https://flagcdn.com/us.svg" alt="US Flag" width="20" />
@@ -428,7 +314,8 @@ const SignInSignUp: React.FC = () => {
                 </div>
             </div>
 
-            <div className="signup-right">
+
+            <div className={isSignUp ? 'signup-right signup-adjust' : 'signup-right signin-adjust'}>
                 <div className="form-card">
                     <h2>{isSignUp ? 'Sign up to get started' : 'Sign in to continue'}</h2>
                     {!isSignUp ? (
@@ -484,8 +371,8 @@ const SignInSignUp: React.FC = () => {
                         </div>
                     )}
                     <div className="social-buttons">
-                        <button className="google">Sign In with Google</button>
-                        <button className="applse">Sign In with Apple</button>
+                        <Button className="google" icon={<GoogleOutlined size={20} />}>Sign In with Google</Button>
+                        <Button className="apple" icon={<AppleOutlined size={20} />}>Sign In with Apple</Button>
                     </div>
                     <div className="switch-auth">
                         {isSignUp ? (

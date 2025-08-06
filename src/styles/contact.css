@@ -31,7 +31,7 @@
     font-size: 1.25rem;
     font-weight: 600;
     gap: 0.6rem;
-    color: #0077b6;
+    color: #f37921;
     margin-bottom: 0.5rem;
 }
 
@@ -41,7 +41,7 @@
 }
 
 .contact-section a {
-    color: #0077b6;
+    color: #f37921;
     text-decoration: none;
     font-weight: 500;
 }
@@ -64,7 +64,7 @@
 }
 
 .icon:hover {
-    color: #0077b6;
+    color: #f37921;
     transform: scale(1.2);
     box-shadow: 0 0 10px rgba(0, 119, 182, 0.4);
 }
@@ -96,9 +96,9 @@
 }
 
 .contact-form h1 {
-    font-size: 2.4rem;
+    font-size: 2rem;
     font-weight: 700;
-    background: linear-gradient(90deg, #0077b6, #00b4d8);
+    background: #000;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     margin-bottom: 1rem;
@@ -124,7 +124,7 @@
 
 .contact-form input:focus,
 .contact-form textarea:focus {
-    border-color: #0077b6;
+    border-color: #f37921;
     background: #fff;
     box-shadow: 0 0 5px rgba(0, 119, 182, 0.2);
     outline: none;
@@ -136,7 +136,7 @@
 }
 
 .contact-form button {
-    background: linear-gradient(to right, #0077b6, #00b4d8);
+    background: #258790;
     color: #fff;
     border: none;
     padding: 0.9rem 2rem;
