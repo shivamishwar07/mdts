@@ -1004,7 +1004,7 @@ const Module = () => {
                                         </Col>
                                     )}
                                     <Col>
-                                        <Tooltip title="Define Activity Cost">
+                                        <Tooltip title="Add Document">
                                             <Button
                                                 icon={<FileTextOutlined style={{ color: '#7f8c8d' }} />}
                                                 className="icon-button"
