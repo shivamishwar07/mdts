@@ -84,7 +84,7 @@ const Module = () => {
     const [moduleCreationMode, setModuleCreationMode] = useState<"MANUAL" | "IMPORT">("MANUAL");
     const [importFromType, setImportFromType] = useState("");
     const [selectedImportModule, setSelectedImportModule] = useState(null);
-    
+
     useEffect(() => {
         (async () => {
             const user = await getCurrentUser();
@@ -185,13 +185,13 @@ const Module = () => {
             form.setFieldsValue({ costType: 'DELAY' });
 
             if (activity?.cost) {
-                const { projectCost, oppertunityCost, dprCost } = activity.cost;
+                const { projectCost, opCost, dprCost } = activity.cost;
                 form.setFieldsValue({
                     projectCost,
-                    oppertunityCost,
+                    opCost,
                     dprCost
                 });
-                if ((dprCost ?? '') !== '' && (projectCost ?? '') === '' && (oppertunityCost ?? '') === '') {
+                if ((dprCost ?? '') !== '' && (projectCost ?? '') === '' && (opCost ?? '') === '') {
                     form.setFieldsValue({ costType: 'DPR' });
                 }
             } else {
@@ -945,28 +945,35 @@ const Module = () => {
                 return;
             }
 
-            const { projectCost, oppertunityCost, dprCost } = values;
+            const asNum = (v: any) =>
+                v === undefined || v === null || v === "" ? undefined : Number(v);
 
-            const updatedActivities = moduleData.activities.map((activity: any) => {
-                if (activity.code !== selectedActivityCode) return activity;
+            const { projectCost, opCost, dprCost } = values;
 
-                const prev = activity.cost || {};
-                const mergedCost = {
-                    ...prev,
-                    ...(projectCost !== undefined ? { projectCost: Number(projectCost) } : {}),
-                    ...(oppertunityCost !== undefined ? { oppertunityCost: Number(oppertunityCost) } : {}),
-                    ...(dprCost !== undefined ? { dprCost: Number(dprCost) } : {}),
-                };
+            setModuleData((prev: any) => {
+                const updatedActivities = prev.activities.map((activity: any) => {
+                    if (activity.code !== selectedActivityCode) return activity;
 
-                return { ...activity, cost: mergedCost };
+                    const prevCost = activity.cost || {};
+                    const mergedCost = {
+                        projectCost: asNum(projectCost) ?? prevCost.projectCost,
+                        opCost: asNum(opCost) ?? prevCost.opCost,
+                        dprCost: asNum(dprCost) ?? prevCost.dprCost,
+                    };
+
+                    return { ...activity, cost: mergedCost };
+                });
+
+                return { ...prev, activities: updatedActivities };
             });
 
-            setModuleData((prev: any) => ({ ...prev, activities: updatedActivities }));
             handleClose();
         } catch (err) {
             console.error("Validation Failed:", err);
         }
     };
+
+
 
     return (
         <div>
@@ -1605,50 +1612,53 @@ const Module = () => {
                     className="modal-container"
                 >
                     <Form form={form} layout="vertical" style={{ padding: "0 10px" }}>
-                        <div style={{marginBottom:'10px'}}>
-                        <Form.Item name="costType" label="" initialValue="DELAY">
-                            <Radio.Group>
-                                <Radio value="DELAY">Delay</Radio>
-                                <Radio value="DPR">DPR</Radio>
-                            </Radio.Group>
-                        </Form.Item>
+                        <div style={{ marginBottom: "10px" }}>
+                            <Form.Item name="costType" label="" initialValue="DELAY">
+                                <Radio.Group>
+                                    <Radio value="DELAY">Delay</Radio>
+                                    <Radio value="DPR">DPR</Radio>
+                                </Radio.Group>
+                            </Form.Item>
                         </div>
 
                         <Form.Item noStyle shouldUpdate={(prev, cur) => prev.costType !== cur.costType}>
                             {({ getFieldValue }) => {
                                 const type = getFieldValue("costType") || "DELAY";
-                                return type === "DELAY" ? (
+
+                                return (
                                     <>
                                         <Row gutter={8}>
-                                            <Col flex="150px" style={{marginTop:'15px'}}>Project Cost</Col>
+                                            <Col hidden={type !== "DELAY"} flex="150px" style={{ marginTop: "15px" }}>Project Cost</Col>
                                             <Col flex="auto">
-                                                <Form.Item name="projectCost">
+                                                <Form.Item name="projectCost" preserve hidden={type !== "DELAY"}>
                                                     <Input type="number" min={0} placeholder="Enter Project Cost" />
                                                 </Form.Item>
                                             </Col>
                                         </Row>
+
                                         <Row gutter={8}>
-                                            <Col flex="150px" style={{marginTop:'15px'}}>Oppertunity Cost</Col>
+                                            <Col hidden={type !== "DELAY"} flex="150px" style={{ marginTop: "15px" }}>Opportunity Cost</Col>
                                             <Col flex="auto">
-                                                <Form.Item name="oppertunityCost">
-                                                    <Input type="number" min={0} placeholder="Enter Oppertunity Cost" />
+                                                <Form.Item name="opCost" preserve hidden={type !== "DELAY"}>
+                                                    <Input type="number" min={0} placeholder="Enter Opportunity Cost" />
+                                                </Form.Item>
+                                            </Col>
+                                        </Row>
+
+                                        <Row gutter={8}>
+                                            <Col flex="150px" hidden={type == "DELAY"} style={{ marginTop: "15px" }}>DPR Cost</Col>
+                                            <Col flex="auto">
+                                                <Form.Item name="dprCost" preserve hidden={type !== "DPR"}>
+                                                    <Input type="number" min={0} placeholder="Enter DPR Cost" />
                                                 </Form.Item>
                                             </Col>
                                         </Row>
                                     </>
-                                ) : (
-                                    <Row gutter={8}>
-                                        <Col flex="150px" style={{marginTop:'15px'}}>DPR Cost</Col>
-                                        <Col flex="auto">
-                                            <Form.Item name="dprCost">
-                                                <Input type="number" min={0} placeholder="Enter DPR Cost" />
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
                                 );
                             }}
                         </Form.Item>
                     </Form>
+
                 </Modal>
 
                 <Modal
