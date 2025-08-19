@@ -82,7 +82,9 @@ const Module = () => {
     const [importableModules, setImportableModules] = useState<any[]>([]);
     const [isMDTSCreation, setIsMDTSCreation] = useState(false);
     const [moduleCreationMode, setModuleCreationMode] = useState<"MANUAL" | "IMPORT">("MANUAL");
-
+    const [importFromType, setImportFromType] = useState("");
+    const [selectedImportModule, setSelectedImportModule] = useState(null);
+    
     useEffect(() => {
         (async () => {
             const user = await getCurrentUser();
@@ -180,13 +182,21 @@ const Module = () => {
     useEffect(() => {
         if (openCostCalcModal && selectedRow?.code) {
             const activity = moduleData.activities.find((a: any) => a.code === selectedRow.code);
+            form.setFieldsValue({ costType: 'DELAY' });
+
             if (activity?.cost) {
+                const { projectCost, oppertunityCost, dprCost } = activity.cost;
                 form.setFieldsValue({
-                    projectCost: activity.cost.projectCost,
-                    opCost: activity.cost.opCost
+                    projectCost,
+                    oppertunityCost,
+                    dprCost
                 });
+                if ((dprCost ?? '') !== '' && (projectCost ?? '') === '' && (oppertunityCost ?? '') === '') {
+                    form.setFieldsValue({ costType: 'DPR' });
+                }
             } else {
                 form.resetFields();
+                form.setFieldsValue({ costType: 'DELAY' });
             }
         }
     }, [openCostCalcModal, selectedRow]);
@@ -600,7 +610,6 @@ const Module = () => {
         setOpenPopup(false);
     };
 
-
     const resetModuleForm = () => {
         setNewModelName("");
         setSelectedOption("");
@@ -936,31 +945,28 @@ const Module = () => {
                 return;
             }
 
+            const { projectCost, oppertunityCost, dprCost } = values;
+
             const updatedActivities = moduleData.activities.map((activity: any) => {
-                if (activity.code === selectedActivityCode) {
-                    return {
-                        ...activity,
-                        cost: {
-                            projectCost: values.projectCost,
-                            opCost: values.opCost
-                        }
-                    };
-                }
-                return activity;
+                if (activity.code !== selectedActivityCode) return activity;
+
+                const prev = activity.cost || {};
+                const mergedCost = {
+                    ...prev,
+                    ...(projectCost !== undefined ? { projectCost: Number(projectCost) } : {}),
+                    ...(oppertunityCost !== undefined ? { oppertunityCost: Number(oppertunityCost) } : {}),
+                    ...(dprCost !== undefined ? { dprCost: Number(dprCost) } : {}),
+                };
+
+                return { ...activity, cost: mergedCost };
             });
 
-            const updatedModuleData = {
-                ...moduleData,
-                activities: updatedActivities
-            };
-            setModuleData(updatedModuleData);
+            setModuleData((prev: any) => ({ ...prev, activities: updatedActivities }));
             handleClose();
         } catch (err) {
             console.error("Validation Failed:", err);
         }
     };
-    const [importFromType, setImportFromType] = useState("");
-    const [selectedImportModule, setSelectedImportModule] = useState(null);
 
     return (
         <div>
@@ -1590,56 +1596,58 @@ const Module = () => {
                 </Modal >
 
                 <Modal
-                    title="Define Cost for Delay (₹ / Day)"
+                    title="Define Cost (₹ / Day)"
                     open={openCostCalcModal}
                     onCancel={handleClose}
                     okText="Save"
-                    onOk={() => {
-                        form
-                            .validateFields()
-                            .then((_values) => {
-                                handleCostConfirm();
-                            })
-                            .catch((_err) => {
-                            });
-                    }}
+                    onOk={() => form.validateFields().then(() => handleCostConfirm())}
                     destroyOnClose={false}
                     className="modal-container"
                 >
-                    <Form
-                        form={form}
-                        layout="vertical"
-                        validateTrigger="onChange"
-                        style={{
-                            padding: "0px 10px",
-                            display: 'flex',
-                            flexDirection: 'column',
-                            gap: '10px',
-                        }}
-                    >
-                        <Row align="middle" gutter={8}>
-                            <Col flex="150px">Project Cost</Col>
-                            <Col flex="auto">
-                                <Form.Item
-                                    name="projectCost"
-                                    rules={[{ required: true, message: 'Please enter Project Cost' }]}
-                                >
-                                    <Input type="number" min={0} placeholder="Enter Project Cost" />
-                                </Form.Item>
-                            </Col>
-                        </Row>
+                    <Form form={form} layout="vertical" style={{ padding: "0 10px" }}>
+                        <div style={{marginBottom:'10px'}}>
+                        <Form.Item name="costType" label="" initialValue="DELAY">
+                            <Radio.Group>
+                                <Radio value="DELAY">Delay</Radio>
+                                <Radio value="DPR">DPR</Radio>
+                            </Radio.Group>
+                        </Form.Item>
+                        </div>
 
-                        <Row align="middle" gutter={8}>
-                            <Col flex="150px">Opportunity Cost</Col>
-                            <Col flex="auto">
-                                <Form.Item
-                                    name="opCost"
-                                    rules={[{ required: true, message: 'Please enter OP Cost' }]}
-                                >
-                                    <Input type="number" min={0} placeholder="Enter OP Cost" />
-                                </Form.Item>
-                            </Col>
-                        </Row>
+                        <Form.Item noStyle shouldUpdate={(prev, cur) => prev.costType !== cur.costType}>
+                            {({ getFieldValue }) => {
+                                const type = getFieldValue("costType") || "DELAY";
+                                return type === "DELAY" ? (
+                                    <>
+                                        <Row gutter={8}>
+                                            <Col flex="150px" style={{marginTop:'15px'}}>Project Cost</Col>
+                                            <Col flex="auto">
+                                                <Form.Item name="projectCost">
+                                                    <Input type="number" min={0} placeholder="Enter Project Cost" />
+                                                </Form.Item>
+                                            </Col>
+                                        </Row>
+                                        <Row gutter={8}>
+                                            <Col flex="150px" style={{marginTop:'15px'}}>Oppertunity Cost</Col>
+                                            <Col flex="auto">
+                                                <Form.Item name="oppertunityCost">
+                                                    <Input type="number" min={0} placeholder="Enter Oppertunity Cost" />
+                                                </Form.Item>
+                                            </Col>
+                                        </Row>
+                                    </>
+                                ) : (
+                                    <Row gutter={8}>
+                                        <Col flex="150px" style={{marginTop:'15px'}}>DPR Cost</Col>
+                                        <Col flex="auto">
+                                            <Form.Item name="dprCost">
+                                                <Input type="number" min={0} placeholder="Enter DPR Cost" />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                );
+                            }}
+                        </Form.Item>
                     </Form>
                 </Modal>
 

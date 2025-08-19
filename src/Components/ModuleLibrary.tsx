@@ -97,6 +97,8 @@ const ModuleLibrary = () => {
           console.error("Error fetching modules:", err);
           setModulesData([]);
         });
+        console.log(modulesData);
+        
 
       db.getAllMineTypes()
         .then((mine) => setMineTypes(mine.filter((item: any) => item.orgId == currentUser.orgId)))

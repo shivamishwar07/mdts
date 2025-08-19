@@ -6,7 +6,7 @@ import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, Tag, Space } from "antd";
+import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, Tag, Space, Tooltip } from "antd";
 import { ClockCircleOutlined, CloseCircleOutlined, DollarOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined, UploadOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
@@ -750,10 +750,7 @@ export const StatusUpdate = () => {
     { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
     { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
     { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
-    { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" },
-    // { title: "Project Delay Cost", dataIndex: "projectCost", key: "projectCost", width: 150, align: "right" },
-    // { title: "Oppertunity Cost", dataIndex: "opCost", key: "opCost", width: 150, align: "right" },
-    // { title: "Total Delay Cost", dataIndex: "totalCost", key: "totalCost", width: 150, align: "right" },
+    { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" }
   ];
 
   const editingColumns: ColumnsType = [
@@ -795,40 +792,58 @@ export const StatusUpdate = () => {
       }
     },
     {
-      title: "Delay (days)",
-      key: "delayDays",
-      width: 120,
-      align: "center",
-      render: (_: any, record: any) => {
-        const flat = flatActivities(dataSource);
-        const d = delayDaysDriver(record, flat);
-        return d > 0 ? d : 0;
-      }
-    },
-    {
       title: "Status",
       dataIndex: "activityStatus",
       key: "activityStatus",
       width: 240,
       align: "center",
       render: (_, record) => {
-        const delayed = isActivityDelayed(record);
-        const causalImpactSum = delayed ? impactedDependentsDelayCost(record, dataSource) : 0;
+        const statusNode =
+          (isEditing && isStatusUpdateMode && !record.isModule)
+            ? renderStatusSelect(record.activityStatus, record, dataSource, replaneMode)
+            : getStatusTag(record.activityStatus);
 
-        const statusNode = (isEditing && isStatusUpdateMode && !record.isModule)
-          ? renderStatusSelect(record.activityStatus, record, dataSource, replaneMode)
-          : getStatusTag(record.activityStatus);
+        const isInProgress = String(record.activityStatus || '').toLowerCase() === 'inprogress';
+        const delayed = isActivityDelayed(record);
+
+        const projDelayCost = parseMoney(record.projectCost ?? record?.cost?.projectCost);
+        const oppCostPerDay = parseMoney(record.opCost ?? record?.cost?.opCost);
+
+        const dd = (isInProgress && delayed) ? delayDaysFor(record) : 0;
+
+        const dependentsImpactSum = (isInProgress && delayed)
+          ? impactedDependentsDelayCost(record, dataSource)
+          : 0;
+
+        const ownImpact = projDelayCost + (oppCostPerDay * dd);
+
+        const finalSum = ownImpact + dependentsImpactSum;
+
+        const showMoney = isInProgress && delayed;
+
+        const tooltip = showMoney ? (
+          <div style={{ minWidth: 240, lineHeight: 1.5 }}>
+            <div>Delay Days: <b>{dd}</b></div>
+            <div>Dependents Impact Sum: <b>₹{dependentsImpactSum.toLocaleString('en-IN')}</b></div>
+            <div>Own Impact: <b>₹{ownImpact.toLocaleString('en-IN')}</b></div>
+            <div style={{ borderTop: '1px solid #eee', marginTop: 6, paddingTop: 6 }}>
+              Final Sum: <b>₹{finalSum.toLocaleString('en-IN')}</b>
+            </div>
+          </div>
+        ) : null;
 
         return (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             {statusNode}
-            {delayed && causalImpactSum > 0 && (
-              <Space size={4}>
-                <DollarOutlined style={{ color: '#e67e22' }} />
-                <Typography.Text strong>
-                  ₹{causalImpactSum.toLocaleString('en-IN')}
-                </Typography.Text>
-              </Space>
+            {showMoney && (
+              <Tooltip title={tooltip} placement="topRight">
+                <Space size={4} style={{ cursor: 'pointer' }}>
+                  <DollarOutlined style={{ color: '#e67e22' }} />
+                  <Typography.Text strong>
+                    ₹{finalSum.toLocaleString('en-IN')}
+                  </Typography.Text>
+                </Space>
+              </Tooltip>
             )}
           </div>
         );
@@ -965,9 +980,21 @@ export const StatusUpdate = () => {
       },
     }
   ];
-  // ---------- Date & delay helpers ----------
+
   const parseDDMM = (d?: string | null) =>
     d && dayjs(d, 'DD-MM-YYYY').isValid() ? dayjs(d, 'DD-MM-YYYY') : null;
+
+  const parseMoney = (v: any) => {
+    if (v == null) return 0;
+    const n = typeof v === 'string' ? parseFloat(v.replace(/[, ]/g, '')) : Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const preReqList = (v: any) =>
+    String(v?.preRequisite ?? v?.prerequisite ?? '')
+      .split(',')
+      .map((s: string) => s.trim().toLowerCase())
+      .filter(Boolean);
 
   const plannedWindow = (rec: any) => ({
     ps: parseDDMM(rec.plannedStart),
@@ -993,8 +1020,6 @@ export const StatusUpdate = () => {
 
     const useDur = !isNaN(dur) ? dur : (!isNaN(fallbackDur) ? fallbackDur : null);
     if (useDur == null) return null;
-
-    // business-day add (same as your addBusinessDays logic)
     let count = 0;
     let d = as.clone();
     while (count < useDur) {
@@ -1020,18 +1045,15 @@ export const StatusUpdate = () => {
     }
 
     if (status === 'inprogress') {
-      // Overrunning planned finish or started late
       if (pf && now.isAfter(pf, 'day')) return true;
       if (ps && as && as.isAfter(ps, 'day')) return true;
 
-      // Also consider projected finish crossing planned finish
       const proj = projectedFinish(rec);
       if (pf && proj && proj.isAfter(pf, 'day')) return true;
 
       return false;
     }
 
-    // yetToStart but should have started
     if (status === 'yettostart') {
       if (ps && now.isAfter(ps, 'day')) return true;
       return false;
@@ -1050,21 +1072,37 @@ export const StatusUpdate = () => {
     return out;
   };
 
-  const preReqList = (v: any) =>
-    (v?.preRequisite || '')
-      .split(',')
-      .map((s: string) => s.trim().toLowerCase())
-      .filter(Boolean);
+  const impactedDependentsDelayCost = (source: any, dataSource: any[]): number => {
+    const flat = flatActivities(dataSource);
+    const dd = delayDaysFor(source);
+    if (dd <= 0) return 0;
 
-  const findDirectDependents = (code: string, flat: any[]) => {
-    const key = String(code || '').toLowerCase();
-    return flat.filter(a => preReqList(a).includes(key));
+    const srcKey = keyOf(source);       
+    const q: string[] = [srcKey];
+    const seen = new Set<string>([srcKey]);
+    let sum = 0;
+
+    while (q.length) {
+      const cur = q.shift()!;
+      for (const dep of flat) {
+        const reqs = preReqList(dep);
+        if (reqs.includes(cur)) {
+          const k = keyOf(dep);
+          if (!seen.has(k)) {
+            seen.add(k);
+            q.push(k);
+            sum += numericOpCost(dep) * dd;
+          }
+        }
+      }
+    }
+    return sum;
   };
 
   const numericOpCost = (a: any): number => {
     const v = a?.opCost ?? a?.cost?.opCost ?? 0;
-    const n = typeof v === 'string' ? parseFloat(v) : Number(v);
-    return isNaN(n) ? 0 : n;
+    const n = typeof v === 'string' ? parseFloat(v.replace(/[, ]/g, '')) : Number(v);
+    return Number.isFinite(n) ? n : 0;
   };
 
   const blockingFinish = (rec: any): dayjs.Dayjs | null => {
@@ -1084,89 +1122,6 @@ export const StatusUpdate = () => {
   };
 
   const keyOf = (a: any) => String(a?.Code || "").toLowerCase();
-
-  const buildIndex = (flat: any[]) => {
-    const m = new Map<string, any>();
-    for (const a of flat) m.set(keyOf(a), a);
-    return m;
-  };
-
-  const prereqCodes = (rec: any) => preReqList(rec);
-
-  const ancestorsOf = (node: any, index: Map<string, any>) => {
-    const out: any[] = [];
-    const seen = new Set<string>();
-    const stack = [...prereqCodes(node)];
-    while (stack.length) {
-      const code = String(stack.pop() || "").toLowerCase();
-      if (!code || seen.has(code)) continue;
-      seen.add(code);
-      const a = index.get(code);
-      if (!a) continue;
-      out.push(a);
-      for (const c of prereqCodes(a)) stack.push(c);
-    }
-    return out;
-  };
-
-  const criticalAncestorFor = (dep: any, flat: any[]) => {
-    const index = buildIndex(flat);
-    const ancs = ancestorsOf(dep, index);
-    let best: any = null;
-    let bestFinish: dayjs.Dayjs | null = null;
-    for (const a of ancs) {
-      const bf = blockingFinish(a);
-      if (!bf) continue;
-      if (!bestFinish || bf.isAfter(bestFinish)) {
-        best = a;
-        bestFinish = bf;
-      }
-    }
-    if (!best) return null;
-    if (delayDaysFor(best) <= 0) return null;
-    return best;
-  };
-
-  const delayDaysDriver = (rec: any, flat: any[]) => {
-    const src = criticalAncestorFor(rec, flat);
-    if (src) return delayDaysFor(src);
-    return delayDaysFor(rec);
-  };
-
-  const isDependentImpactedBySourceDelay = (source: any, dep: any, flat: any[]): boolean => {
-    const srcKey = keyOf(source);
-    const crit = criticalAncestorFor(dep, flat);
-    if (!crit) return false;
-    return keyOf(crit) === srcKey;
-  };
-
-  const impactedDependentsDelayCost = (source: any, dataSource: any[]): number => {
-    const flat = flatActivities(dataSource);
-    const dd = delayDaysFor(source);
-    if (dd <= 0) return 0;
-
-    const visited = new Set<string>();
-    const queue = findDirectDependents(String(source.Code || ""), flat).filter(Boolean);
-    for (const d of queue) visited.add(keyOf(d));
-
-    let sum = 0;
-    while (queue.length) {
-      const dep = queue.shift()!;
-      if (isDependentImpactedBySourceDelay(source, dep, flat)) {
-        sum += numericOpCost(dep) * dd;
-      }
-      const nextDeps = findDirectDependents(String(dep.Code || ""), flat);
-      for (const nd of nextDeps) {
-        const k = keyOf(nd);
-        if (!visited.has(k)) {
-          visited.add(k);
-          queue.push(nd);
-        }
-      }
-    }
-    return sum;
-  };
-
 
   const getStatusTag = (status: string) => {
     switch (status) {
