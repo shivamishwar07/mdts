@@ -6,7 +6,7 @@ import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, Tag, Space } from "antd";
+import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, Tag, Space, Tooltip } from "antd";
 import { ClockCircleOutlined, CloseCircleOutlined, DollarOutlined, DownloadOutlined, EditOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined, UploadOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
@@ -73,7 +73,14 @@ export const StatusUpdate = () => {
   const [isEditUser, setIsEditUser] = useState(false);
   const [isStatusUpdateMode, setIsStatusUpdateMode] = useState(false);
   const [editedUserId, setEditedUserId] = useState(selectedProjectTimeline?.assignedUserId);
-
+  const [docModalVisible, setDocModalVisible] = useState(false);
+  const [docName, setDocName] = useState("");
+  const [docType, setDocType] = useState("");
+  const [_docDescription, setDocDescription] = useState("");
+  const [docFile, setDocFile] = useState<File | null>(null);
+  const [selectedActivityDocs, setSelectedActivityDocs] = useState<any[]>([]);
+  const [previewVisible, setPreviewVisible] = useState(false);
+  const [previewContent, setPreviewContent] = useState<string | null>(null);
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getCurrentUser();
@@ -520,6 +527,11 @@ export const StatusUpdate = () => {
             raci: activity.raci || {},
             cost: activity.cost || {},
             documents: activity.documents || {},
+            projectCost: activity.cost.projectCost || "",
+            opCost: activity.cost.opCost || "",
+            totalCost: (parseInt(activity?.cost?.projectCost) || 0) +
+              (parseInt(activity?.cost?.opCost) || 0)
+
           };
         });
 
@@ -628,7 +640,7 @@ export const StatusUpdate = () => {
         ]}
         disabled={disabled}
         className={`status-select ${status}`}
-        style={{ width: "100%", fontWeight: "bold" }}
+        style={{ width: "130px", fontWeight: "bold" }}
         title={undefined}
       />
     );
@@ -738,7 +750,7 @@ export const StatusUpdate = () => {
     { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", width: 120, align: "center" },
     { title: "Slack", dataIndex: "slack", key: "slack", width: 80, align: "center" },
     { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 120, align: "center" },
-    { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" },
+    { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 120, align: "center" }
   ];
 
   const editingColumns: ColumnsType = [
@@ -783,14 +795,59 @@ export const StatusUpdate = () => {
       title: "Status",
       dataIndex: "activityStatus",
       key: "activityStatus",
-      width: 150,
+      width: 240,
       align: "center",
       render: (_, record) => {
-        return isEditing && isStatusUpdateMode && !record.isModule
-          ? renderStatusSelect(record.activityStatus, record, dataSource, replaneMode)
-          : getStatusTag(record.activityStatus);
-      },
+        const statusNode =
+          (isEditing && isStatusUpdateMode && !record.isModule)
+            ? renderStatusSelect(record.activityStatus, record, dataSource, replaneMode)
+            : getStatusTag(record.activityStatus);
 
+        const isInProgress = String(record.activityStatus || '').toLowerCase() === 'inprogress';
+        const delayed = isActivityDelayed(record);
+
+        const projDelayCost = parseMoney(record.projectCost ?? record?.cost?.projectCost);
+        const oppCostPerDay = parseMoney(record.opCost ?? record?.cost?.opCost);
+
+        const dd = (isInProgress && delayed) ? delayDaysFor(record) : 0;
+
+        const dependentsImpactSum = (isInProgress && delayed)
+          ? impactedDependentsDelayCost(record, dataSource)
+          : 0;
+
+        const ownImpact = projDelayCost + (oppCostPerDay * dd);
+
+        const finalSum = ownImpact + dependentsImpactSum;
+
+        const showMoney = isInProgress && delayed;
+
+        const tooltip = showMoney ? (
+          <div style={{ minWidth: 240, lineHeight: 1.5 }}>
+            <div>Delay Days: <b>{dd}</b></div>
+            <div>Dependents Impact Sum: <b>₹{dependentsImpactSum.toLocaleString('en-IN')}</b></div>
+            <div>Own Impact: <b>₹{ownImpact.toLocaleString('en-IN')}</b></div>
+            <div style={{ borderTop: '1px solid #eee', marginTop: 6, paddingTop: 6 }}>
+              Final Sum: <b>₹{finalSum.toLocaleString('en-IN')}</b>
+            </div>
+          </div>
+        ) : null;
+
+        return (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            {statusNode}
+            {showMoney && (
+              <Tooltip title={tooltip} placement="topRight">
+                <Space size={4} style={{ cursor: 'pointer' }}>
+                  <DollarOutlined style={{ color: '#e67e22' }} />
+                  <Typography.Text strong>
+                    ₹{finalSum.toLocaleString('en-IN')}
+                  </Typography.Text>
+                </Space>
+              </Tooltip>
+            )}
+          </div>
+        );
+      },
     },
     {
       title: "Actual / Expected Start",
@@ -799,7 +856,7 @@ export const StatusUpdate = () => {
       width: 180,
       align: "center",
       render: (_, record) => {
-        const { actualStart, activityStatus, key, isModule, preRequisite, children, Code } = record;
+        const { actualStart, activityStatus, key, isModule, preRequisite, children, Code, plannedStart } = record;
         const disableDueToReplan =
           replaneMode && ["completed", "inProgress"].includes(record.fin_status)
         const flatList = getAllActivities(dataSource);
@@ -852,7 +909,7 @@ export const StatusUpdate = () => {
             disabled={shouldDisable || disableDueToReplan}
           />
         ) : (
-          actualStart || ""
+          actualStart || plannedStart
         );
       },
     },
@@ -863,7 +920,7 @@ export const StatusUpdate = () => {
       width: 180,
       align: "center",
       render: (_, record) => {
-        const { actualFinish, activityStatus, key, isModule, preRequisite, children, Code } = record;
+        const { actualFinish, activityStatus, key, isModule, preRequisite, children, Code, plannedFinish } = record;
         const disableDueToReplan =
           replaneMode && ["completed", "inProgress"].includes(record.fin_status)
         const flatList = getAllActivities(dataSource);
@@ -918,11 +975,153 @@ export const StatusUpdate = () => {
             disabled={shouldDisable || disableDueToReplan}
           />
         ) : (
-          actualFinish || ""
+          actualFinish || plannedFinish
         );
       },
     }
   ];
+
+  const parseDDMM = (d?: string | null) =>
+    d && dayjs(d, 'DD-MM-YYYY').isValid() ? dayjs(d, 'DD-MM-YYYY') : null;
+
+  const parseMoney = (v: any) => {
+    if (v == null) return 0;
+    const n = typeof v === 'string' ? parseFloat(v.replace(/[, ]/g, '')) : Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const preReqList = (v: any) =>
+    String(v?.preRequisite ?? v?.prerequisite ?? '')
+      .split(',')
+      .map((s: string) => s.trim().toLowerCase())
+      .filter(Boolean);
+
+  const plannedWindow = (rec: any) => ({
+    ps: parseDDMM(rec.plannedStart),
+    pf: parseDDMM(rec.plannedFinish),
+  });
+
+  const actualWindow = (rec: any) => ({
+    as: parseDDMM(rec.actualStart),
+    af: parseDDMM(rec.actualFinish),
+  });
+
+  const today = () => dayjs();
+
+  const projectedFinish = (rec: any): dayjs.Dayjs | null => {
+    const { as, af } = actualWindow(rec);
+    if (af) return af;
+    if (!as) return null;
+
+    const dur =
+      (rec?.expectedDuration != null ? Number(rec.expectedDuration) : NaN);
+    const fallbackDur =
+      (rec?.duration != null ? Number(rec.duration) : NaN);
+
+    const useDur = !isNaN(dur) ? dur : (!isNaN(fallbackDur) ? fallbackDur : null);
+    if (useDur == null) return null;
+    let count = 0;
+    let d = as.clone();
+    while (count < useDur) {
+      d = d.add(1, 'day');
+      const wd = d.day();
+      if (wd !== 0 && wd !== 6) count++;
+    }
+    return d;
+  };
+
+  const isActivityDelayed = (rec: any): boolean => {
+    const { ps, pf } = plannedWindow(rec);
+    const { as, af } = actualWindow(rec);
+    const now = today();
+    const status = (rec.activityStatus || '').toLowerCase();
+
+    if (!ps && !pf) return false;
+
+    if (status === 'completed') {
+      if (pf && af && af.isAfter(pf, 'day')) return true;
+      if (ps && as && as.isAfter(ps, 'day')) return true;
+      return false;
+    }
+
+    if (status === 'inprogress') {
+      if (pf && now.isAfter(pf, 'day')) return true;
+      if (ps && as && as.isAfter(ps, 'day')) return true;
+
+      const proj = projectedFinish(rec);
+      if (pf && proj && proj.isAfter(pf, 'day')) return true;
+
+      return false;
+    }
+
+    if (status === 'yettostart') {
+      if (ps && now.isAfter(ps, 'day')) return true;
+      return false;
+    }
+
+    return false;
+  };
+
+  const flatActivities = (data: any[]): any[] => {
+    const out: any[] = [];
+    const walk = (items: any[]) => items.forEach(i => {
+      if (!i.isModule) out.push(i);
+      if (i.children?.length) walk(i.children);
+    });
+    walk(data);
+    return out;
+  };
+
+  const impactedDependentsDelayCost = (source: any, dataSource: any[]): number => {
+    const flat = flatActivities(dataSource);
+    const dd = delayDaysFor(source);
+    if (dd <= 0) return 0;
+
+    const srcKey = keyOf(source);       
+    const q: string[] = [srcKey];
+    const seen = new Set<string>([srcKey]);
+    let sum = 0;
+
+    while (q.length) {
+      const cur = q.shift()!;
+      for (const dep of flat) {
+        const reqs = preReqList(dep);
+        if (reqs.includes(cur)) {
+          const k = keyOf(dep);
+          if (!seen.has(k)) {
+            seen.add(k);
+            q.push(k);
+            sum += numericOpCost(dep) * dd;
+          }
+        }
+      }
+    }
+    return sum;
+  };
+
+  const numericOpCost = (a: any): number => {
+    const v = a?.opCost ?? a?.cost?.opCost ?? 0;
+    const n = typeof v === 'string' ? parseFloat(v.replace(/[, ]/g, '')) : Number(v);
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const blockingFinish = (rec: any): dayjs.Dayjs | null => {
+    const { pf } = plannedWindow(rec);
+    const { af } = actualWindow(rec);
+    if (af) return af;
+    const proj = projectedFinish(rec);
+    if (proj) return proj;
+    return pf || null;
+  };
+
+  const delayDaysFor = (rec: any): number => {
+    const { pf } = plannedWindow(rec);
+    const bf = blockingFinish(rec);
+    if (pf && bf && bf.isAfter(pf, 'day')) return getWorkingDaysDiff(pf, bf);
+    return 0;
+  };
+
+  const keyOf = (a: any) => String(a?.Code || "").toLowerCase();
 
   const getStatusTag = (status: string) => {
     switch (status) {
@@ -1297,13 +1496,6 @@ export const StatusUpdate = () => {
               return true;
             }
           }
-
-          // if (activityStatus == "yetToStart" && (actualStart || actualFinish)) {
-          //   errorMessage = `Activity ${activity.keyActivity} is Yet To Start but ${actualStart ? "Actual Start" : "Actual Finish"} is filled incorrectly.`;
-          //   isValid = false;
-          //   return true;
-          // }  
-
           return false;
         });
       }
@@ -1393,18 +1585,21 @@ export const StatusUpdate = () => {
   };
 
   const selectedNotes = useMemo(() => {
-    const findNotes = (items: any[]): any[] => {
+    const findNotes = (items: any[]): any[] | undefined => {
       for (const item of items) {
-        if (item.key == selectedActivityKey) return item.notes || [];
-        if (item.children) {
+        if (item.key == selectedActivityKey) {
+          return item.notes ?? [];
+        }
+        if (item.children?.length) {
           const found = findNotes(item.children);
-          if (found) return found;
+          if (found !== undefined) return found;
         }
       }
-      return [];
+      return undefined;
     };
-    return findNotes(dataSource);
+    return findNotes(dataSource) ?? [];
   }, [selectedActivityKey, dataSource]);
+
 
   const handleSaveNote = async () => {
     const timestamp = new Date();
@@ -1735,39 +1930,51 @@ export const StatusUpdate = () => {
     }
   };
 
-  const [docModalVisible, setDocModalVisible] = useState(false);
-  const [docName, setDocName] = useState("");
-  const [docType, setDocType] = useState("");
-  const [_docDescription, setDocDescription] = useState("");
-  const [docFile, setDocFile] = useState<File | null>(null);
-  const [selectedActivityDocs, setSelectedActivityDocs] = useState<any[]>([]);
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [previewContent, setPreviewContent] = useState<string | null>(null);
-
-
   const handleOpenDocumentsModal = (activityKey: string) => {
-    if (!activityKey || typeof activityKey !== 'string') {
+    setSelectedActivityKey(activityKey);
+
+    if (!activityKey || typeof activityKey !== "string") {
       setSelectedActivityDocs([]);
       setDocModalVisible(true);
       return;
     }
 
-    const activity = Array.isArray(dataSource)
-      ? dataSource.find((item) => item?.key === activityKey)
-      : null;
+    const keyStr = String(activityKey);
 
-    const documents = activity?.documents;
-
-    if (Array.isArray(documents)) {
-      setSelectedActivityDocs(documents);
-    } else {
-      setSelectedActivityDocs([]);
+    let activity: any = null;
+    if (Array.isArray(dataSource)) {
+      for (const module of dataSource) {
+        if (String(module?.key) === keyStr) {
+          activity = module;
+          break;
+        }
+        if (Array.isArray(module?.children)) {
+          activity = module.children.find((c: any) => String(c?.key) === keyStr) || null;
+          if (activity) break;
+        }
+      }
     }
 
+    let docs: any[] = Array.isArray(activity?.documents) ? activity!.documents : [];
+
+    if (docs.length === 0) {
+      const actCode = activity?.Code ?? activity?.code ?? null;
+      if (actCode && Array.isArray(sequencedModules)) {
+        for (const m of sequencedModules) {
+          const a: any = (m.activities || []).find(
+            (x: any) => String(x.Code ?? x.code) === String(actCode)
+          );
+          if (a && Array.isArray(a.documents)) {
+            docs = a.documents;
+            break;
+          }
+        }
+      }
+    }
+
+    setSelectedActivityDocs(docs);
     setDocModalVisible(true);
   };
-
-
 
   const handleSaveDocument = async () => {
     if (!docFile || !docName || !docType || !selectedActivityKey || !selectedProjectId) {
@@ -1777,6 +1984,7 @@ export const StatusUpdate = () => {
 
     const fileId = Date.now().toString();
     const filePath = `documents/${fileId}`;
+
     await saveFileToDisk(docFile, fileId);
 
     const activity = findActivityByKey(dataSource, selectedActivityKey);
@@ -1794,68 +2002,62 @@ export const StatusUpdate = () => {
       fileName: docFile.name,
       filePath,
       uploadedAt: new Date().toISOString(),
-      uploadedBy: currentUser?.name || "Unknown"
+      uploadedBy: currentUser?.name || "Unknown",
     };
-
-    // Update activity in dataSource
     const updatedDataSource = dataSource.map((module: any) => {
-      if (module.children) {
-        module.children = module.children.map((child: any) => {
-          if (child.key === selectedActivityKey) {
-            const documents = child.documents || [];
-            return { ...child, documents: [...documents, newDoc] };
-          }
-          return child;
-        });
-      }
-      return module;
+      if (!Array.isArray(module.children)) return module;
+
+      return {
+        ...module,
+        children: module.children.map((child: any) => {
+          if (child.key !== selectedActivityKey) return child;
+
+          const existing = Array.isArray(child.documents) ? child.documents : [];
+          return { ...child, documents: [...existing, newDoc] };
+        }),
+      };
     });
 
     setDataSource(updatedDataSource);
 
-    // Map to reconstruct activity->documents relation
-    const updatedMap = new Map();
+    const updatedMap = new Map<string, any[]>();
     updatedDataSource.forEach((module: any) => {
-      module.children.forEach((activity: any) => {
-        if (activity.documents) {
-          updatedMap.set(activity.Code, activity.documents);
+      (module.children || []).forEach((act: any) => {
+        const docs = Array.isArray(act.documents) ? act.documents : [];
+        const actCode: string | undefined = act.Code ?? act.code;
+        if (actCode && docs.length) {
+          updatedMap.set(String(actCode), docs);
         }
       });
     });
 
-    // Update sequencedModules
-    const updatedSequencedModules = sequencedModules.map((module) => ({
+    const updatedSequencedModules = (sequencedModules || []).map((module: any) => ({
       ...module,
-      activities: module.activities.map((activity) => ({
-        ...activity,
-        ...(updatedMap.has(activity.code) ? { documents: updatedMap.get(activity.code) } : {})
-      }))
+      activities: (module.activities || []).map((act: any) => {
+        const key = String(act.Code ?? act.code ?? "");
+        return key && updatedMap.has(key)
+          ? { ...act, documents: updatedMap.get(key) }
+          : { ...act };
+      }),
     }));
 
     setSequencedModules(updatedSequencedModules);
 
-    // Persist to timeline table
     await db.updateProjectTimeline(
       selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId,
       updatedSequencedModules
     );
 
-    // ✅ Persist to parent project timeline (so it loads after refresh)
     const updatedProjectTimeline = selectedProject.projectTimeline.map((timeline: any) => {
-      if ((timeline.versionId || timeline.timelineId) === (selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId)) {
-        return {
-          ...timeline,
-          data: updatedSequencedModules, // assuming this holds the timeline's activity/module data
-        };
+      const tId = timeline.versionId || timeline.timelineId;
+      const selId = selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId;
+      if (tId === selId) {
+        return { ...timeline, data: updatedSequencedModules };
       }
       return timeline;
     });
 
-    const updatedProject = {
-      ...selectedProject,
-      projectTimeline: updatedProjectTimeline
-    };
-
+    const updatedProject = { ...selectedProject, projectTimeline: updatedProjectTimeline };
     await db.updateProject(selectedProjectId, updatedProject);
 
     notify.success("Document uploaded successfully!");
@@ -1864,10 +2066,10 @@ export const StatusUpdate = () => {
     setDocType("");
     setDocDescription("");
     setDocFile(null);
-    setSelectedActivityDocs(updatedMap.get(activity.Code) || []);
+
+    const currentActCode = String(activity.Code ?? activity.code ?? "");
+    setSelectedActivityDocs(updatedMap.get(currentActCode) || []);
   };
-
-
 
   const handleDeleteDocument = async (docId: string) => {
     const updatedDocs = selectedActivityDocs.filter((doc) => doc.id !== docId);
@@ -1910,7 +2112,6 @@ export const StatusUpdate = () => {
     notify.success("Document deleted.");
   };
 
-
   const handlePreviewDocument = async (doc: any) => {
     const file: any = await db.diskStorage.where("path").equals(doc.filePath).first();
     if (file?.content) {
@@ -1920,7 +2121,6 @@ export const StatusUpdate = () => {
       notify.error("Preview failed. File not found.");
     }
   };
-
 
   async function saveFileToDisk(file: File, fileId: string) {
     const reader = new FileReader();
@@ -1935,7 +2135,6 @@ export const StatusUpdate = () => {
     };
     reader.readAsDataURL(file);
   }
-
 
   return (
     <>
@@ -2669,40 +2868,44 @@ export const StatusUpdate = () => {
         onCancel={() => setDocModalVisible(false)}
         footer={null}
         width="65%"
-
+        className="modal-container"
       >
-        <Form layout="vertical" onFinish={handleSaveDocument}>
-          <Form.Item label="Document Name" required>
-            <Input value={docName} onChange={(e) => setDocName(e.target.value)} />
-          </Form.Item>
-          <Form.Item label="Description" required>
-            <Input value={docType} onChange={(e) => setDocType(e.target.value)} />
-          </Form.Item>
-          <Form.Item label="Upload File" required>
-            <input type="file" onChange={(e) => setDocFile(e.target.files?.[0] || null)} />
-          </Form.Item>
-          <Button type="primary" htmlType="submit">Add Document</Button>
-        </Form>
+        <div style={{ padding: '10px 20px' }}>
+          <Form layout="vertical" onFinish={handleSaveDocument}>
+            <Form.Item label="Document Name" required>
+              <Input value={docName} onChange={(e) => setDocName(e.target.value)} />
+            </Form.Item>
+            <Form.Item label="Description" required>
+              <Input value={docType} onChange={(e) => setDocType(e.target.value)} />
+            </Form.Item>
+            <Form.Item label="Upload File" required>
+              <input type="file" onChange={(e) => setDocFile(e.target.files?.[0] || null)} />
+            </Form.Item>
+            <div style={{ marginBottom: '10px', float: 'right' }}>
+              <Button type="primary" htmlType="submit">Add Document</Button>
+            </div>
+          </Form>
 
-        <Table
-          dataSource={selectedActivityDocs}
-          rowKey="id"
-          pagination={false}
-          columns={[
-            { title: "Type", dataIndex: "description" },
-            { title: "Name", dataIndex: "documentName" },
-            {
-              title: "Actions",
-              render: (_, record) => (
-                <Space>
-                  <a onClick={() => handlePreviewDocument(record)}>Preview</a>
-                  <a onClick={() => handleDeleteDocument(record.id)}>Delete</a>
-                </Space>
-              ),
-            },
-          ]}
-          style={{ marginTop: 20 }}
-        />
+          <Table
+            dataSource={Array.isArray(selectedActivityDocs) ? selectedActivityDocs : []}
+            rowKey="id"
+            pagination={false}
+            columns={[
+              { title: "Type", dataIndex: "description" },
+              { title: "Name", dataIndex: "documentName" },
+              {
+                title: "Actions",
+                render: (_: any, record: any) => (
+                  <Space>
+                    <a onClick={() => handlePreviewDocument(record)}>Preview</a>
+                    <a onClick={() => handleDeleteDocument(record.id)}>Delete</a>
+                  </Space>
+                ),
+              },
+            ]}
+            style={{ marginTop: 20 }}
+          />
+        </div>
       </Modal>
 
       <Modal
