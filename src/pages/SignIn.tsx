@@ -320,8 +320,8 @@ const SignInSignUp: React.FC = () => {
                     <h2>{isSignUp ? 'Sign up to get started' : 'Sign in to continue'}</h2>
                     {!isSignUp ? (
                         <form>
-                            <input type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                            <input type={showPassword ? "text" : "password"}
+                            <input className="mb-20" type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                            <input className="mb-20" type={showPassword ? "text" : "password"}
                                 placeholder="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)} required />
