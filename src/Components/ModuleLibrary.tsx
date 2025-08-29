@@ -92,7 +92,7 @@ const ModuleLibrary = () => {
         });
 
       db.getModules()
-        .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId == currentUser.orgId && mod.moduleType != 'MDTS')))
+        .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId == currentUser.orgId)))
         .catch((err) => {
           console.error("Error fetching modules:", err);
           setModulesData([]);
@@ -235,7 +235,7 @@ const ModuleLibrary = () => {
     try {
       await db.deleteModule(selectedModuleId);
       db.getModules()
-        .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId == currentUser.orgId && mod.moduleType != 'MDTS')))
+        .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId == currentUser.orgId)))
         .catch((err) => {
           console.error("Error fetching modules:", err);
           setModulesData([]);
@@ -378,7 +378,7 @@ const ModuleLibrary = () => {
       if (updatedCount) {
         notify.success("Module successfully converted to Organizational type.");
         db.getModules()
-          .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId == currentUser.orgId && mod.moduleType != 'MDTS')))
+          .then((mods) => setModulesData(mods.filter((mod: any) => mod.orgId == currentUser.orgId)))
           .catch((err) => {
             console.error("Error fetching modules:", err);
             setModulesData([]);

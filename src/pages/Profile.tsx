@@ -133,12 +133,10 @@ const Profile = () => {
         }
 
         if (currentUser.isTempPassword) {
-            // First-time user: open modal to prompt for password update
             setIsModalOpen(true);
             return;
         }
 
-        // Returning user: directly save profile
         await proceedProfileSave(currentUser);
     };
 
