@@ -497,6 +497,261 @@ const TimeBuilder = () => {
     setSequencedModules(items);
   };
 
+  const isDayjsObj = (v: any) => !!v && typeof v === "object" && typeof v.isSame === "function";
+
+  const ensureDate = (value: any): Date => {
+    if (!value) throw new Error("Invalid date input");
+
+    if (value instanceof Date) {
+      if (isNaN(value.getTime())) throw new Error("Invalid date input");
+      return value;
+    }
+
+    if (isDayjsObj(value)) {
+      const d = (value as dayjs.Dayjs).toDate();
+      if (isNaN(d.getTime())) throw new Error("Invalid date input");
+      return d;
+    }
+
+    if (typeof value === "string") {
+      const isoTry = new Date(value);
+      if (!isNaN(isoTry.getTime())) return isoTry;
+
+      const m = value.match(/^(\d{2})-(\d{2})-(\d{4})$/);
+      if (m) {
+        const dmy = new Date(`${m[3]}-${m[2]}-${m[1]}`);
+        if (!isNaN(dmy.getTime())) return dmy;
+      }
+
+      const parsed = Date.parse(value);
+      if (!isNaN(parsed)) return new Date(parsed);
+    }
+
+    throw new Error("Invalid date input");
+  };
+
+  const toISODateOnly = (value: any): string => {
+    const d = ensureDate(value);
+    const y = d.getUTCFullYear();
+    const m = d.getUTCMonth();
+    const day = d.getUTCDate();
+    const normalized = new Date(Date.UTC(y, m, day));
+    return normalized.toISOString().slice(0, 10);
+  };
+
+  const addBusinessDays = (startDateAny: any, days: number) => {
+    let date = ensureDate(startDateAny);
+    date = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+
+    let addedDays = 0;
+    let holidays: { date: string; reason: string }[] = [];
+
+    while (addedDays < days) {
+      date.setUTCDate(date.getUTCDate() + 1);
+
+      const day = date.getUTCDay();
+      const formattedDate = date.toISOString().slice(0, 10);
+
+      const isSaturday = day === 6;
+      const isSunday = day === 0;
+
+      const holidayEntry: any = (finalHolidays || []).find((holiday: any) => {
+        try {
+          const holidayDate = toISODateOnly(holiday.from);
+          return holidayDate === formattedDate;
+        } catch {
+          return false;
+        }
+      });
+
+      if (isSaturday && !isSaturdayWorking) {
+        holidays.push({ date: formattedDate, reason: "Saturday" });
+      } else if (isSunday && !isSundayWorking) {
+        holidays.push({ date: formattedDate, reason: "Sunday" });
+      } else if (holidayEntry) {
+        holidays.push({ date: formattedDate, reason: holidayEntry.holiday || "Holiday" });
+      } else {
+        addedDays++;
+      }
+    }
+
+    const finalDate = date.toISOString().slice(0, 10);
+    return { date: finalDate, holidays };
+  };
+
+  const handleStartDateChange = (code: any, dateVal: any) => {
+    let updatedFinalData = [...finalData];
+    let updatedSequencedModules = [...sequencedModules];
+
+    const startISO = toISODateOnly(dateVal);
+
+    function updateActivities(activities: any) {
+      return activities.map((activity: any) => {
+        if (activity.code == code) {
+          const duration = parseInt(activity.duration, 10) || 0;
+          const { date: endISO, holidays } = addBusinessDays(startISO, duration);
+
+          activity.start = startISO;         // YYYY-MM-DD
+          activity.end = endISO;             // YYYY-MM-DD
+          activity.holidays = holidays;
+          activity.saturdayWorking = isSaturdayWorking;
+          activity.sundayWorking = isSundayWorking;
+
+          updateDependentActivities(activity.code, endISO);
+        }
+        return activity;
+      });
+    }
+
+    updatedFinalData = updatedFinalData.map((module) => ({
+      ...module,
+      activities: updateActivities(module.activities),
+    }));
+
+    updatedSequencedModules = updatedSequencedModules.map((module) => ({
+      ...module,
+      saturdayWorking: isSaturdayWorking,
+      sundayWorking: isSundayWorking,
+      activities: updateActivities(module.activities),
+    }));
+
+    setFinalData(updatedFinalData);
+    setSequencedModules(updatedSequencedModules);
+  };
+
+  const handleSlackChange = (code: any, newSlack: any) => {
+    let updatedFinalData = [...finalData];
+    let updatedSequencedModules = [...sequencedModules];
+
+    function updateActivities(activities: any) {
+      return activities.map((activity: any) => {
+        if (activity.activityStatus == "completed" || activity.fin_status == "completed") return activity;
+
+        if (activity.code == code) {
+          activity.slack = newSlack;
+
+          const preEnd = activity.prerequisite
+            ? getActivityEndDate(activity.prerequisite)
+            : (activity.start || null);
+
+          const preEndISO = preEnd ? toISODateOnly(preEnd) : null;
+          if (!preEndISO) return activity; // cannot compute yet
+
+          const slackDays = parseInt(newSlack, 10) || 0;
+          const { date: startISO, holidays: slackH } = addBusinessDays(preEndISO, slackDays + 1);
+
+          const duration = parseInt(activity.duration, 10) || 0;
+          const { date: endISO, holidays: durH } = addBusinessDays(startISO, duration);
+
+          activity.start = startISO;
+          activity.end = endISO;
+          activity.holidays = [...slackH, ...durH];
+
+          updateDependentActivities(activity.code, endISO);
+        }
+        return activity;
+      });
+    }
+
+    updatedFinalData = updatedFinalData.map((module) => ({
+      ...module,
+      activities: updateActivities(module.activities),
+    }));
+
+    updatedSequencedModules = updatedSequencedModules.map((module) => ({
+      ...module,
+      activities: updateActivities(module.activities),
+    }));
+
+    setFinalData(updatedFinalData);
+    setSequencedModules(updatedSequencedModules);
+  };
+
+  const updateDependentActivities = (prerequisiteCode: any, prerequisiteEndDate: any) => {
+    let updatedFinalData = [...finalData];
+    let updatedSequencedModules = [...sequencedModules];
+
+    const prereqEndISO = toISODateOnly(prerequisiteEndDate);
+
+    function updateActivities(activities: any) {
+      return activities.map((activity: any) => {
+        if (activity.prerequisite == prerequisiteCode) {
+          const slack = parseInt(activity.slack, 10) || 0;
+          const { date: startISO, holidays: slackH } = addBusinessDays(prereqEndISO, slack + 1);
+
+          const duration = parseInt(activity.duration, 10) || 0;
+          const { date: endISO, holidays: durH } = addBusinessDays(startISO, duration);
+
+          activity.start = startISO;
+          activity.end = endISO;
+          activity.holidays = [...slackH, ...durH];
+          activity.saturdayWorking = isSaturdayWorking;
+          activity.sundayWorking = isSundayWorking;
+
+          updateDependentActivities(activity.code, endISO);
+        }
+        return activity;
+      });
+    }
+
+    updatedFinalData = updatedFinalData.map((module) => ({
+      ...module,
+      activities: updateActivities(module.activities),
+    }));
+
+    updatedSequencedModules = updatedSequencedModules.map((module) => ({
+      ...module,
+      saturdayWorking: isSaturdayWorking,
+      sundayWorking: isSundayWorking,
+      activities: updateActivities(module.activities),
+    }));
+
+    setFinalData(updatedFinalData);
+    setSequencedModules(updatedSequencedModules);
+  };
+
+  // const addBusinessDays = (startDate: string, days: number) => {
+  //   let date = new Date(startDate);
+  //   let addedDays = 0;
+  //   let holidays: { date: string; reason: string }[] = [];
+
+  //   while (addedDays < days) {
+  //     date.setDate(date.getDate() + 1);
+
+  //     const day = date.getDay();
+  //     const formattedDate = date.toISOString().split("T")[0];
+
+  //     const isSaturday = day == 6;
+  //     const isSunday = day == 0;
+
+  //     const holidayEntry: any = finalHolidays?.find((holiday: any) => {
+  //       const holidayDate = new Date(holiday.from).toISOString().split("T")[0];
+  //       return holidayDate == formattedDate;
+  //     });
+
+  //     if (isSaturday && !isSaturdayWorking) {
+  //       holidays.push({ date: formattedDate, reason: "Saturday" });
+  //     } else if (isSunday && !isSundayWorking) {
+  //       holidays.push({ date: formattedDate, reason: "Sunday" });
+  //     } else if (holidayEntry) {
+  //       holidays.push({
+  //         date: formattedDate,
+  //         reason: holidayEntry.holiday || "Holiday",
+  //       });
+  //     } else {
+  //       addedDays++;
+  //     }
+  //   }
+
+  //   const finalDate = date.toLocaleDateString("en-US", {
+  //     day: "numeric",
+  //     month: "long",
+  //     year: "numeric",
+  //   });
+
+  //   return { date: finalDate, holidays };
+  // };
+
   const handleDurationChange = (code: any, newDuration: any) => {
     let updatedFinalData = [...finalData];
     let updatedSequencedModules = [...sequencedModules];
@@ -540,46 +795,124 @@ const TimeBuilder = () => {
     setSequencedModules(updatedSequencedModules);
   };
 
-  const handleSlackChange = (code: any, newSlack: any) => {
-    let updatedFinalData = [...finalData];
-    let updatedSequencedModules = [...sequencedModules];
+  // const handleSlackChange = (code: any, newSlack: any) => {
+  //   let updatedFinalData = [...finalData];
+  //   let updatedSequencedModules = [...sequencedModules];
 
-    function updateActivities(activities: any) {
-      return activities.map((activity: any) => {
-        if (activity.activityStatus == "completed" || activity.fin_status == "completed") {
-          return activity;
-        }
-        if (activity.code == code) {
-          activity.slack = newSlack;
-          const prerequisiteEndDate = activity.prerequisite
-            ? getActivityEndDate(activity.prerequisite)
-            : activity.start;
-          const { date: startDate, holidays: slackHolidays } = addBusinessDays(prerequisiteEndDate, parseInt(newSlack, 10) + 1);
-          const duration = parseInt(activity.duration, 10) || 0;
-          const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
+  //   function updateActivities(activities: any) {
+  //     return activities.map((activity: any) => {
+  //       if (activity.activityStatus == "completed" || activity.fin_status == "completed") {
+  //         return activity;
+  //       }
+  //       if (activity.code == code) {
+  //         activity.slack = newSlack;
+  //         const prerequisiteEndDate = activity.prerequisite
+  //           ? getActivityEndDate(activity.prerequisite)
+  //           : activity.start;
+  //         const { date: startDate, holidays: slackHolidays } = addBusinessDays(prerequisiteEndDate, parseInt(newSlack, 10) + 1);
+  //         const duration = parseInt(activity.duration, 10) || 0;
+  //         const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
 
-          activity.start = startDate;
-          activity.end = endDate;
-          activity.holidays = [...slackHolidays, ...durationHolidays];
-          updateDependentActivities(activity.code, endDate);
-        }
-        return activity;
-      });
-    }
+  //         activity.start = startDate;
+  //         activity.end = endDate;
+  //         activity.holidays = [...slackHolidays, ...durationHolidays];
+  //         updateDependentActivities(activity.code, endDate);
+  //       }
+  //       return activity;
+  //     });
+  //   }
 
-    updatedFinalData = updatedFinalData.map((module) => ({
-      ...module,
-      activities: updateActivities(module.activities),
-    }));
+  //   updatedFinalData = updatedFinalData.map((module) => ({
+  //     ...module,
+  //     activities: updateActivities(module.activities),
+  //   }));
 
-    updatedSequencedModules = updatedSequencedModules.map((module) => ({
-      ...module,
-      activities: updateActivities(module.activities),
-    }));
+  //   updatedSequencedModules = updatedSequencedModules.map((module) => ({
+  //     ...module,
+  //     activities: updateActivities(module.activities),
+  //   }));
 
-    setFinalData(updatedFinalData);
-    setSequencedModules(updatedSequencedModules);
-  };
+  //   setFinalData(updatedFinalData);
+  //   setSequencedModules(updatedSequencedModules);
+  // };
+
+  // const handleStartDateChange = (code: any, date: any) => {
+  //   let updatedFinalData = [...finalData];
+  //   let updatedSequencedModules = [...sequencedModules];
+
+  //   function updateActivities(activities: any) {
+  //     return activities.map((activity: any) => {
+  //       if (activity.code == code) {
+  //         const duration = parseInt(activity.duration, 10) || 0;
+  //         const { date: endDate, holidays } = addBusinessDays(date, duration);
+
+  //         activity.start = new Date(date).toISOString();
+  //         activity.end = new Date(endDate).toISOString();
+  //         activity.holidays = holidays;
+  //         activity.saturdayWorking = isSaturdayWorking;
+  //         activity.sundayWorking = isSundayWorking;
+
+  //         updateDependentActivities(activity.code, endDate);
+  //       }
+  //       return activity;
+  //     });
+  //   }
+
+  //   updatedFinalData = updatedFinalData.map((module) => ({
+  //     ...module,
+  //     activities: updateActivities(module.activities),
+  //   }));
+
+  //   updatedSequencedModules = updatedSequencedModules.map((module) => ({
+  //     ...module,
+  //     saturdayWorking: isSaturdayWorking,
+  //     sundayWorking: isSundayWorking,
+  //     activities: updateActivities(module.activities),
+  //   }));
+
+  //   setFinalData(updatedFinalData);
+  //   setSequencedModules(updatedSequencedModules);
+  // };
+
+  // const updateDependentActivities = (prerequisiteCode: any, prerequisiteEndDate: any) => {
+  //   let updatedFinalData = [...finalData];
+  //   let updatedSequencedModules = [...sequencedModules];
+
+  //   function updateActivities(activities: any) {
+  //     return activities.map((activity: any) => {
+  //       if (activity.prerequisite == prerequisiteCode) {
+  //         const slack = parseInt(activity.slack, 10) || 0;
+  //         const { date: startDate, holidays: slackHolidays } = addBusinessDays(prerequisiteEndDate, slack + 1);
+  //         const duration = parseInt(activity.duration, 10) || 0;
+  //         const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
+
+  //         activity.start = startDate;
+  //         activity.end = endDate;
+  //         activity.holidays = [...slackHolidays, ...durationHolidays];
+  //         activity.saturdayWorking = isSaturdayWorking;
+  //         activity.sundayWorking = isSundayWorking;
+
+  //         updateDependentActivities(activity.code, endDate);
+  //       }
+  //       return activity;
+  //     });
+  //   }
+
+  //   updatedFinalData = updatedFinalData.map((module) => ({
+  //     ...module,
+  //     activities: updateActivities(module.activities),
+  //   }));
+
+  //   updatedSequencedModules = updatedSequencedModules.map((module) => ({
+  //     ...module,
+  //     saturdayWorking: isSaturdayWorking,
+  //     sundayWorking: isSundayWorking,
+  //     activities: updateActivities(module.activities),
+  //   }));
+
+  //   setFinalData(updatedFinalData);
+  //   setSequencedModules(updatedSequencedModules);
+  // };
 
   const getActivityEndDate = (prerequisiteCode: any) => {
     let endDate = null;
@@ -591,126 +924,6 @@ const TimeBuilder = () => {
       });
     });
     return endDate;
-  };
-
-  const addBusinessDays = (startDate: string, days: number) => {
-    let date = new Date(startDate);
-    let addedDays = 0;
-    let holidays: { date: string; reason: string }[] = [];
-
-    while (addedDays < days) {
-      date.setDate(date.getDate() + 1);
-
-      const day = date.getDay();
-      const formattedDate = date.toISOString().split("T")[0];
-
-      const isSaturday = day == 6;
-      const isSunday = day == 0;
-
-      const holidayEntry: any = finalHolidays?.find((holiday: any) => {
-        const holidayDate = new Date(holiday.from).toISOString().split("T")[0];
-        return holidayDate == formattedDate;
-      });
-
-      if (isSaturday && !isSaturdayWorking) {
-        holidays.push({ date: formattedDate, reason: "Saturday" });
-      } else if (isSunday && !isSundayWorking) {
-        holidays.push({ date: formattedDate, reason: "Sunday" });
-      } else if (holidayEntry) {
-        holidays.push({
-          date: formattedDate,
-          reason: holidayEntry.holiday || "Holiday",
-        });
-      } else {
-        addedDays++;
-      }
-    }
-
-    const finalDate = date.toLocaleDateString("en-US", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    });
-
-    return { date: finalDate, holidays };
-  };
-
-  const handleStartDateChange = (code: any, date: any) => {
-    let updatedFinalData = [...finalData];
-    let updatedSequencedModules = [...sequencedModules];
-
-    function updateActivities(activities: any) {
-      return activities.map((activity: any) => {
-        if (activity.code == code) {
-          const duration = parseInt(activity.duration, 10) || 0;
-          const { date: endDate, holidays } = addBusinessDays(date, duration);
-
-          activity.start = new Date(date).toISOString();
-          activity.end = new Date(endDate).toISOString();
-          activity.holidays = holidays;
-          activity.saturdayWorking = isSaturdayWorking;
-          activity.sundayWorking = isSundayWorking;
-
-          updateDependentActivities(activity.code, endDate);
-        }
-        return activity;
-      });
-    }
-
-    updatedFinalData = updatedFinalData.map((module) => ({
-      ...module,
-      activities: updateActivities(module.activities),
-    }));
-
-    updatedSequencedModules = updatedSequencedModules.map((module) => ({
-      ...module,
-      saturdayWorking: isSaturdayWorking,
-      sundayWorking: isSundayWorking,
-      activities: updateActivities(module.activities),
-    }));
-
-    setFinalData(updatedFinalData);
-    setSequencedModules(updatedSequencedModules);
-  };
-
-  const updateDependentActivities = (prerequisiteCode: any, prerequisiteEndDate: any) => {
-    let updatedFinalData = [...finalData];
-    let updatedSequencedModules = [...sequencedModules];
-
-    function updateActivities(activities: any) {
-      return activities.map((activity: any) => {
-        if (activity.prerequisite == prerequisiteCode) {
-          const slack = parseInt(activity.slack, 10) || 0;
-          const { date: startDate, holidays: slackHolidays } = addBusinessDays(prerequisiteEndDate, slack + 1);
-          const duration = parseInt(activity.duration, 10) || 0;
-          const { date: endDate, holidays: durationHolidays } = addBusinessDays(startDate, duration);
-
-          activity.start = startDate;
-          activity.end = endDate;
-          activity.holidays = [...slackHolidays, ...durationHolidays];
-          activity.saturdayWorking = isSaturdayWorking;
-          activity.sundayWorking = isSundayWorking;
-
-          updateDependentActivities(activity.code, endDate);
-        }
-        return activity;
-      });
-    }
-
-    updatedFinalData = updatedFinalData.map((module) => ({
-      ...module,
-      activities: updateActivities(module.activities),
-    }));
-
-    updatedSequencedModules = updatedSequencedModules.map((module) => ({
-      ...module,
-      saturdayWorking: isSaturdayWorking,
-      sundayWorking: isSundayWorking,
-      activities: updateActivities(module.activities),
-    }));
-
-    setFinalData(updatedFinalData);
-    setSequencedModules(updatedSequencedModules);
   };
 
   const handleActivitySelection = (activityCode: string, isChecked: boolean) => {
