@@ -85,7 +85,7 @@ export const RegisterNewProject: React.FC = () => {
 
   const fetchMineTypes = async (storedLib: any) => {
     try {
-      let currentUser = getCurrentUser();
+      const currentUser = await getCurrentUser(); // <-- await
       const storedOptions: any = (await db.getAllMineTypes())?.filter(
         (type: any) => type.orgId === currentUser.orgId
       );
@@ -93,8 +93,8 @@ export const RegisterNewProject: React.FC = () => {
 
       if (storedOptions.length === 1) {
         const defaultMineType = storedOptions[0].type;
-
         setFormData((prev) => ({ ...prev, typeOfMine: defaultMineType }));
+
         const updatedLibraries = storedLib.filter((lib: any) => lib.mineType == defaultMineType);
         setAllLibrariesName(storedLib);
         if (updatedLibraries.length > 0) {
@@ -334,12 +334,31 @@ export const RegisterNewProject: React.FC = () => {
         };
 
         const id = await db.addMineType(mineTypeData);
-        setOptions([...options, { id, ...mineTypeData }]);
+        const newOpt = { id, ...mineTypeData };
+
+        setOptions((prev: any[]) => [...prev, newOpt]);
+        setMineTypeOptions((prev: any[]) => [
+          ...prev,
+          { type: newOpt.type, description: newOpt.description },
+        ]);
+
+        setFormData((prev) => ({ ...prev, typeOfMine: newOpt.type }));
+
+        const updatedLibraries = (allLibrariesName || []).filter((lib: any) => lib.mineType === newOpt.type);
+        if (updatedLibraries.length > 0) {
+          setSelectedLibrary(updatedLibraries[0].name);
+          setSelectedItems(updatedLibraries[0].items);
+        } else {
+          setSelectedLibrary(null);
+          setSelectedItems([]);
+        }
+
         setNewMineType("");
         setShorthandCode("");
         setMineTypePopupOpen(false);
         notify.success("Added Successfully");
       } catch (error) {
+        console.error(error);
         notify.error("Error adding mine type");
       }
     }

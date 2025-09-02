@@ -23,6 +23,7 @@ const SignInSignUp: React.FC = () => {
         ["country", "state", "city", "address1", "zip"],
         ["name", "designation", "email", "mobile", "password", "confirmPassword"]
     ];
+
     const handleNext = async () => {
         try {
             await form.validateFields(stepFieldNames[currentStep]);
@@ -32,10 +33,10 @@ const SignInSignUp: React.FC = () => {
         }
     };
 
-
     const handlePrev = () => setCurrentStep(prev => prev - 1);
 
     const handleFinish = async (values: any) => {
+        let orgId = uuidv4();
         const newUser = {
             id: Date.now(),
             guiId: uuidv4(),
@@ -55,6 +56,7 @@ const SignInSignUp: React.FC = () => {
             isTempPassword: false,
             role: "admin",
             userType: "IND",
+            orgId: orgId,
             companyType: values.industry || "",
             industryType: values.industry || "",
             companyLogo: "",
@@ -204,7 +206,7 @@ const SignInSignUp: React.FC = () => {
                                 }
                             ]}
                         >
-                            <Input />
+                            <Input type="password" />
                         </Form.Item>
                     </Col>
                     <Col span={12}>
@@ -224,7 +226,7 @@ const SignInSignUp: React.FC = () => {
                                 }
                             ]}
                         >
-                            <Input />
+                            <Input type="password" />
                         </Form.Item>
                     </Col>
                 </Row>

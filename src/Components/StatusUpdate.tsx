@@ -527,8 +527,8 @@ export const StatusUpdate = () => {
             raci: activity.raci || {},
             cost: activity.cost || {},
             documents: activity.documents || {},
-            projectCost: activity.cost.projectCost || "",
-            opCost: activity.cost.opCost || "",
+            projectCost: activity?.cost?.projectCost || "",
+            opCost: activity?.cost?.opCost || "",
             totalCost: (parseInt(activity?.cost?.projectCost) || 0) +
               (parseInt(activity?.cost?.opCost) || 0)
 
