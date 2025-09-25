@@ -532,12 +532,13 @@ const TimeBuilder = () => {
 
   const toISODateOnly = (value: any): string => {
     const d = ensureDate(value);
-    const y = d.getUTCFullYear();
-    const m = d.getUTCMonth();
-    const day = d.getUTCDate();
-    const normalized = new Date(Date.UTC(y, m, day));
-    return normalized.toISOString().slice(0, 10);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const day = d.getDate();
+
+    return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   };
+
 
   const addBusinessDays = (startDateAny: any, days: number) => {
     let date = ensureDate(startDateAny);
