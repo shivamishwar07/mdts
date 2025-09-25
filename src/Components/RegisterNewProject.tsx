@@ -126,7 +126,7 @@ export const RegisterNewProject: React.FC = () => {
 
   const fetchMineTypes = async (storedLib: any) => {
     try {
-      const currentUser = await getCurrentUser(); // <-- await
+      const currentUser = await getCurrentUser();
       const storedOptions: any = (await db.getAllMineTypes())?.filter(
         (type: any) => type.orgId === currentUser.orgId
       );
@@ -188,46 +188,6 @@ export const RegisterNewProject: React.FC = () => {
     setIsModalVisible(false);
   };
 
-  // const handleSubmit = async () => {
-  //   const loggedInUser = getCurrentUser();
-  //   const initialDataVal = { library: "", items: [] };
-  //   // const initialDataVal = { library: selectedLibrary, items: selectedItems };
-  //   if (!loggedInUser.id) {
-  //     notify.error("Authentication Required! No logged-in user was found. Please log in and try again."
-  //     );
-  //     return;
-  //   }
-  //   const finalData = Array.isArray(formStepsData) ? [...formStepsData] : [];
-  //   finalData[currentStep - 1] = { ...formData };
-  //   let currentUser = getCurrentUser();
-  //   const newProject = {
-  //     id: Date.now(),
-  //     guiId: uuidv4(),
-  //     projectParameters: finalData[0] || {},
-  //     locations: finalData[1] || {},
-  //     contractualDetails: finalData[2] || {},
-  //     initialStatus: initialDataVal || {},
-  //     documents: contractualDocuments,
-  //     userGuiId: currentUser?.guiId,
-  //     orgId: currentUser?.orgId,
-  //     createdAt: new Date().toISOString()
-  //   };
-  //   try {
-  //     await db.addProject(newProject);
-  //   } catch {
-  //     throw new Error("Failed to save library to database.");
-  //   }
-
-  //   notify.success("Project Successfully Registered")
-
-  //   setFormStepsData([]);
-  //   setFormData({});
-  //   setCurrentStep(1);
-  //   setIsModalVisible(false);
-  //   clearFormData();
-  //   fetchCompanyName();
-  //   fetchAllLibrary();
-  // };
 
   const handleSubmit = async () => {
     const loggedInUser = getCurrentUser();
@@ -309,8 +269,9 @@ export const RegisterNewProject: React.FC = () => {
   };
 
   const clearFormData = () => {
+     const userData = getCurrentUser();
     setFormData({
-      companyName: "",
+       companyName: userData?.company || "",
       projectName: "",
       reserve: "",
       netGeologicalReserve: "",
