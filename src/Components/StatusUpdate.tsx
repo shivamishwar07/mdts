@@ -2140,7 +2140,7 @@ export const StatusUpdate = () => {
     <>
       <div className="status-heading">
         <div className="status-update-header">
-          <p>Project Timeline</p>
+          <p>Status Update</p>
           {selectedProject?.projectTimeline != null && (
             <div style={{ display: "flex", gap: "10px" }}>
               <span>Approval Status:</span>

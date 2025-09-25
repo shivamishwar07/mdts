@@ -95,6 +95,14 @@ export class DataStorage extends Dexie {
     return this.projects.add(project);
   }
 
+  async getProjectById(id: any): Promise<any | undefined> {
+    const numericId = Number(id);
+    if (isNaN(numericId)) {
+      throw new Error(`Invalid project ID: ${id}`);
+    }
+    return await this.projects.get(numericId);
+  }
+
   async getProjects(): Promise<any[]> {
     return this.projects.toArray();
   }

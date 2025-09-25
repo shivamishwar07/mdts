@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import Home from "../pages/Home";
 import NotFound from "../pages/NotFound";
 import MainLayout from "../Layout/MainLayout";
-import ProtectedRoute from "./ProtectedRoutes";
 import About from "../pages/About";
 import Projects from "../pages/Projects";
 import KnowledgeCenter from "../pages/KnowledgeCenter";
@@ -32,20 +31,18 @@ import HelpAndSupport from "../pages/HelpAndSupport";
 import SignInSignUp from "../pages/SignIn";
 import DelayCostCalculator from "../Components/DelayCostCalculator";
 import DPRCostBuilder from "../Components/DPRCostBuilder";
+import ProtectedRoute from "./ProtectedRoutes";
+import ProjectList from "../pages/ProjectList";
 
 const AppRoutes = () => {
-    const isAuthenticated = !!localStorage.getItem('user');
+    const isAuthenticated = !!localStorage.getItem("user");
 
     return (
         <Router>
             <Routes>
                 <Route
                     path="/home"
-                    element={
-                        isAuthenticated
-                            ? <Navigate to="/dashboard" replace />
-                            : <Home />
-                    }
+                    element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Home />}
                 >
                     <Route index element={<Hero />} />
                     <Route path="services" element={<Services />} />
@@ -53,14 +50,15 @@ const AppRoutes = () => {
                     <Route path="contacts" element={<Contact />} />
                     <Route path="login" element={<SignInSignUp />} />
                 </Route>
+
                 <Route
                     path="/"
                     element={
-                        isAuthenticated
-                            ? <Navigate to="/dashboard" replace />
-                            : <Navigate to="/home" replace />
+                        isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/home" replace />
                     }
                 />
+
+                {/* Protected Routes with Layout */}
                 <Route
                     element={
                         <ProtectedRoute>
@@ -68,31 +66,212 @@ const AppRoutes = () => {
                         </ProtectedRoute>
                     }
                 >
+                    {/* General pages (no special permission, just auth) */}
                     <Route path="/landing-page" element={<LandingPage />} />
                     <Route path="/settings" element={<SettingsAndPrivacy />} />
                     <Route path="/helps" element={<HelpAndSupport />} />
                     <Route path="/not-found" element={<NotFound />} />
-                    <Route path="/create/register-new-project" element={<RegisterNewProject />} />
-                    <Route path="/employee-registration" element={<EmployeeRegistration />} />
                     <Route path="/profile" element={<Profile />} />
-                    <Route path="/create/project-timeline" element={<StatusUpdate />} />
-                    <Route path="/create/module-library" element={<ModuleLibrary />} />
-                    <Route path="/create/non-working-days" element={<HolidayCalender />} />
-                    <Route path="/create/raci-alert-notification" element={<ManageUser />} />
-                    <Route path="/view-user" element={<ViewUser />} />
-                    <Route path="/create/document" element={<CreateDocument />} />
-                    <Route path="/view-document" element={<ViewDocumentPage />} />
-                    <Route path="/notificationlibrary" element={<NotificationLibrary />} />
-                    <Route path="/create/timeline-builder" element={<TimelineBuilder />} />
-                    <Route path="/data-master" element={<DataMaster />} />
-                    <Route path="/about" element={<About />} />
-                    <Route path="/dashboard" element={<Projects />} />
-                    <Route path="/modules" element={<Module />} />
-                    <Route path="/knowledge-center" element={<KnowledgeCenter />} />
-                    <Route path="/document" element={<Document />} />
-                    <Route path="/create/notification" element={<CreateNotification />} />
-                    <Route path="/create/delay-cost-calculator" element={<DelayCostCalculator />} />
-                    <Route path="/create/dpr-cost-builder" element={<DPRCostBuilder />} />
+
+                    {/* Role-based protected pages */}
+                    <Route
+                        path="/create/register-new-project"
+                        element={
+                            <ProtectedRoute action="CREATE_PROJECT">
+                                <RegisterNewProject />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/employee-registration"
+                        element={
+                            <ProtectedRoute action="ADD_TEAM_MEMBER">
+                                <EmployeeRegistration />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/create/status-update"
+                        element={
+                            <ProtectedRoute action="UPDATE_STATUS">
+                                <StatusUpdate />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/create/module-library"
+                        element={
+                            <ProtectedRoute action="CREATE_MODULE">
+                                <ModuleLibrary />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/create/project-list"
+                        element={
+                            <ProtectedRoute action="VIEW_PROJECT_LIST">
+                                <ProjectList />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                     <Route
+                        path="/update-project/:id"
+                        element={
+                            <ProtectedRoute>
+                                <RegisterNewProject />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/create/non-working-days"
+                        element={
+                            <ProtectedRoute action="SET_GLOBAL_HOLIDAY">
+                                <HolidayCalender />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/create/raci-alert-notification"
+                        element={
+                            <ProtectedRoute action="ASSIGN_RASI">
+                                <ManageUser />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/view-user"
+                        element={
+                            <ProtectedRoute action="VIEW_TEAM_MEMBERS">
+                                <ViewUser />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/create/document"
+                        element={
+                            <ProtectedRoute action="ADD_GLOBAL_DOCUMENT">
+                                <CreateDocument />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/view-document"
+                        element={
+                            <ProtectedRoute action="VIEW_NAVBAR_MENUS">
+                                <ViewDocumentPage />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/notificationlibrary"
+                        element={
+                            <ProtectedRoute action="SET_NOTIFICATIONS">
+                                <NotificationLibrary />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/create/timeline-builder"
+                        element={
+                            <ProtectedRoute action="BUILD_TIMEBUILDER">
+                                <TimelineBuilder />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/data-master"
+                        element={
+                            <ProtectedRoute action="CREATE_MODULE">
+                                <DataMaster />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/about"
+                        element={
+                            <ProtectedRoute action="VIEW_NAVBAR_MENUS">
+                                <About />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/dashboard"
+                        element={
+                            <ProtectedRoute action="VIEW_NAVBAR_MENUS">
+                                <Projects />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/modules"
+                        element={
+                            <ProtectedRoute action="CREATE_MODULE">
+                                <Module />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/knowledge-center"
+                        element={
+                            <ProtectedRoute action="VIEW_NAVBAR_MENUS">
+                                <KnowledgeCenter />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/document"
+                        element={
+                            <ProtectedRoute action="VIEW_NAVBAR_MENUS">
+                                <Document />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/create/notification"
+                        element={
+                            <ProtectedRoute action="SET_NOTIFICATIONS">
+                                <CreateNotification />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/create/delay-cost-calculator"
+                        element={
+                            <ProtectedRoute action="ADD_COST_IN_ACTIVITY">
+                                <DelayCostCalculator />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/create/dpr-cost-builder"
+                        element={
+                            <ProtectedRoute action="ADD_COST_IN_ACTIVITY">
+                                <DPRCostBuilder />
+                            </ProtectedRoute>
+                        }
+                    />
+
                     <Route path="*" element={<Navigate to="/not-found" replace />} />
                 </Route>
             </Routes>

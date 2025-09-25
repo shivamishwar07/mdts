@@ -15,6 +15,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { notify } from "../Utils/ToastNotify.tsx";
 import { getCurrentUser } from "../Utils/moduleStorage";
 import { ToastContainer } from "react-toastify";
+import { hasPermission } from "../Utils/auth.ts";
 const Module = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
@@ -974,7 +975,6 @@ const Module = () => {
     };
 
 
-
     return (
         <div>
             <div className="module-main">
@@ -1002,7 +1002,7 @@ const Module = () => {
                         <Row justify="space-between" align="middle">
                             <Col>
                                 <Row gutter={16}>
-                                    {!moduleData.parentModuleCode && (
+                                   {hasPermission(currentUser?.role, "CREATE_MDTS_MODULE") && !moduleData.parentModuleCode && (
                                         <Col>
                                             <Tooltip title="Create New Module">
                                                 <Button
@@ -1016,6 +1016,7 @@ const Module = () => {
                                             </Tooltip>
                                         </Col>
                                     )}
+                                    {hasPermission(currentUser?.role, "ADD_DOCUMENT_IN_ACTIVITY") && (
                                     <Col>
                                         <Tooltip title="Add Document">
                                             <Button
@@ -1026,6 +1027,8 @@ const Module = () => {
                                             />
                                         </Tooltip>
                                     </Col>
+                                    )}
+                                    {hasPermission(currentUser?.role, "ADD_COST_IN_ACTIVITY")&&(
                                     <Col>
                                         <Tooltip title="Define Activity Cost">
                                             <Button
@@ -1036,6 +1039,8 @@ const Module = () => {
                                             />
                                         </Tooltip>
                                     </Col>
+                                    )} 
+                                    {hasPermission(currentUser?.role, "LEVEL_UP_DOWN") &&(
                                     <Col>
                                         <Tooltip title="Decrease Level">
                                             <Button
@@ -1046,6 +1051,8 @@ const Module = () => {
                                             />
                                         </Tooltip>
                                     </Col>
+                                    )}
+                                    {hasPermission(currentUser?.role, "LEVEL_UP_DOWN") &&(
                                     <Col>
                                         <Tooltip title="Increase Level">
                                             <Button
@@ -1056,6 +1063,7 @@ const Module = () => {
                                             />
                                         </Tooltip>
                                     </Col>
+                                    )}
 
                                     <Col>
                                         <Tooltip title="Delete">
@@ -1067,6 +1075,7 @@ const Module = () => {
                                             />
                                         </Tooltip>
                                     </Col>
+
                                     <Col>
                                         <Tooltip title="Undo">
                                             <Button
@@ -1083,6 +1092,7 @@ const Module = () => {
                                             <Button onClick={toggleSortOrder} icon={getSortIcon()} disabled={moduleData.activities?.length == 0} className="icon-button blue" />
                                         </Tooltip>
                                     </Col> */}
+                                    {hasPermission(currentUser?.role, "ASSIGN_RASI") &&(
                                     <Col>
                                         <Tooltip title="Assign RACI">
                                             <Button
@@ -1107,6 +1117,8 @@ const Module = () => {
                                             />
                                         </Modal>
                                     </Col>
+                                    )}
+                                    {hasPermission(currentUser?.role, "ASSIGN_RASI") &&(
                                     <Col>
                                         <Tooltip title="Notifications">
                                             <Button
@@ -1126,6 +1138,7 @@ const Module = () => {
                                             <CreateNotification open={open} onClose={() => setOpen(false)} />
                                         </Modal>
                                     </Col>
+                                    )}
                                     <Col>
                                         <Tooltip title="Add Activity">
                                             <Button
@@ -1140,7 +1153,7 @@ const Module = () => {
                                         </Tooltip>
                                     </Col>
 
-                                    {!moduleData.parentModuleCode && (
+                                    {hasPermission(currentUser?.role, "CREATE_NEW_Module") && !moduleData.parentModuleCode && (
                                         <Col>
                                             <Tooltip title="Create New Module">
                                                 <Button
@@ -1357,7 +1370,9 @@ const Module = () => {
                                                 }}
                                             >
                                                 <Radio value="MANUAL">MANUALLY</Radio>
+                                                {hasPermission(currentUser?.role, "IMPORT_MODULE_FROM_OTHER_SOURCE") && (
                                                 <Radio value="IMPORT">IMPORT</Radio>
+                                                )}
                                             </Radio.Group>
                                         </Col>
                                     </Row>
@@ -1411,8 +1426,12 @@ const Module = () => {
                                                     >
                                                         {moduleType === "PERSONAL" && (
                                                             <>
+                                                            {hasPermission(currentUser?.role, "IMPORT_FROM_ORGANIZATIONS") && (
                                                                 <Select.Option value="ORG">Organization Module</Select.Option>
+                                                            )}
+                                                            {hasPermission(currentUser?.role, "IMPORT_FROM_MDTS") && (
                                                                 <Select.Option value="MDTS">MDTS Module</Select.Option>
+                                                            )}
                                                             </>
                                                         )}
                                                         {moduleType === "ORG" && (
