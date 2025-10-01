@@ -52,7 +52,7 @@ const initialNavLinks: any[] = [
         requiredPermission: "CREATE_MODULE",
         subItems: [
             { label: "Module Library", action: "/create/module-library", requiredPermission: "CREATE_MODULE" },
-            { label: "Notification", action: "/create/notification", isNull: true, requiredPermission: "SET_NOTIFICATIONS" },
+            // { label: "Notification", action: "/create/notification", isNull: true, requiredPermission: "SET_NOTIFICATIONS" },
             { label: "Projects", action: "/create/project-list", isNull: true, requiredPermission: "VIEW_PROJECT_LIST" }
         ]
     },
