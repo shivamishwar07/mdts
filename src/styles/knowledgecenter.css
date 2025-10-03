@@ -93,7 +93,7 @@
     width: 300px;
     position: sticky;
     top: 18px;
-    height: calc(100vh - 140px);
+    height: calc(100vh - 60px);
     overflow: auto;
     padding-right: 6px
 }
