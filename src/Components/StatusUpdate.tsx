@@ -2328,7 +2328,6 @@ export const StatusUpdate = () => {
                   {(
                     selectedProjectTimeline?.status !== 'replanned' &&
                     !replaneMode &&
-                    getCurrentUser()?.id !== selectedProjectTimeline?.approver?.id &&
                     (
                       (selectedProjectTimeline?.revisedByLog?.newUserId == (getCurrentUser()?.id) || (getCurrentUser()?.guiId) &&
                         selectedProjectTimeline?.status !== 'Pending')
@@ -2381,7 +2380,7 @@ export const StatusUpdate = () => {
                     </Button>
                   )}
 
-                  {(selectedProjectTimeline?.status !== 'Revised' && selectedProjectTimeline?.status != 'Approved' && selectedProjectTimeline?.status != 'replanned') && getCurrentUser()?.id == selectedProjectTimeline?.approver?.id && (
+                  {(selectedProjectTimeline?.status !== 'Revised' && selectedProjectTimeline?.status != 'Approved' && selectedProjectTimeline?.status != 'replanned') && (
                     <div className="action-btn">
                       <Button
                         type="primary"

@@ -177,7 +177,6 @@ const TimeBuilder = () => {
         setIsSundayWorking(projectTimeline[0]?.sundayWorking || false);
         setSelectedProjectMineType(projectParameters?.typeOfMine || "");
         setIsMenualTimeline(true);
-        alert("bt")
         handleLibraryChange(initialStatus.items);
 
       } else {
@@ -475,7 +474,7 @@ const TimeBuilder = () => {
       if (isUpdateMode) {
         handleSaveProjectTimeline(sequencedModules);
         setTimeout(() => {
-          navigate("/create/project-timeline");
+          navigate("/create/status-update");
         }, 1000);
       }
       else {
@@ -1915,9 +1914,10 @@ const TimeBuilder = () => {
         await db.updateProject(selectedProject.id, updatedProjectWithTimeline);
         await db.addProjectTimeline(updatedProjectWithTimeline.projectTimeline);
         localStorage.setItem('selectedProjectId', selectedProject.id);
-
-        setTimeout(() => notify.success("Project timeline linked successfully!"), 0);
-        navigate("/create/project-timeline");
+        notify.success("Project timeline linked successfully!");
+        setTimeout(() => {
+          navigate("/create/status-update");
+        }, 1000);
       } else {
         setTimeout(() => notify.error("Selected project and existing project must have the same mine type!"), 0);
       }

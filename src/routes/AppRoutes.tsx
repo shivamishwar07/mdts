@@ -4,7 +4,6 @@ import NotFound from "../pages/NotFound";
 import MainLayout from "../Layout/MainLayout";
 import About from "../pages/About";
 import Projects from "../pages/Projects";
-import KnowledgeCenter from "../pages/KnowledgeCenter";
 import Document from "../pages/Document";
 import DataMaster from "../pages/DataMaster";
 import Profile from "../pages/Profile";
@@ -33,6 +32,7 @@ import DelayCostCalculator from "../Components/DelayCostCalculator";
 import DPRCostBuilder from "../Components/DPRCostBuilder";
 import ProtectedRoute from "./ProtectedRoutes";
 import ProjectList from "../pages/ProjectList";
+import KnowledgeCenter from "../Components/KnowledgeCenter";
 
 const AppRoutes = () => {
     const isAuthenticated = !!localStorage.getItem("user");
@@ -42,7 +42,7 @@ const AppRoutes = () => {
             <Routes>
                 <Route
                     path="/home"
-                    element={isAuthenticated ? <Navigate to="/dashboard" replace /> : <Home />}
+                    element={isAuthenticated ? <Navigate to="/knowledge-center" replace /> : <Home />}
                 >
                     <Route index element={<Hero />} />
                     <Route path="services" element={<Services />} />
@@ -54,7 +54,7 @@ const AppRoutes = () => {
                 <Route
                     path="/"
                     element={
-                        isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/home" replace />
+                        isAuthenticated ? <Navigate to="/knowledge-center" replace /> : <Navigate to="/home" replace />
                     }
                 />
 
@@ -124,6 +124,15 @@ const AppRoutes = () => {
                         element={
                             <ProtectedRoute>
                                 <RegisterNewProject />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/knowledge-center"
+                        element={
+                            <ProtectedRoute>
+                                <KnowledgeCenter />
                             </ProtectedRoute>
                         }
                     />
@@ -223,15 +232,6 @@ const AppRoutes = () => {
                         element={
                             <ProtectedRoute action="CREATE_MODULE">
                                 <Module />
-                            </ProtectedRoute>
-                        }
-                    />
-
-                    <Route
-                        path="/knowledge-center"
-                        element={
-                            <ProtectedRoute action="VIEW_NAVBAR_MENUS">
-                                <KnowledgeCenter />
                             </ProtectedRoute>
                         }
                     />

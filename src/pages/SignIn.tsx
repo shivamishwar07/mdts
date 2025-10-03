@@ -5,19 +5,47 @@ import { db } from "../Utils/dataStorege.ts";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
 import { v4 as uuidv4 } from 'uuid';
-import { Form, Input, Button, Select, Row, Col } from "antd";
+import { Form, Input, Button, Select, Row, Col, Modal } from "antd"; // Added Modal
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { GoogleOutlined, AppleOutlined } from '@ant-design/icons';
 const { Option } = Select;
+
+const TermsAndConditionsContent: React.FC = () => (
+    <div>
+        <h3>Terms & Conditions for Mining Management Tracking System</h3>
+        <p>Welcome to our Mining Management Tracking System. By signing in or signing up, you agree to comply with and be bound by the following terms and conditions of use. Please review them carefully.</p>
+
+        <h4>1. System Usage</h4>
+        <p>The system is provided solely for the purpose of managing, tracking, and optimizing mining operations, including resource allocation, activity logging, and compliance reporting. Any unauthorized use or misuse of the platform is strictly prohibited.</p>
+
+        <h4>2. Data Privacy</h4>
+        <p>All operational data, including location, personnel, and production metrics, submitted to the system will be kept confidential and used only for internal management, system improvement, and regulatory compliance as required by law. We employ industry-standard security measures to protect your data.</p>
+
+        <h4>3. User Responsibility</h4>
+        <p>You are responsible for maintaining the confidentiality of your account password and for all activities that occur under your account. You agree to immediately notify us of any unauthorized use of your password or account or any other breach of security.</p>
+
+        <h4>4. Limitation of Liability</h4>
+        <p>The company is not liable for any direct, indirect, incidental, special, consequential, or exemplary damages, including but not limited to damages for loss of profits, goodwill, data, or other intangible losses resulting from the use or the inability to use the system.</p>
+
+        <p><strong>This is a brief summary. The full terms can be requested from the support team.</strong></p>
+    </div>
+);
+
 const SignInSignUp: React.FC = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isSignUp, setIsSignUp] = useState(false);
     const [showPassword, _setShowPassword] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false); // New state for checkbox
+    const [showTermsModal, setShowTermsModal] = useState(false); // New state for modal
+
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(0);
     const [form] = Form.useForm();
+    
+    // ... (Your existing stepFieldNames and other functions like handleNext, handlePrev, handleFinish, steps, isProfileCompleted, validateEmail remain unchanged)
+
     const stepFieldNames = [
         ["company", "industry", "website", "gstin", "cin", "incorpDate", "employeeCount"],
         ["country", "state", "city", "address1", "zip"],
@@ -248,7 +276,15 @@ const SignInSignUp: React.FC = () => {
         );
     };
 
-    const handleLogin = async () => {
+    const handleLogin = async (e: React.MouseEvent) => {
+        e.preventDefault(); // Prevent default form submission
+        
+        if (!termsAccepted) {
+            // This is technically unnecessary since the button is disabled, 
+            // but it's a good fail-safe.
+            return notify.error("You must accept the Terms to log in.");
+        }
+        
         try {
             validateEmail(email);
 
@@ -266,7 +302,7 @@ const SignInSignUp: React.FC = () => {
 
             const isProfileComplete = isProfileCompleted(user);
             setTimeout(() => {
-                navigate(isProfileComplete ? "/dashboard" : "/profile");
+                navigate(isProfileComplete ? "/knowledge-center" : "/profile");
             }, 1000);
         } catch (error: any) {
             if (error.message === "Invalid email format") {
@@ -289,8 +325,35 @@ const SignInSignUp: React.FC = () => {
         window.scrollTo(0, 0);
     }, []);
 
+    // Function to handle opening the Terms Modal
+    const openTermsModal = (e: React.MouseEvent) => {
+        e.preventDefault(); // Stop link navigation
+        setShowTermsModal(true);
+    };
+
+    // Function to handle closing the Terms Modal (just closes it)
+    const handleCloseTermsModal = () => {
+        setShowTermsModal(false);
+    }
+
+
     return (
         <div className="signup-container">
+            {/* Terms and Conditions Modal */}
+            <Modal
+                title="Terms & Conditions"
+                open={showTermsModal}
+                onCancel={handleCloseTermsModal}
+                footer={[
+                    <Button key="close" type="primary" onClick={handleCloseTermsModal}>
+                        Close
+                    </Button>
+                ]}
+                width={700}
+            >
+                <TermsAndConditionsContent />
+            </Modal>
+            
             <div className={isSignUp ? 'signup-left signup-adjust' : 'signup-left signin-adjust'}>
                 <div className="vector-image">
                     <img src="/images/auths/signin.png" alt="Mining Management Illustration" />
@@ -321,19 +384,30 @@ const SignInSignUp: React.FC = () => {
                 <div className="form-card">
                     <h2>{isSignUp ? 'Sign up to get started' : 'Sign in to continue'}</h2>
                     {!isSignUp ? (
-                        <form>
+                        <form onSubmit={(e) => e.preventDefault()}> {/* Use onSubmit on form for accessibility */}
                             <input className="mb-20" type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
                             <input className="mb-20" type={showPassword ? "text" : "password"}
                                 placeholder="Password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)} required />
                             <div className="checkbox">
-                                <input type="checkbox" id="terms" required />
+                                <input 
+                                    type="checkbox" 
+                                    id="terms" 
+                                    checked={termsAccepted}
+                                    onChange={(e) => setTermsAccepted(e.target.checked)} // Update termsAccepted state
+                                />
                                 <label htmlFor="terms">
-                                    I accept the <a href="#">Term</a>
+                                    I accept the <a href="#" onClick={openTermsModal}>Term</a> {/* Call openTermsModal on click */}
                                 </label>
                             </div>
-                            <button className="submit" onClick={handleLogin}>Login</button>
+                            <button 
+                                className="submit" 
+                                onClick={handleLogin}
+                                disabled={!termsAccepted} // Disable button if terms not accepted
+                            >
+                                Login
+                            </button>
                         </form>
                     ) : (
                         <div className="form-body">

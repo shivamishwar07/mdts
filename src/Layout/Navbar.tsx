@@ -223,13 +223,16 @@ const Navbar: React.FC = () => {
                             <p>Tracking System</p>
                         </div>
                     </div>
-                    <div className="search-bar-wrapper" style={{ marginRight: "20px", width: "250px" }}>
+                   <div className="generic-input-wrapper">
+                        <input type="text" placeholder="Search mdts" />
+                    </div>
+                   {/* <div className="search-bar-wrapper">
                         <div className="spectacledcoder-search-bar">
                             <img className="search-icon" width="27" height="27" src="https://img.icons8.com/sf-black/500/000000/search.png" alt="search" />
                             <input type="text" name="search" placeholder="Search MDTS" className="spectacledcoder-search-input" />
 
                         </div>
-                    </div>
+                    </div> */}
                 </div>
                 <div className="user-data">
                     <div className="nav-tab-items">
