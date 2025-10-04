@@ -2322,7 +2322,7 @@ export const StatusUpdate = () => {
                       onClick={handleDownload}
                       style={{ backgroundColor: "#4CAF50" }}
                     >
-                      Download Timeline
+                      Download
                     </Button>
                   )}
                   {(

@@ -52,6 +52,7 @@ export const RegisterNewProject: React.FC = () => {
   );
   const [contractualDocuments, setContractualDocuments] = useState<DocumentData[]>([]);
   const [isUploadDisabled, setIsUploadDisabled] = useState(true);
+  const [projectTimeline, setProjectTimeline] = useState<any[]>([]);
   // const requiredFields: { [key: number]: string[] } = {
   //   1: ["companyName", "projectName", "mineral", "typeOfMine", "reserve", "netGeologicalReserve", "extractableReserve", "grade", "stripRatio", "peakCapacity", "mineLife", "totalCoalBlockArea"],
   //   2: ["state", "district", "nearestTown", "nearestAirport", "nearestRailwayStation"],
@@ -99,7 +100,8 @@ export const RegisterNewProject: React.FC = () => {
             project.locations,
             project.contractualDetails,
           ]);
-          setFormData(project.projectParameters);
+            setFormData(project);
+             setProjectTimeline(project.projectTimeline || []);
         }
       });
     }
@@ -188,7 +190,6 @@ export const RegisterNewProject: React.FC = () => {
     setIsModalVisible(false);
   };
 
-
   const handleSubmit = async () => {
     const loggedInUser = getCurrentUser();
     const finalData = Array.isArray(formStepsData) ? [...formStepsData] : [];
@@ -207,9 +208,20 @@ export const RegisterNewProject: React.FC = () => {
 
     try {
       if (isEditMode && id) {
-        await db.updateProject(id, projectPayload);
-        notify.success("Project updated successfully");
-      } else {
+        const existingProject = await db.getProjectById(id);
+
+        if (existingProject) {
+          const updatedProject = {
+            ...existingProject,
+            ...projectPayload,
+            updatedAt: new Date().toISOString(),
+          };
+
+          await db.updateProject(id, updatedProject);
+          notify.success("Project updated successfully");
+        }
+      }
+      else {
         const newProject = {
           ...projectPayload,
           createdAt: new Date().toISOString(),
@@ -253,7 +265,6 @@ export const RegisterNewProject: React.FC = () => {
   const handleDiscardConfirm = () => navigate("/create/project-list");
   const handleDiscardCancel = () => setDiscardModalVisible(false);
 
-
   const handleNext = () => {
     if (currentStep < steps.length) {
       if (!validateFields(currentStep)) {
@@ -269,9 +280,9 @@ export const RegisterNewProject: React.FC = () => {
   };
 
   const clearFormData = () => {
-     const userData = getCurrentUser();
+    const userData = getCurrentUser();
     setFormData({
-       companyName: userData?.company || "",
+      companyName: userData?.company || "",
       projectName: "",
       reserve: "",
       netGeologicalReserve: "",
@@ -526,6 +537,7 @@ export const RegisterNewProject: React.FC = () => {
                     <Select
                       value={formData.typeOfMine || ""}
                       style={{ marginLeft: "4px" }}
+                        disabled={isEditMode && projectTimeline.length > 0}
                       onChange={(value) => {
                         handleChange("typeOfMine", value);
                         const updatedLibraries = allLibrariesName.filter((name: any) => name.mineType === value);
@@ -829,15 +841,15 @@ export const RegisterNewProject: React.FC = () => {
 
 
                 <div style={{ display: "flex", gap: "10px" }}>
-                  {isEditMode &&(
-                  <Button
-                    type="default"
-                    danger
-                    className="bg-danger text-white"
-                    onClick={showDiscardModal}
-                  >
-                    Discard
-                  </Button>
+                  {isEditMode && (
+                    <Button
+                      type="default"
+                      danger
+                      className="bg-danger text-white"
+                      onClick={showDiscardModal}
+                    >
+                      Discard
+                    </Button>
                   )}
 
                   <Button

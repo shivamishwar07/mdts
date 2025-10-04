@@ -40,6 +40,8 @@ const Module = () => {
     const [filteredModuleData, _setFilteredModuleData] = useState<any>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [openCostCalcModal, setOpenCostCalcModal] = useState(false);
+    const normalize = (s?: string) =>
+        (s ?? "").trim().replace(/\s+/g, " ").toLowerCase();
     const parentModuleCode = moduleCode
         ? moduleCode
         : generateTwoLetterAcronym(moduleName, existingAcronyms);
@@ -86,7 +88,7 @@ const Module = () => {
     const [importFromType, setImportFromType] = useState("");
     const [selectedImportModule, setSelectedImportModule] = useState(null);
     const [moduleNameError, setModuleNameError] = useState("");
-    
+
     useEffect(() => {
         (async () => {
             const user = await getCurrentUser();
@@ -569,17 +571,17 @@ const Module = () => {
 
     const handleModulePlus = () => {
         if (moduleNameError) {
-             notify.error("Module name already present");
+            notify.error("Module name already present");
             return;
         }
 
-        if (!newModelName || !selectedOption) {
+        const intendedName =
+            (newModelName || moduleData.moduleName || "").trim();
+        const intendedType =
+            selectedOption || moduleData.mineType || "";
+
+        if (!intendedName || !intendedType) {
             notify.warning("Missing Required Fields");
-            return;
-        }
-
-        if (!newModelName.trim()) {
-            notify.warning("Module Name cannot be empty");
             return;
         }
 
@@ -588,6 +590,17 @@ const Module = () => {
                 notify.warning("Please select a module type and module to import");
                 return;
             }
+        }
+
+        const dup = isDuplicateModuleName(
+            intendedName,
+            intendedType,
+            currentUser?.orgId ?? null
+        );
+        if (dup) {
+            setModuleNameError("Module name already exists");
+            notify.error("Module name already present");
+            return;
         }
 
         const generatedId = uuidv4();
@@ -977,6 +990,21 @@ const Module = () => {
         } catch (err) {
             console.error("Validation Failed:", err);
         }
+    };
+
+    const isDuplicateModuleName = (
+        name: string,
+        mineType: string,
+        orgId: any,
+        excludeId?: number | null,
+    ) => {
+        const target = normalize(name);
+        return allModules.some((m: any) =>
+            normalize(m.moduleName) === target &&
+            m.mineType === mineType &&
+            m.orgId === orgId &&
+            (excludeId ? m.id !== excludeId : true)
+        );
     };
 
     return (
@@ -1458,7 +1486,7 @@ const Module = () => {
                                                 </Col>
 
                                                 <Col span={16}>
-                                                    <Select
+                                                    {/* <Select
                                                         placeholder="Select module"
                                                         value={selectedImportModule}
                                                         style={{ width: '100%' }}
@@ -1502,7 +1530,61 @@ const Module = () => {
                                                                     {mod.moduleName}
                                                                 </Select.Option>
                                                             ))}
+                                                    </Select> */}
+                                                    <Select
+                                                        placeholder="Select module"
+                                                        value={selectedImportModule}
+                                                        style={{ width: '100%' }}
+                                                        onChange={(value) => {
+                                                            const selected = importableModules.find((m) => m.guiId === value);
+                                                            setSelectedImportModule(value);
+
+                                                            if (selected) {
+                                                                const clonedActivities = JSON.parse(JSON.stringify(selected.activities || []));
+                                                                const newGuiId = uuidv4();
+                                                                const newModuleCode = moduleCodeName || generateTwoLetterAcronym(selected.moduleName, existingAcronyms);
+
+                                                                setNewModelName(selected.moduleName);
+                                                                setSelectedOption(selected.mineType);
+                                                                setModuleCodeName(newModuleCode);
+
+                                                                const willDuplicate = isDuplicateModuleName(
+                                                                    selected.moduleName,
+                                                                    selected.mineType,
+                                                                    currentUser?.orgId ?? null
+                                                                );
+                                                                setModuleNameError(willDuplicate ? "Module name already exists" : "");
+
+                                                                setModuleData({
+                                                                    guiId: newGuiId,
+                                                                    parentModuleCode: newModuleCode,
+                                                                    moduleName: selected.moduleName,
+                                                                    mineType: selected.mineType,
+                                                                    level: "L1",
+                                                                    moduleType: moduleType,
+                                                                    userGuiId: currentUser?.guiId,
+                                                                    orgId: currentUser?.orgId,
+                                                                    createdAt: new Date().toISOString(),
+                                                                    activities: clonedActivities,
+                                                                });
+
+                                                                notify.success("Module imported successfully");
+                                                            }
+                                                        }}
+                                                    >
+                                                        {importableModules
+                                                            .filter(
+                                                                (mod) =>
+                                                                    mod.moduleType === importFromType &&
+                                                                    mod.mineType === selectedOption
+                                                            )
+                                                            .map((mod) => (
+                                                                <Select.Option key={mod.guiId} value={mod.guiId}>
+                                                                    {mod.moduleName}
+                                                                </Select.Option>
+                                                            ))}
                                                     </Select>
+
                                                 </Col>
                                             </Row>
                                         </Col>
@@ -1526,19 +1608,14 @@ const Module = () => {
                                                 placeholder="Enter module name"
                                                 value={newModelName}
                                                 onChange={(e) => {
-                                                    setNewModelName(e.target.value);
-
-                                                    const isDuplicate = allModules.some(
-                                                        (mod: any) =>
-                                                            mod.moduleName.trim().toLowerCase() ===
-                                                            e.target.value.trim().toLowerCase() &&
-                                                            mod.mineType === selectedOption &&
-                                                            mod.orgId === currentUser?.orgId
+                                                    const val = e.target.value;
+                                                    setNewModelName(val);
+                                                    const dup = isDuplicateModuleName(
+                                                        val,
+                                                        selectedOption || moduleData.mineType || "",
+                                                        currentUser?.orgId ?? null
                                                     );
-
-                                                    setModuleNameError(
-                                                        isDuplicate ? "Module name already exists" : ""
-                                                    );
+                                                    setModuleNameError(dup ? "Module name already exists" : "");
                                                 }}
                                                 status={moduleNameError ? "error" : ""}
                                             />

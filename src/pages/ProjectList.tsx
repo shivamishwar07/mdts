@@ -58,8 +58,6 @@ const ProjectsList = () => {
             const storedData: ProjectData[] = await db.getProjects();
             const orgProjects = storedData?.filter((proj: any) => proj.orgId == currentUser.orgId) || [];
             setAllProjects(orgProjects);
-            console.log(orgProjects);
-
         } catch (error) {
             console.error("An unexpected error occurred while fetching projects:", error);
         }
@@ -158,16 +156,16 @@ const ProjectsList = () => {
                 <span>👥 {members?.length || 0}</span>
             )
         },
-        {
-            title: 'Status',
-            dataIndex: 'status',
-            key: 'status',
-            render: (status: string | undefined) => (
-                <span className={`status-badge ${status === "Active" ? "active" : "inactive"}`}>
-                    {status || "Unknown"}
-                </span>
-            )
-        },
+        // {
+        //     title: 'Status',
+        //     dataIndex: 'status',
+        //     key: 'status',
+        //     render: (status: string | undefined) => (
+        //         <span className={`status-badge ${status === "Active" ? "active" : "inactive"}`}>
+        //             {status || "Unknown"}
+        //         </span>
+        //     )
+        // },
         {
             title: 'Actions',
             key: 'actions',
@@ -190,7 +188,7 @@ const ProjectsList = () => {
                             <Button
                                 icon={<EditOutlined />}
                                 onClick={() => navigate(`/update-project/${record.id}`)}
-                                disabled={!canModify}
+                                // disabled={!canModify}
                             />
                         </Tooltip>
 
@@ -215,7 +213,6 @@ const ProjectsList = () => {
             }
         }
     ];
-
 
     return (
         <>

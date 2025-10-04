@@ -353,8 +353,8 @@
 }
 
 .generic-input-wrapper input[type="text"] {
-    padding: 6px 15px;
-    border: 2px solid #fff;
+    padding: 4px 15px;
+    border:  .75px solid #fff;
     border-radius: 10px;
     font-size: 15px;
     color: #04646d;
