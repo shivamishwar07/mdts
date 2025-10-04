@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import "../styles/status-update.css";
 import { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
-import { FolderOpenOutlined, Padding, SaveOutlined } from "@mui/icons-material";
+import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -567,6 +567,13 @@ export const StatusUpdate = () => {
   const rePlanTimeline = () => {
     eventBus.emit("updateTab", "/create/timeline-builder");
     setIsReplanMode(true);
+    navigate("/create/timeline-builder", {
+      state: {
+        selectedProject,
+        selectedTimeline: selectedProjectTimeline,
+        rePlanTimeline: true,
+      },
+    });
   };
 
   const getAllActivities = (data: any[]): any[] => {
