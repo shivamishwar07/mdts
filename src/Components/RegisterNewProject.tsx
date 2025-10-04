@@ -20,6 +20,7 @@ import MapComponent from "./MapComponent.tsx";
 import ImageContainer from "../Components/ImageContainer";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
+import { useNavigate, useParams } from "react-router-dom";
 const { Text } = Typography;
 export const RegisterNewProject: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -51,12 +52,15 @@ export const RegisterNewProject: React.FC = () => {
   );
   const [contractualDocuments, setContractualDocuments] = useState<DocumentData[]>([]);
   const [isUploadDisabled, setIsUploadDisabled] = useState(true);
+  const [projectTimeline, setProjectTimeline] = useState<any[]>([]);
   // const requiredFields: { [key: number]: string[] } = {
   //   1: ["companyName", "projectName", "mineral", "typeOfMine", "reserve", "netGeologicalReserve", "extractableReserve", "grade", "stripRatio", "peakCapacity", "mineLife", "totalCoalBlockArea"],
   //   2: ["state", "district", "nearestTown", "nearestAirport", "nearestRailwayStation"],
   //   3: ["mineOwner", "dateOfH1Bidder", "cbdpaDate", "vestingOrderDate", "pbgAmount"],
   //   4: Object.values(allLibrariesName).map((moduleName: any) => moduleName)
   // };
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
   useEffect(() => {
     setFormData({});
@@ -64,6 +68,45 @@ export const RegisterNewProject: React.FC = () => {
     fetchAllLibrary();
     fetchCompanyName();
   }, []);
+
+  const [isEditMode, setIsEditMode] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      setIsEditMode(true);
+      loadProjectData(id);
+    }
+  }, [id]);
+
+  const loadProjectData = async (projectId: string) => {
+    const project = await db.getProjectById(projectId);
+    if (project) {
+      setFormStepsData([
+        project.projectParameters,
+        project.locations,
+        project.contractualDetails,
+      ]);
+      setFormData(project.projectParameters);
+    }
+  };
+
+  useEffect(() => {
+    if (id) {
+      setIsEditMode(true);
+      db.getProjectById(id).then((project) => {
+        if (project) {
+          setFormStepsData([
+            project.projectParameters,
+            project.locations,
+            project.contractualDetails,
+          ]);
+            setFormData(project);
+             setProjectTimeline(project.projectTimeline || []);
+        }
+      });
+    }
+  }, [id]);
+
 
   useEffect(() => {
     const init = async () => {
@@ -85,7 +128,7 @@ export const RegisterNewProject: React.FC = () => {
 
   const fetchMineTypes = async (storedLib: any) => {
     try {
-      const currentUser = await getCurrentUser(); // <-- await
+      const currentUser = await getCurrentUser();
       const storedOptions: any = (await db.getAllMineTypes())?.filter(
         (type: any) => type.orgId === currentUser.orgId
       );
@@ -149,43 +192,47 @@ export const RegisterNewProject: React.FC = () => {
 
   const handleSubmit = async () => {
     const loggedInUser = getCurrentUser();
-    const initialDataVal = { library: "", items: [] };
-    // const initialDataVal = { library: selectedLibrary, items: selectedItems };
-    if (!loggedInUser.id) {
-      notify.error("Authentication Required! No logged-in user was found. Please log in and try again."
-      );
-      return;
-    }
     const finalData = Array.isArray(formStepsData) ? [...formStepsData] : [];
     finalData[currentStep - 1] = { ...formData };
-    let currentUser = getCurrentUser();
-    const newProject = {
-      id: Date.now(),
-      guiId: uuidv4(),
+
+    const projectPayload = {
       projectParameters: finalData[0] || {},
       locations: finalData[1] || {},
       contractualDetails: finalData[2] || {},
-      initialStatus: initialDataVal || {},
+      initialStatus: { library: "", items: [] },
       documents: contractualDocuments,
-      userGuiId: currentUser?.guiId,
-      orgId: currentUser?.orgId,
-      createdAt: new Date().toISOString()
+      userGuiId: loggedInUser?.guiId,
+      orgId: loggedInUser?.orgId,
+      updatedAt: new Date().toISOString(),
     };
+
     try {
-      await db.addProject(newProject);
-    } catch {
-      throw new Error("Failed to save library to database.");
+      if (isEditMode && id) {
+        const existingProject = await db.getProjectById(id);
+
+        if (existingProject) {
+          const updatedProject = {
+            ...existingProject,
+            ...projectPayload,
+            updatedAt: new Date().toISOString(),
+          };
+
+          await db.updateProject(id, updatedProject);
+          notify.success("Project updated successfully");
+        }
+      }
+      else {
+        const newProject = {
+          ...projectPayload,
+          createdAt: new Date().toISOString(),
+        };
+        await db.addProject(newProject);
+        notify.success("Project registered successfully");
+      }
+      navigate("/create/project-list");
+    } catch (error) {
+      notify.error("Error saving project");
     }
-
-    notify.success("Project Successfully Registered")
-
-    setFormStepsData([]);
-    setFormData({});
-    setCurrentStep(1);
-    setIsModalVisible(false);
-    clearFormData();
-    fetchCompanyName();
-    fetchAllLibrary();
   };
 
   const validateFields = (_step: number): boolean => {
@@ -200,6 +247,23 @@ export const RegisterNewProject: React.FC = () => {
     // return Object.keys(newErrors).length === 0;
     return true;
   };
+
+  useEffect(() => {
+    if (id) {
+      setIsEditMode(true);
+      loadProjectData(id);
+    } else {
+      setIsEditMode(false);
+      setFormStepsData([]);
+      clearFormData();
+    }
+  }, [id]);
+
+  const [discardModalVisible, setDiscardModalVisible] = useState(false);
+
+  const showDiscardModal = () => setDiscardModalVisible(true);
+  const handleDiscardConfirm = () => navigate("/create/project-list");
+  const handleDiscardCancel = () => setDiscardModalVisible(false);
 
   const handleNext = () => {
     if (currentStep < steps.length) {
@@ -216,8 +280,9 @@ export const RegisterNewProject: React.FC = () => {
   };
 
   const clearFormData = () => {
+    const userData = getCurrentUser();
     setFormData({
-      companyName: "",
+      companyName: userData?.company || "",
       projectName: "",
       reserve: "",
       netGeologicalReserve: "",
@@ -252,12 +317,6 @@ export const RegisterNewProject: React.FC = () => {
     });
     setErrors({});
   };
-
-  // const handleLibraryChange = (value: string) => {
-  //   setSelectedLibrary(value);
-  //   const selectedLib: any = allLibrariesName.find((lib: any) => lib.name === value);
-  //   setSelectedItems(selectedLib ? selectedLib.items : []);
-  // };
 
   const handleStatusChange = (index: number, value: string) => {
     setSelectedItems((prevItems: any) =>
@@ -478,6 +537,7 @@ export const RegisterNewProject: React.FC = () => {
                     <Select
                       value={formData.typeOfMine || ""}
                       style={{ marginLeft: "4px" }}
+                        disabled={isEditMode && projectTimeline.length > 0}
                       onChange={(value) => {
                         handleChange("typeOfMine", value);
                         const updatedLibraries = allLibrariesName.filter((name: any) => name.mineType === value);
@@ -690,7 +750,6 @@ export const RegisterNewProject: React.FC = () => {
     });
   };
 
-
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     multiple: false,
     onDrop,
@@ -765,12 +824,42 @@ export const RegisterNewProject: React.FC = () => {
               </div>
               <hr className="saparation-line" />
               <div className="form-buttons">
-                <Button variant="outlined" onClick={handlePrevious} className="bg-tertiary text-white" disabled={currentStep === 1}>
+                {/* <Button variant="outlined" onClick={handlePrevious} className="bg-tertiary text-white" disabled={currentStep === 1}>
                   Previous
                 </Button>
                 <Button className="bg-secondary text-white" onClick={currentStep === steps.length ? showConfirmationModal : handleNext}>
-                  {currentStep === steps.length ? "Submit" : "Next"}
+                  {currentStep === steps.length ? (isEditMode ? 'Update' : 'Submit') : "Next"}
+                </Button> */}
+                <Button
+                  variant="outlined"
+                  onClick={handlePrevious}
+                  className="bg-tertiary text-white"
+                  disabled={currentStep === 1}
+                >
+                  Previous
                 </Button>
+
+
+                <div style={{ display: "flex", gap: "10px" }}>
+                  {isEditMode && (
+                    <Button
+                      type="default"
+                      danger
+                      className="bg-danger text-white"
+                      onClick={showDiscardModal}
+                    >
+                      Discard
+                    </Button>
+                  )}
+
+                  <Button
+                    type="primary"
+                    className="bg-secondary text-white"
+                    onClick={currentStep === steps.length ? showConfirmationModal : handleNext}
+                  >
+                    {currentStep === steps.length ? (isEditMode ? "Update" : "Submit") : "Next"}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
@@ -892,11 +981,11 @@ export const RegisterNewProject: React.FC = () => {
       </div>
 
       <Modal
-        title="Confirm Submission"
+        title={isEditMode ? "Confirm Update" : "Confirm Submission"}
         open={isModalVisible}
         onOk={handleSubmit}
         onCancel={handleModalCancel}
-        okText="Submit"
+        okText={isEditMode ? "Update" : "Submit"}
         cancelText="Cancel"
         okButtonProps={{ className: "bg-secondary" }}
         cancelButtonProps={{ className: "bg-tertiary" }}
@@ -906,32 +995,12 @@ export const RegisterNewProject: React.FC = () => {
       >
         <p className="modal-body-item-padding">
           <ExclamationCircleOutlined style={{ color: "red", marginRight: 8 }} />
-          Are you sure you want to submit this form? Submitting will save all data and reset the form.
+          {isEditMode
+            ? "Are you sure you want to update this project? Changes will overwrite existing data."
+            : "Are you sure you want to submit this form? Submitting will save all data and reset the form."}
         </p>
-
       </Modal>
 
-      {/* <Modal
-        title="Add Mine Type"
-        open={mineTypePopupOpen}
-        onCancel={() => setMineTypePopupOpen(false)}
-        onOk={handleAddNewMineType}
-        okButtonProps={{ className: "bg-secondary" }}
-        cancelButtonProps={{ className: "bg-tertiary" }}
-        maskClosable={false}
-        keyboard={false}
-        className="modal-container"
-      >
-        <div className="modal-body-item-padding">
-          <Input
-            placeholder="Enter Mine Type"
-            value={newMineType}
-            onChange={(e) => handleMineTypeChange(e.target.value)}
-            style={{ marginBottom: "10px" }}
-          />
-          <Typography>Shorthand Code: <strong>{shorthandCode}</strong></Typography>
-        </div>
-      </Modal> */}
 
       <Modal
         title="Add Mine Type"
@@ -954,6 +1023,20 @@ export const RegisterNewProject: React.FC = () => {
 
           <Typography>Shorthand Code: <strong>{shorthandCode}</strong></Typography>
         </div>
+      </Modal>
+
+      <Modal
+        title="Discard Changes"
+        open={discardModalVisible}
+        onOk={handleDiscardConfirm}
+        onCancel={handleDiscardCancel}
+        okText="Discard"
+        cancelText="Cancel"
+        okButtonProps={{ danger: true }}
+        maskClosable={false}
+        keyboard={false}
+      >
+        <p>Are you sure you want to discard this project? All unsaved changes will be lost.</p>
       </Modal>
       <ToastContainer />
     </>

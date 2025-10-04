@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Menu, Dropdown, Button, Typography, Divider, Modal, Badge } from "antd";
+import { Menu, Dropdown, Button, Typography, Modal, Badge } from "antd";
 import { BellOutlined, DownOutlined, LogoutOutlined, QuestionCircleOutlined, SettingOutlined } from "@ant-design/icons";
 import "../styles/nav-bar.css";
 import { userStore } from "../Utils/UserStore";
+import { hasPermission } from "../Utils/auth";
 const { Title } = Typography;
 interface NavItem {
     label: string;
@@ -13,31 +14,60 @@ interface NavItem {
     name?: string;
     isNull?: boolean;
     view?: boolean;
+    requiredPermission: any
 }
 
-const initialNavLinks: any = [
-    // { label: "About", action: "/about" },
-    { label: "Dashboard", action: "/dashboard" },
-    { label: "Documents", action: "/document" },
-    { label: "Knowledge Center", action: "/knowledge-center" },
+// const initialNavLinks: any = [
+//     // { label: "About", action: "/about" },
+//     { label: "Dashboard", action: "/dashboard" },
+//     { label: "Documents", action: "/document" },
+//     { label: "Knowledge Center", action: "/knowledge-center" },
+//     {
+//         label: "Data Master",
+//         subItems: [
+//             { label: "Module Library", action: "/create/module-library" },
+//             { label: "Notification", action: "/create/notification", isNull: true }
+//         ]
+//     },
+//     {
+//         label: "Create",
+//         subItems: [
+//             { label: "Register New Project", action: "/create/register-new-project" },
+//             { label: "Modules", action: "/modules" },
+//             { label: "Timeline Builder", action: "/create/timeline-builder" },
+//             { label: "Status Update", action: "/create/status-update" },
+//             { label: "Non-working Days", action: "/create/non-working-days" },
+//             { label: "DPR Cost Builder", action: "/create/dpr-cost-builder", isNull: true },
+//             { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true },
+//             { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true },
+//         ]
+//     }
+// ];
+const initialNavLinks: any[] = [
+    { label: "Dashboard", action: "/dashboard", requiredPermission: "VIEW_NAVBAR_MENUS" },
+    { label: "Documents", action: "/document", requiredPermission: "VIEW_NAVBAR_MENUS" },
+    { label: "Knowledge Center", action: "/knowledge-center", requiredPermission: "VIEW_NAVBAR_MENUS" },
     {
         label: "Data Master",
+        requiredPermission: "CREATE_MODULE",
         subItems: [
-            { label: "Module Library", action: "/create/module-library" },
-            { label: "Notification", action: "/create/notification", isNull: true }
+            { label: "Module Library", action: "/create/module-library", requiredPermission: "CREATE_MODULE" },
+            // { label: "Notification", action: "/create/notification", isNull: true, requiredPermission: "SET_NOTIFICATIONS" },
+            { label: "Projects", action: "/create/project-list", isNull: true, requiredPermission: "VIEW_PROJECT_LIST" }
         ]
     },
     {
         label: "Create",
+        requiredPermission: "CREATE_PROJECT",
         subItems: [
-            { label: "Register New Project", action: "/create/register-new-project" },
-            { label: "Modules", action: "/modules" },
-            { label: "Timeline Builder", action: "/create/timeline-builder" },
-            { label: "Project Timeline", action: "/create/project-timeline" },
-            { label: "Non-working Days", action: "/create/non-working-days" },
-            { label: "DPR Cost Builder", action: "/create/dpr-cost-builder", isNull: true },
-            { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true },
-            { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true },
+            { label: "Register New Project", action: "/create/register-new-project", requiredPermission: "CREATE_PROJECT" },
+            { label: "Modules", action: "/modules", requiredPermission: "CREATE_MODULE" },
+            { label: "Timeline Builder", action: "/create/timeline-builder", requiredPermission: "BUILD_TIMEBUILDER" },
+            { label: "Status Update", action: "/create/status-update", requiredPermission: "UPDATE_STATUS" },
+            { label: "Non-working Days", action: "/create/non-working-days", requiredPermission: "SET_GLOBAL_HOLIDAY" },
+            { label: "DPR Cost Builder", action: "/create/dpr-cost-builder", isNull: true, requiredPermission: "DPR_COST_BUILDER" },
+            { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true, requiredPermission: "CASH_FLOW_BUILDER" },
+            { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true, requiredPermission: "DELAY_COST_CALCULATOR" },
         ]
     }
 ];
@@ -193,59 +223,75 @@ const Navbar: React.FC = () => {
                             <p>Tracking System</p>
                         </div>
                     </div>
-                    <div className="search-bar-wrapper" style={{ marginRight: "20px", width: "250px" }}>
+                   <div className="generic-input-wrapper">
+                        <input type="text" placeholder="Search mdts" />
+                    </div>
+                   {/* <div className="search-bar-wrapper">
                         <div className="spectacledcoder-search-bar">
                             <img className="search-icon" width="27" height="27" src="https://img.icons8.com/sf-black/500/000000/search.png" alt="search" />
-                            <input type="text" name="search" placeholder="Search MDTS" className="spectacledcoder-search-input"/>
+                            <input type="text" name="search" placeholder="Search MDTS" className="spectacledcoder-search-input" />
 
                         </div>
-                    </div>
+                    </div> */}
                 </div>
                 <div className="user-data">
                     <div className="nav-tab-items">
                         <Title level={3} style={{ color: "white", flexGrow: 1 }}></Title>
-                        {navLinks.map((link, index) => (
-                            <div key={index} style={{ margin: "0 5px" }}>
-                                {link.subItems ? (
-                                    <div className="nav-dropdown-cust"
-                                        style={{
-                                            position: "relative",
-                                            cursor: "pointer",
-                                            transition: "all 0.3s ease",
-                                            backgroundColor: isActive(link.subItems[0]?.action || "") ? "#424242" : "transparent",
-                                            borderRadius: "4px",
-                                        }}
-                                    >
-                                        <Dropdown
-                                            overlay={
-                                                <Menu selectedKeys={[selectedDropdownKeys[link.label] || ""]} style={{ maxHeight: '300px', overflowY: 'auto' }}>
-                                                    {link.subItems.map((subItem, _subIndex) => (
-                                                        <Menu.Item
-                                                            key={subItem.label}
-                                                            onClick={() => handleDropdownSelect(link.label, subItem)}
-                                                        >
-                                                            {subItem.label}
-                                                        </Menu.Item>
-                                                    ))}
-                                                </Menu>
-                                            }
+                        {navLinks
+                            .filter(link => hasPermission(user?.role, link.requiredPermission as any))
+                            .map((link, index) => (
+                                <div key={index} style={{ margin: "0 5px" }}>
+                                    {link.subItems ? (
+                                        <div className="nav-dropdown-cust"
+                                            style={{
+                                                position: "relative",
+                                                cursor: "pointer",
+                                                transition: "all 0.3s ease",
+                                                backgroundColor: isActive(link.subItems[0]?.action || "") ? "#424242" : "transparent",
+                                                borderRadius: "4px",
+                                            }}
                                         >
-                                            <Button type="text">
-                                                {link.label} <DownOutlined />
-                                            </Button>
-                                        </Dropdown>
-                                    </div>
-                                ) : (
-                                    <Button className={`nav-item ${isActive(link.action) ? "active" : ""}`} type="text">
-                                        <Link style={{ color: "inherit", textDecoration: "none" }} to={link.action || "#"} onClick={() => setSelectedDropdownKeys({})}>{link.label}</Link>
-                                    </Button>
+                                            <Dropdown
+                                                overlay={
+                                                    <Menu
+                                                        selectedKeys={[selectedDropdownKeys[link.label] || ""]}
+                                                        style={{ maxHeight: '300px', overflowY: 'auto' }}
+                                                    >
+                                                        {link.subItems
+                                                            .filter(sub => hasPermission(user?.role, sub.requiredPermission as any))
+                                                            .map((subItem, _subIndex) => (
+                                                                <Menu.Item
+                                                                    key={subItem.label}
+                                                                    onClick={() => handleDropdownSelect(link.label, subItem)}
+                                                                >
+                                                                    {subItem.label}
+                                                                </Menu.Item>
+                                                            ))}
+                                                    </Menu>
+                                                }
+                                            >
+                                                <Button type="text">
+                                                    {link.label} <DownOutlined />
+                                                </Button>
+                                            </Dropdown>
+                                        </div>
+                                    ) : (
+                                        <Button
+                                            className={`nav-item ${isActive(link.action) ? "active" : ""}`}
+                                            type="text"
+                                        >
+                                            <Link
+                                                style={{ color: "inherit", textDecoration: "none" }}
+                                                to={link.action || "#"}
+                                                onClick={() => setSelectedDropdownKeys({})}
+                                            >
+                                                {link.label}
+                                            </Link>
+                                        </Button>
+                                    )}
+                                </div>
+                            ))}
 
-                                )}
-                                {index < navLinks.length - 1 && !link.subItems && (
-                                    <Divider type="vertical" style={{ backgroundColor: "#ddd", height: 20, margin: "0 2px" }} />
-                                )}
-                            </div>
-                        ))}
                     </div>
                     <span className="notification-icon-wrapper">
                         <Badge count={5} size="small" offset={[-2, 4]}>

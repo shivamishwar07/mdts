@@ -97,8 +97,8 @@ const ModuleLibrary = () => {
           console.error("Error fetching modules:", err);
           setModulesData([]);
         });
-        console.log(modulesData);
-        
+      console.log(modulesData);
+
 
       db.getAllMineTypes()
         .then((mine) => setMineTypes(mine.filter((item: any) => item.orgId == currentUser.orgId)))
@@ -145,13 +145,22 @@ const ModuleLibrary = () => {
         typeLabel.includes(searchLower) ||
         formattedDate.includes(searchLower);
 
-      const moduleTypeMatches = !selectedOption || module.moduleType === selectedOption;
+      const moduleTypeMatches =
+        !selectedOption ||
+        module.moduleType === selectedOption ||
+        (
+          selectedOption === "PERSONAL" &&
+          module.userGuiId === currentUser?.guiId
+        );
+
       const mineTypeMatches = !newLibraryMineTypeFilter || module.mineType === newLibraryMineTypeFilter;
 
       return moduleTypeMatches && mineTypeMatches && searchMatches;
     });
 
     setFilteredModules(filtered);
+    console.log(filtered);
+    
   }, [searchTerm, selectedOption, newLibraryMineTypeFilter, modulesData]);
 
   const handleModuleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -365,7 +374,7 @@ const ModuleLibrary = () => {
   };
 
   const canEditModule = (module: Module) => {
-    return module.moduleType == "PERSONAL" && currentUser?.guiId === module.userGuiId;
+    return module.moduleType == "PERSONAL" || currentUser?.guiId === module.userGuiId;
   };
 
   const handleConfirmConvertToOrg = async () => {
@@ -432,6 +441,7 @@ const ModuleLibrary = () => {
                 placeholder="Select Module Type"
                 style={{ width: "100%", height: "26px", fontSize: "12px" }}
               >
+                <Option value="MDTS">MDTS Module</Option>
                 <Option value="PERSONAL">Personal Module</Option>
                 <Option value="ORG">Organizational Module</Option>
               </Select>
@@ -492,7 +502,7 @@ const ModuleLibrary = () => {
                         </TableCell>
                         <TableCell style={{ flex: "0 0 15%", padding: "8px", textAlign: "center" }}>{module.mineType}</TableCell>
                         <TableCell style={{ flex: "0 0 10%", padding: "8px 12px", display: "flex", alignItems: "center" }}>
-                          {module.moduleType == 'PERSONAL' && (
+                          {module.moduleType == 'PERSONAL' ||  module.userGuiId == currentUser.guiId &&(
                             <Button
                               icon={<DeleteOutlined />}
                               type="primary"

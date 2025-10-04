@@ -208,23 +208,50 @@ const Projects = () => {
         notify.success("Project link copied to clipboard!");
     };
 
-    const menu = (project: ProjectData) => (
-        <Menu>
-            <Menu.Item key="pin" icon={<PushpinOutlined />} onClick={() => pinProject(project)}>
-                Pin to Top
-            </Menu.Item>
-            <Menu.Item key="favorite" icon={<StarOutlined />} onClick={() => markAsFavorite(project)}>
-                Mark as Favorite
-            </Menu.Item>
-            <Menu.Item key="share" icon={<ShareAltOutlined />} onClick={() => shareProject(project)}>
-                Share Project
-            </Menu.Item>
-            <Menu.Divider />
-            <Menu.Item key="delete" icon={<DeleteOutlined />} danger onClick={() => showDeleteModal(project)}>
-                Delete
-            </Menu.Item>
-        </Menu>
-    );
+    const menu = (project: any) => {
+        const hasTimeline = project.projectTimeline && project.projectTimeline.length > 0;
+        const isOwner = project.userGuiId === currentUser?.userGuiId;
+        const canDelete = isOwner && !hasTimeline;
+
+        return (
+            <Menu
+                onClick={(e) => {
+                    e.domEvent.stopPropagation();
+                }}
+            >
+                <Menu.Item key="pin" icon={<PushpinOutlined />} onClick={() => pinProject(project)}>
+                    Pin to Top
+                </Menu.Item>
+                <Menu.Item key="favorite" icon={<StarOutlined />} onClick={() => markAsFavorite(project)}>
+                    Mark as Favorite
+                </Menu.Item>
+                <Menu.Item key="share" icon={<ShareAltOutlined />} onClick={() => shareProject(project)}>
+                    Share Project
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item
+                    key="delete"
+                    icon={<DeleteOutlined />}
+                    danger
+                    disabled={!canDelete}
+                    onClick={(e) => {
+                        e.domEvent.stopPropagation();
+                        if (canDelete) {
+                            showDeleteModal(project);
+                        } else {
+                            notify.error(
+                                !isOwner
+                                    ? "You are not the owner of this project"
+                                    : "Timeline created - deletion not allowed"
+                            );
+                        }
+                    }}
+                >
+                    Delete
+                </Menu.Item>
+            </Menu>
+        );
+    };
 
     const renderTabContent = () => {
         switch (activeTab) {

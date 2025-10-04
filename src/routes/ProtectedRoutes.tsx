@@ -1,53 +1,68 @@
-import React, { useEffect, useState } from 'react';
-import { Navigate } from 'react-router-dom';
+// src/routes/ProtectedRoute.tsx
+import React, { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
+import { hasPermission } from "../Utils/auth";
+import { Permission } from "../config/permissions";
 
 type ProtectedRouteProps = {
-    children: JSX.Element;
-    redirectPath?: string;
-    checkAuthAsync?: () => Promise<boolean>;
+  children: JSX.Element;
+  redirectPath?: string;
+  checkAuthAsync?: () => Promise<boolean>;
+  action?: Permission;
 };
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-    children,
-    redirectPath = '/home',
-    checkAuthAsync,
+  children,
+  redirectPath = "/home",
+  checkAuthAsync,
+  action,
 }) => {
-    const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isAllowed, setIsAllowed] = useState<boolean | null>(null);
 
-    useEffect(() => {
-        const syncAuthCheck = () => {
-            const authToken = localStorage.getItem('user');
-            setIsAuthenticated(!!authToken);
-        };
+  useEffect(() => {
+    const checkAccess = () => {
+      const rawUser = localStorage.getItem("user");
+      if (!rawUser) {
+        setIsAllowed(false);
+        return;
+      }
+      const user = JSON.parse(rawUser);
 
-        if (!checkAuthAsync) {
-            syncAuthCheck();
-        }
-    }, [checkAuthAsync]);
+      if (action) {
+        setIsAllowed(hasPermission(user.role, action));
+      } else {
+        setIsAllowed(true);
+      }
+    };
 
-    useEffect(() => {
-        if (checkAuthAsync) {
-            const asyncAuthCheck = async () => {
-                try {
-                    const authenticated = await checkAuthAsync();
-                    setIsAuthenticated(authenticated);
-                } catch (error) {
-                    setIsAuthenticated(false);
-                }
-            };
-            asyncAuthCheck();
-        }
-    }, [checkAuthAsync]);
-
-    if (isAuthenticated === null) {
-        return <div>Loading...</div>;
+    if (!checkAuthAsync) {
+      checkAccess();
     }
+  }, [checkAuthAsync, action]);
 
-    if (!isAuthenticated) {
-        return <Navigate to={redirectPath} replace />;
+  useEffect(() => {
+    if (checkAuthAsync) {
+      const asyncAuthCheck = async () => {
+        try {
+          const authenticated = await checkAuthAsync();
+          setIsAllowed(authenticated);
+        } catch (error) {
+          setIsAllowed(false);
+        }
+      };
+      asyncAuthCheck();
     }
+  }, [checkAuthAsync]);
 
-    return children;
+  if (isAllowed === null) {
+    return <div>Loading...</div>;
+  }
+
+  if (!isAllowed) {
+    return <Navigate to={redirectPath} replace />;
+  }
+
+  return children;
 };
 
 export default ProtectedRoute;

@@ -177,7 +177,6 @@ const TimeBuilder = () => {
         setIsSundayWorking(projectTimeline[0]?.sundayWorking || false);
         setSelectedProjectMineType(projectParameters?.typeOfMine || "");
         setIsMenualTimeline(true);
-        alert("bt")
         handleLibraryChange(initialStatus.items);
 
       } else {
@@ -475,7 +474,7 @@ const TimeBuilder = () => {
       if (isUpdateMode) {
         handleSaveProjectTimeline(sequencedModules);
         setTimeout(() => {
-          navigate("/create/project-timeline");
+          navigate("/create/status-update");
         }, 1000);
       }
       else {
@@ -532,12 +531,13 @@ const TimeBuilder = () => {
 
   const toISODateOnly = (value: any): string => {
     const d = ensureDate(value);
-    const y = d.getUTCFullYear();
-    const m = d.getUTCMonth();
-    const day = d.getUTCDate();
-    const normalized = new Date(Date.UTC(y, m, day));
-    return normalized.toISOString().slice(0, 10);
+    const y = d.getFullYear();
+    const m = d.getMonth() + 1;
+    const day = d.getDate();
+
+    return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   };
+
 
   const addBusinessDays = (startDateAny: any, days: number) => {
     let date = ensureDate(startDateAny);
@@ -1914,9 +1914,10 @@ const TimeBuilder = () => {
         await db.updateProject(selectedProject.id, updatedProjectWithTimeline);
         await db.addProjectTimeline(updatedProjectWithTimeline.projectTimeline);
         localStorage.setItem('selectedProjectId', selectedProject.id);
-
-        setTimeout(() => notify.success("Project timeline linked successfully!"), 0);
-        navigate("/create/project-timeline");
+        notify.success("Project timeline linked successfully!");
+        setTimeout(() => {
+          navigate("/create/status-update");
+        }, 1000);
       } else {
         setTimeout(() => notify.error("Selected project and existing project must have the same mine type!"), 0);
       }

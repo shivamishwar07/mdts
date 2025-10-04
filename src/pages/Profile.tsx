@@ -14,6 +14,7 @@ import { notify } from "../Utils/ToastNotify.tsx";
 import { v4 as uuidv4 } from 'uuid';
 import 'react-phone-input-2/lib/style.css';
 import PhoneInput from 'react-phone-input-2';
+import { hasPermission } from "../Utils/auth.ts";
 const Profile = () => {
 
     const [formData, setFormData] = useState<any>({
@@ -616,9 +617,8 @@ const Profile = () => {
                             <div style={{ color: "grey", fontSize: "12px" }}>{formData?.company || ""}</div>
                         </div>
                     </div>
-
                     {['Profile Information', 'Team Members'].map((tab) => {
-                        if (tab === 'Team Members' && formData?.role?.toUpperCase() !== 'ADMIN') {
+                        if (tab === 'Team Members' && !hasPermission(formData?.role, "VIEW_TEAM_MEMBERS")) {
                             return null;
                         }
 

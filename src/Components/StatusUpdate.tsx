@@ -2268,7 +2268,7 @@ export const StatusUpdate = () => {
     <>
       <div className="status-heading">
         <div className="status-update-header">
-          <p>Project Timeline</p>
+          <p>Status Update</p>
           {selectedProject?.projectTimeline != null && (
             <div style={{ display: "flex", gap: "10px" }}>
               <span>Approval Status:</span>
@@ -2450,13 +2450,12 @@ export const StatusUpdate = () => {
                       onClick={handleDownload}
                       style={{ backgroundColor: "#4CAF50" }}
                     >
-                      Download Timeline
+                      Download
                     </Button>
                   )}
                   {(
                     selectedProjectTimeline?.status !== 'replanned' &&
                     !replaneMode &&
-                    getCurrentUser()?.id !== selectedProjectTimeline?.approver?.id &&
                     (
                       (selectedProjectTimeline?.revisedByLog?.newUserId == (getCurrentUser()?.id) || (getCurrentUser()?.guiId) &&
                         selectedProjectTimeline?.status !== 'Pending')
@@ -2509,7 +2508,7 @@ export const StatusUpdate = () => {
                     </Button>
                   )}
 
-                  {(selectedProjectTimeline?.status !== 'Revised' && selectedProjectTimeline?.status != 'Approved' && selectedProjectTimeline?.status != 'replanned') && getCurrentUser()?.id == selectedProjectTimeline?.approver?.id && (
+                  {(selectedProjectTimeline?.status !== 'Revised' && selectedProjectTimeline?.status != 'Approved' && selectedProjectTimeline?.status != 'replanned') && (
                     <div className="action-btn">
                       <Button
                         type="primary"

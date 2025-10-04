@@ -15,6 +15,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { notify } from "../Utils/ToastNotify.tsx";
 import { getCurrentUser } from "../Utils/moduleStorage";
 import { ToastContainer } from "react-toastify";
+import { hasPermission } from "../Utils/auth.ts";
 const Module = () => {
     const { state } = useLocation();
     const navigate = useNavigate();
@@ -39,6 +40,8 @@ const Module = () => {
     const [filteredModuleData, _setFilteredModuleData] = useState<any>(null);
     const [isFocused, setIsFocused] = useState(false);
     const [openCostCalcModal, setOpenCostCalcModal] = useState(false);
+    const normalize = (s?: string) =>
+        (s ?? "").trim().replace(/\s+/g, " ").toLowerCase();
     const parentModuleCode = moduleCode
         ? moduleCode
         : generateTwoLetterAcronym(moduleName, existingAcronyms);
@@ -84,6 +87,7 @@ const Module = () => {
     const [moduleCreationMode, setModuleCreationMode] = useState<"MANUAL" | "IMPORT">("MANUAL");
     const [importFromType, setImportFromType] = useState("");
     const [selectedImportModule, setSelectedImportModule] = useState(null);
+    const [moduleNameError, setModuleNameError] = useState("");
 
     useEffect(() => {
         (async () => {
@@ -566,22 +570,37 @@ const Module = () => {
     };
 
     const handleModulePlus = () => {
-        if (!newModelName || !selectedOption) {
+        if (moduleNameError) {
+            notify.error("Module name already present");
+            return;
+        }
+
+        const intendedName =
+            (newModelName || moduleData.moduleName || "").trim();
+        const intendedType =
+            selectedOption || moduleData.mineType || "";
+
+        if (!intendedName || !intendedType) {
             notify.warning("Missing Required Fields");
             return;
         }
 
-        if (!newModelName.trim()) {
-            notify.warning("Module Name cannot be empty");
-            return;
-        }
-
-        // Additional check for IMPORT mode
         if (moduleCreationMode === "IMPORT") {
             if (!importFromType || !selectedImportModule) {
                 notify.warning("Please select a module type and module to import");
                 return;
             }
+        }
+
+        const dup = isDuplicateModuleName(
+            intendedName,
+            intendedType,
+            currentUser?.orgId ?? null
+        );
+        if (dup) {
+            setModuleNameError("Module name already exists");
+            notify.error("Module name already present");
+            return;
         }
 
         const generatedId = uuidv4();
@@ -973,7 +992,20 @@ const Module = () => {
         }
     };
 
-
+    const isDuplicateModuleName = (
+        name: string,
+        mineType: string,
+        orgId: any,
+        excludeId?: number | null,
+    ) => {
+        const target = normalize(name);
+        return allModules.some((m: any) =>
+            normalize(m.moduleName) === target &&
+            m.mineType === mineType &&
+            m.orgId === orgId &&
+            (excludeId ? m.id !== excludeId : true)
+        );
+    };
 
     return (
         <div>
@@ -1002,7 +1034,7 @@ const Module = () => {
                         <Row justify="space-between" align="middle">
                             <Col>
                                 <Row gutter={16}>
-                                    {!moduleData.parentModuleCode && (
+                                    {hasPermission(currentUser?.role, "CREATE_MDTS_MODULE") && !moduleData.parentModuleCode && (
                                         <Col>
                                             <Tooltip title="Create New Module">
                                                 <Button
@@ -1016,46 +1048,54 @@ const Module = () => {
                                             </Tooltip>
                                         </Col>
                                     )}
-                                    <Col>
-                                        <Tooltip title="Add Document">
-                                            <Button
-                                                icon={<FileTextOutlined style={{ color: '#7f8c8d' }} />}
-                                                className="icon-button"
-                                                onClick={showDocumentModal}
-                                                disabled={!selectedActivityRow}
-                                            />
-                                        </Tooltip>
-                                    </Col>
-                                    <Col>
-                                        <Tooltip title="Define Activity Cost">
-                                            <Button
-                                                icon={<DollarOutlined style={{ color: '#52c41a' }} />}
-                                                className="icon-button"
-                                                onClick={handleOpenCostCalcModal}
-                                                disabled={!selectedActivityRow}
-                                            />
-                                        </Tooltip>
-                                    </Col>
-                                    <Col>
-                                        <Tooltip title="Decrease Level">
-                                            <Button
-                                                icon={<ArrowDownOutlined />}
-                                                className="icon-button orange"
-                                                onClick={decreaseLevel}
-                                                disabled={!selectedActivityRow}
-                                            />
-                                        </Tooltip>
-                                    </Col>
-                                    <Col>
-                                        <Tooltip title="Increase Level">
-                                            <Button
-                                                icon={<ArrowUpOutlined />}
-                                                className="icon-button orange"
-                                                onClick={increaseLevel}
-                                                disabled={!selectedActivityRow}
-                                            />
-                                        </Tooltip>
-                                    </Col>
+                                    {hasPermission(currentUser?.role, "ADD_DOCUMENT_IN_ACTIVITY") && (
+                                        <Col>
+                                            <Tooltip title="Add Document">
+                                                <Button
+                                                    icon={<FileTextOutlined style={{ color: '#7f8c8d' }} />}
+                                                    className="icon-button"
+                                                    onClick={showDocumentModal}
+                                                    disabled={!selectedActivityRow}
+                                                />
+                                            </Tooltip>
+                                        </Col>
+                                    )}
+                                    {hasPermission(currentUser?.role, "ADD_COST_IN_ACTIVITY") && (
+                                        <Col>
+                                            <Tooltip title="Define Activity Cost">
+                                                <Button
+                                                    icon={<DollarOutlined style={{ color: '#52c41a' }} />}
+                                                    className="icon-button"
+                                                    onClick={handleOpenCostCalcModal}
+                                                    disabled={!selectedActivityRow}
+                                                />
+                                            </Tooltip>
+                                        </Col>
+                                    )}
+                                    {hasPermission(currentUser?.role, "LEVEL_UP_DOWN") && (
+                                        <Col>
+                                            <Tooltip title="Decrease Level">
+                                                <Button
+                                                    icon={<ArrowDownOutlined />}
+                                                    className="icon-button orange"
+                                                    onClick={decreaseLevel}
+                                                    disabled={!selectedActivityRow}
+                                                />
+                                            </Tooltip>
+                                        </Col>
+                                    )}
+                                    {hasPermission(currentUser?.role, "LEVEL_UP_DOWN") && (
+                                        <Col>
+                                            <Tooltip title="Increase Level">
+                                                <Button
+                                                    icon={<ArrowUpOutlined />}
+                                                    className="icon-button orange"
+                                                    onClick={increaseLevel}
+                                                    disabled={!selectedActivityRow}
+                                                />
+                                            </Tooltip>
+                                        </Col>
+                                    )}
 
                                     <Col>
                                         <Tooltip title="Delete">
@@ -1067,6 +1107,7 @@ const Module = () => {
                                             />
                                         </Tooltip>
                                     </Col>
+
                                     <Col>
                                         <Tooltip title="Undo">
                                             <Button
@@ -1083,49 +1124,53 @@ const Module = () => {
                                             <Button onClick={toggleSortOrder} icon={getSortIcon()} disabled={moduleData.activities?.length == 0} className="icon-button blue" />
                                         </Tooltip>
                                     </Col> */}
-                                    <Col>
-                                        <Tooltip title="Assign RACI">
-                                            <Button
-                                                icon={<UserOutlined />}
-                                                onClick={showResponsibilityModal}
-                                                className="icon-button blue"
-                                                disabled={!selectedActivityRow}
-                                            />
-                                        </Tooltip>
-                                        <Modal
-                                            title={<span style={{ fontWeight: "bold", fontSize: "20px" }}>Assign User Roles</span>}
-                                            open={openModal}
-                                            onCancel={() => setOpenModal(false)}
-                                            footer={false}
-                                            width={"50%"}
-                                        >
-                                            <UserRolesPage
+                                    {hasPermission(currentUser?.role, "ASSIGN_RASI") && (
+                                        <Col>
+                                            <Tooltip title="Assign RACI">
+                                                <Button
+                                                    icon={<UserOutlined />}
+                                                    onClick={showResponsibilityModal}
+                                                    className="icon-button blue"
+                                                    disabled={!selectedActivityRow}
+                                                />
+                                            </Tooltip>
+                                            <Modal
+                                                title={<span style={{ fontWeight: "bold", fontSize: "20px" }}>Assign User Roles</span>}
                                                 open={openModal}
-                                                onClose={() => setOpenModal(false)}
-                                                selectedRow={selectedRow}
-                                                moduleData={filteredModuleData}
-                                            />
-                                        </Modal>
-                                    </Col>
-                                    <Col>
-                                        <Tooltip title="Notifications">
-                                            <Button
-                                                icon={<BellOutlined />}
-                                                onClick={showNotificationModal}
-                                                className="icon-button blue"
-                                                disabled={!selectedActivityRow}
-                                            />
-                                        </Tooltip>
-                                        <Modal
-                                            title="Notification Settings"
-                                            visible={open}
-                                            onCancel={() => setOpen(false)}
-                                            width={"70%"}
-                                            footer={false}
-                                        >
-                                            <CreateNotification open={open} onClose={() => setOpen(false)} />
-                                        </Modal>
-                                    </Col>
+                                                onCancel={() => setOpenModal(false)}
+                                                footer={false}
+                                                width={"50%"}
+                                            >
+                                                <UserRolesPage
+                                                    open={openModal}
+                                                    onClose={() => setOpenModal(false)}
+                                                    selectedRow={selectedRow}
+                                                    moduleData={filteredModuleData}
+                                                />
+                                            </Modal>
+                                        </Col>
+                                    )}
+                                    {hasPermission(currentUser?.role, "ASSIGN_RASI") && (
+                                        <Col>
+                                            <Tooltip title="Notifications">
+                                                <Button
+                                                    icon={<BellOutlined />}
+                                                    onClick={showNotificationModal}
+                                                    className="icon-button blue"
+                                                    disabled={!selectedActivityRow}
+                                                />
+                                            </Tooltip>
+                                            <Modal
+                                                title="Notification Settings"
+                                                visible={open}
+                                                onCancel={() => setOpen(false)}
+                                                width={"70%"}
+                                                footer={false}
+                                            >
+                                                <CreateNotification open={open} onClose={() => setOpen(false)} />
+                                            </Modal>
+                                        </Col>
+                                    )}
                                     <Col>
                                         <Tooltip title="Add Activity">
                                             <Button
@@ -1140,7 +1185,7 @@ const Module = () => {
                                         </Tooltip>
                                     </Col>
 
-                                    {!moduleData.parentModuleCode && (
+                                    {hasPermission(currentUser?.role, "CREATE_NEW_Module") && !moduleData.parentModuleCode && (
                                         <Col>
                                             <Tooltip title="Create New Module">
                                                 <Button
@@ -1308,6 +1353,8 @@ const Module = () => {
                         setIsMDTSCreation(false);
                         setModuleType("PERSONAL");
                         resetModuleForm();
+                        setNewModelName("");
+                        setModuleNameError("");
                     }}
                     onOk={handleModulePlus}
                     okButtonProps={{ className: "bg-secondary" }}
@@ -1357,7 +1404,9 @@ const Module = () => {
                                                 }}
                                             >
                                                 <Radio value="MANUAL">MANUALLY</Radio>
-                                                <Radio value="IMPORT">IMPORT</Radio>
+                                                {hasPermission(currentUser?.role, "IMPORT_MODULE_FROM_OTHER_SOURCE") && (
+                                                    <Radio value="IMPORT">IMPORT</Radio>
+                                                )}
                                             </Radio.Group>
                                         </Col>
                                     </Row>
@@ -1411,8 +1460,12 @@ const Module = () => {
                                                     >
                                                         {moduleType === "PERSONAL" && (
                                                             <>
-                                                                <Select.Option value="ORG">Organization Module</Select.Option>
-                                                                <Select.Option value="MDTS">MDTS Module</Select.Option>
+                                                                {hasPermission(currentUser?.role, "IMPORT_FROM_ORGANIZATIONS") && (
+                                                                    <Select.Option value="ORG">Organization Module</Select.Option>
+                                                                )}
+                                                                {hasPermission(currentUser?.role, "IMPORT_FROM_MDTS") && (
+                                                                    <Select.Option value="MDTS">MDTS Module</Select.Option>
+                                                                )}
                                                             </>
                                                         )}
                                                         {moduleType === "ORG" && (
@@ -1433,7 +1486,7 @@ const Module = () => {
                                                 </Col>
 
                                                 <Col span={16}>
-                                                    <Select
+                                                    {/* <Select
                                                         placeholder="Select module"
                                                         value={selectedImportModule}
                                                         style={{ width: '100%' }}
@@ -1477,7 +1530,61 @@ const Module = () => {
                                                                     {mod.moduleName}
                                                                 </Select.Option>
                                                             ))}
+                                                    </Select> */}
+                                                    <Select
+                                                        placeholder="Select module"
+                                                        value={selectedImportModule}
+                                                        style={{ width: '100%' }}
+                                                        onChange={(value) => {
+                                                            const selected = importableModules.find((m) => m.guiId === value);
+                                                            setSelectedImportModule(value);
+
+                                                            if (selected) {
+                                                                const clonedActivities = JSON.parse(JSON.stringify(selected.activities || []));
+                                                                const newGuiId = uuidv4();
+                                                                const newModuleCode = moduleCodeName || generateTwoLetterAcronym(selected.moduleName, existingAcronyms);
+
+                                                                setNewModelName(selected.moduleName);
+                                                                setSelectedOption(selected.mineType);
+                                                                setModuleCodeName(newModuleCode);
+
+                                                                const willDuplicate = isDuplicateModuleName(
+                                                                    selected.moduleName,
+                                                                    selected.mineType,
+                                                                    currentUser?.orgId ?? null
+                                                                );
+                                                                setModuleNameError(willDuplicate ? "Module name already exists" : "");
+
+                                                                setModuleData({
+                                                                    guiId: newGuiId,
+                                                                    parentModuleCode: newModuleCode,
+                                                                    moduleName: selected.moduleName,
+                                                                    mineType: selected.mineType,
+                                                                    level: "L1",
+                                                                    moduleType: moduleType,
+                                                                    userGuiId: currentUser?.guiId,
+                                                                    orgId: currentUser?.orgId,
+                                                                    createdAt: new Date().toISOString(),
+                                                                    activities: clonedActivities,
+                                                                });
+
+                                                                notify.success("Module imported successfully");
+                                                            }
+                                                        }}
+                                                    >
+                                                        {importableModules
+                                                            .filter(
+                                                                (mod) =>
+                                                                    mod.moduleType === importFromType &&
+                                                                    mod.mineType === selectedOption
+                                                            )
+                                                            .map((mod) => (
+                                                                <Select.Option key={mod.guiId} value={mod.guiId}>
+                                                                    {mod.moduleName}
+                                                                </Select.Option>
+                                                            ))}
                                                     </Select>
+
                                                 </Col>
                                             </Row>
                                         </Col>
@@ -1500,11 +1607,28 @@ const Module = () => {
                                             <Input
                                                 placeholder="Enter module name"
                                                 value={newModelName}
-                                                onChange={(e) => setNewModelName(e.target.value)}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setNewModelName(val);
+                                                    const dup = isDuplicateModuleName(
+                                                        val,
+                                                        selectedOption || moduleData.mineType || "",
+                                                        currentUser?.orgId ?? null
+                                                    );
+                                                    setModuleNameError(dup ? "Module name already exists" : "");
+                                                }}
+                                                status={moduleNameError ? "error" : ""}
                                             />
+
+                                            {moduleNameError && (
+                                                <div style={{ color: "red", fontSize: "12px", marginTop: "4px" }}>
+                                                    {moduleNameError}
+                                                </div>
+                                            )}
                                         </Col>
                                     </Row>
                                 </Col>
+
                                 <Col span={24}>
                                     <Row align="middle">
                                         <Col span={8}><label>Module Code</label></Col>
@@ -1881,6 +2005,7 @@ const Module = () => {
                         </Form.List>
                     </Form>
                 </Modal>
+
             </div>
             <ToastContainer />
         </div>
