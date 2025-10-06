@@ -548,8 +548,6 @@ export const StatusUpdate = () => {
         };
       });
       setDataSource(finDataSource);
-      console.log(finDataSource);
-
       setExpandedKeys(finDataSource.map((_: any, index: any) => `module-${index}`));
       if (editingRequired) {
         setIsEditing(true);
