@@ -177,13 +177,13 @@ const ProjectsList = () => {
                 return (
                     <div style={{ display: 'flex', gap: '8px' }}>
                         <Tooltip
-                            title={
-                                !isOwner
-                                    ? "You are not the owner of this project"
-                                    : hasTimeline
-                                        ? "Timeline created - editing not allowed"
-                                        : "Edit project"
-                            }
+                            // title={
+                            //     !isOwner
+                            //         ? "You are not the owner of this project"
+                            //         : hasTimeline
+                            //             ? "Timeline created - editing not allowed"
+                            //             : "Edit project"
+                            // }
                         >
                             <Button
                                 icon={<EditOutlined />}

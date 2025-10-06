@@ -2485,8 +2485,8 @@ export const StatusUpdate = () => {
                         style={{ backgroundColor: "#715147ff" }}
                       >
                         {selectedProjectTimeline?.status !== 'Approved'
-                          ? 'Edit Timeline'
-                          : 'Replan Timeline'}
+                          ? 'Edit'
+                          : 'Replan'}
                       </Button>
                     )}
 

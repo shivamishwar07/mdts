@@ -153,7 +153,7 @@ const TimeBuilder = () => {
 
     const state = location.state;
     console.log(state);
-    
+
     if (!state?.selectedProject || !state?.selectedTimeline) return;
     const fetchData = async () => {
       setIsReplanMode(state.rePlanTimeline || false);
@@ -469,7 +469,28 @@ const TimeBuilder = () => {
     });
   };
 
+  // const handleNext = () => {
+  //   if (currentStep < 7) {
+  //     setCurrentStep(currentStep + 1);
+  //   } else {
+  //     if (isUpdateMode) {
+  //       handleSaveProjectTimeline(sequencedModules);
+  //       setTimeout(() => {
+  //         navigate("/create/status-update");
+  //       }, 1000);
+  //     }
+  //     else {
+  //       handleSaveProjectTimeline(sequencedModules);
+  //     }
+  //   }
+  // };
+
   const handleNext = () => {
+    if (currentStep === 0) {
+      syncSequencedFromSelectedItems(selectedItems);
+      setCurrentStep(1);
+      return;
+    }
     if (currentStep < 7) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -478,8 +499,7 @@ const TimeBuilder = () => {
         setTimeout(() => {
           navigate("/create/status-update");
         }, 1000);
-      }
-      else {
+      } else {
         handleSaveProjectTimeline(sequencedModules);
       }
     }
@@ -539,8 +559,7 @@ const TimeBuilder = () => {
 
     return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   };
-
-
+  
   const addBusinessDays = (startDateAny: any, days: number) => {
     let date = ensureDate(startDateAny);
     date = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -2100,15 +2119,36 @@ const TimeBuilder = () => {
     },
   ];
 
+  // const handleStatusChange = (index: number, value: string) => {
+  //   setSelectedItems((prevItems: any) =>
+  //     prevItems.map((item: any, i: any) => {
+  //       if (i < index) return item;
+  //       if (i == index) return { ...item, status: value == "Yes" ? "Completed" : "Pending" };
+  //       return { ...item, status: "Pending" };
+  //     })
+  //   );
+  // };
+
   const handleStatusChange = (index: number, value: string) => {
-    setSelectedItems((prevItems: any) =>
-      prevItems.map((item: any, i: any) => {
+    setSelectedItems((prevItems: any) => {
+      const next = prevItems.map((item: any, i: any) => {
         if (i < index) return item;
         if (i == index) return { ...item, status: value == "Yes" ? "Completed" : "Pending" };
         return { ...item, status: "Pending" };
-      })
-    );
+      });
+      syncSequencedFromSelectedItems(next);
+      return next;
+    });
   };
+
+  const syncSequencedFromSelectedItems = (items: any[]) => {
+    const filtered = (items || []).filter((it: any) => (it.status || "").toLowerCase() !== "completed");
+    setSequencedModules(filtered);
+    setModules(filtered);
+    setActivitiesData(filtered.flatMap((m: any) => m.activities));
+    setSelectedActivities(filtered.flatMap((m: any) => m.activities.map((a: any) => a.code)));
+  };
+
 
   const handleGroupNameChange = async (newGroupName: string | undefined) => {
     try {
