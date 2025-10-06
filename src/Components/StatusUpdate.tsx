@@ -475,18 +475,22 @@ export const StatusUpdate = () => {
     setEmail("");
   };
 
+  const timelineKey = (t: any) => String(t?.versionId ?? t?.timelineId ?? "");
+  const selectedTimelineKey = () => String(selectedProjectTimeline?.versionId ?? selectedProjectTimeline?.timelineId ?? "");
+
   const handleApproveTimeline = async () => {
-    const updatedProjectTimeline = selectedProject.projectTimeline.map((timeline: any) => {
-      if (timeline.timelineId == selectedProjectTimeline.versionId || selectedProjectTimeline.timelineId) {
-        return { ...timeline, status: "Approved" };
-      }
-      return timeline;
-    });
+    const selId = selectedTimelineKey();
+    if (!selId) return;
+
+    const updatedProjectTimeline = (selectedProject?.projectTimeline || []).map((t: any) =>
+      timelineKey(t) === selId ? { ...t, status: "Approved" } : t
+    );
 
     const updatedSelectedProject = {
       ...selectedProject,
       projectTimeline: updatedProjectTimeline,
     };
+
     await db.updateProject(selectedProjectId, updatedSelectedProject);
     notify.success("Timeline approved successfully");
     setIsApproveModalOpen(false);

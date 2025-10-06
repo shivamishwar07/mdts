@@ -2233,7 +2233,7 @@ const TimeBuilder = () => {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div className="title-and-filter">
               <div className="heading">
-                <span>Timeline Builder</span>
+                <span>{isReplanMode?'Replan Timeline':isUpdateMode?'Edit Timeline':'Timeline Builder'}</span>
               </div>
               {(allProjects.length > 0 || selectedProject) && (
                 <div>
