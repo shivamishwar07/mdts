@@ -7,7 +7,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, Tag, Space, Tooltip } from "antd";
-import { ClockCircleOutlined, CloseCircleOutlined, DeleteOutlined, DollarOutlined, DownloadOutlined, EditOutlined, EyeOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined, UploadOutlined } from "@ant-design/icons";
+import { ClockCircleOutlined, CloseCircleOutlined, DeleteOutlined, DollarOutlined, DownloadOutlined, EditOutlined, EyeOutlined, FileSyncOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined, UploadOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -2356,17 +2356,20 @@ export const StatusUpdate = () => {
                         value: selectedVersionId,
                         label: (
                           <>
-                            {selectedProjectTimeline?.status == 'pending' ? (
+                            {selectedProjectTimeline?.status === 'pending' ? (
                               <ClockCircleOutlined style={{ color: 'orange', marginRight: 8 }} />
-                            ) : selectedProjectTimeline?.status == 'replanned' ? (
+                            ) : selectedProjectTimeline?.status === 'replanned' ? (
                               <SyncOutlined style={{ color: '#6f42c1', marginRight: 8 }} />
-                            ) : selectedProjectTimeline?.status == 'Revised' ? (
+                            ) : selectedProjectTimeline?.status === 'Revised' ? (
                               <EditOutlined style={{ color: '#c00c0cff', marginRight: 8 }} />
+                            ) : selectedProjectTimeline?.status === 'amendment pending' ? (
+                              <FileSyncOutlined style={{ color: '#007bff', marginRight: 8 }} />
                             ) : (
                               <LikeOutlined style={{ color: 'green', marginRight: 8 }} />
                             )}
                             {selectedProjectTimeline?.version}
                           </>
+
                         ),
                       }}
                       onChange={(valueObj) => {
@@ -2384,15 +2387,18 @@ export const StatusUpdate = () => {
                     >
                       {allVersions?.map((version: any) => (
                         <Option key={version.versionId} value={version.versionId}>
-                          {version.status == 'pending' ? (
+                          {version.status === 'pending' ? (
                             <ClockCircleOutlined style={{ color: 'orange', marginRight: 8 }} />
-                          ) : version.status == 'replanned' ? (
+                          ) : version.status === 'replanned' ? (
                             <SyncOutlined style={{ color: 'blue', marginRight: 8 }} />
+                          ) : version.status === 'amendment pending' ? (
+                            <FileSyncOutlined style={{ color: '#007bff', marginRight: 8 }} />
                           ) : (
                             <LikeOutlined style={{ color: 'green', marginRight: 8 }} />
                           )}
                           {version.version}
                         </Option>
+
                       ))}
                     </Select>
                   </div>

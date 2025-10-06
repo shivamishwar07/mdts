@@ -1793,6 +1793,7 @@ const TimeBuilder = () => {
     setSelectedProject(null);
     setSelectedProjectMineType("");
     setLibraryName("");
+    setIsReplanMode(false);
     setSelectedProjectId(null);
     setIsMenualTimeline(false);
     defaultSetup();
