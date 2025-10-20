@@ -23,6 +23,11 @@ export interface DiskStorage {
   content: string;
 }
 
+export interface DocType {
+  id?: number;
+  name: string;
+}
+
 
 export class DataStorage extends Dexie {
   mineTypes!: Table<MineType, number>;
@@ -35,6 +40,7 @@ export class DataStorage extends Dexie {
   documents!: Table<Document, number>;
   diskStorage!: Table<DiskStorage, number>;
   companies!: Table<any, number>;
+  docTypes!: Table<DocType, number>;
 
   constructor() {
     super("MTDS");
@@ -51,6 +57,20 @@ export class DataStorage extends Dexie {
       companies: "++id, guiId",
     });
 
+    this.version(2).stores({
+      docTypes: "++id, name",
+    }).upgrade(async (tx) => {
+      const count = await tx.table("docTypes").count();
+      if (!count) {
+        await tx.table("docTypes").bulkAdd([
+          { name: "Notification" },
+          { name: "Letter" },
+          { name: "Review Meeting MoM" },
+          { name: "Approved NFA" },
+        ]);
+      }
+    });
+
     this.mineTypes = this.table("mineTypes");
     this.modules = this.table("modules");
     this.moduleLibrary = this.table("moduleLibrary");
@@ -61,6 +81,7 @@ export class DataStorage extends Dexie {
     this.documents = this.table("documents");
     this.diskStorage = this.table("diskStorage");
     this.companies = this.table("companies");
+    this.docTypes = this.table("docTypes");
   }
 
   async addModule(module: any): Promise<number> {
@@ -390,6 +411,18 @@ export class DataStorage extends Dexie {
     } else {
       message.warning(`Company with ID ${id} not found.`);
     }
+  }
+
+  async addDocType(name: string): Promise<number> {
+    const trimmed = name.trim();
+    if (!trimmed) throw new Error("Type name required");
+    const exists = await this.docTypes.where("name").equalsIgnoreCase(trimmed).first();
+    if (exists) throw new Error("Type already exists");
+    return this.docTypes.add({ name: trimmed });
+  }
+
+  async getAllDocTypes(): Promise<DocType[]> {
+    return this.docTypes.orderBy("name").toArray();
   }
 
 }

@@ -15,6 +15,8 @@ import TextArea from "antd/es/input/TextArea";
 import { ToastContainer } from 'react-toastify';
 import { notify } from "../Utils/ToastNotify.tsx";
 import { UserOutlined } from '@ant-design/icons';
+import customParseFormat from "dayjs/plugin/customParseFormat";
+dayjs.extend(customParseFormat);
 interface Activity {
   code: string;
   activityName: string;
@@ -80,6 +82,13 @@ export const StatusUpdate = () => {
   const [selectedActivityDocs, setSelectedActivityDocs] = useState<any[]>([]);
   const [previewVisible, setPreviewVisible] = useState(false);
   const [previewContent, setPreviewContent] = useState<string | null>(null);
+  const [docMilestone, setDocMilestone] = useState("");
+  const [docActivity, setDocActivity] = useState("");
+  const [docNameOptions, setDocNameOptions] = useState<string[]>([]);
+  const [addNameOpen, setAddNameOpen] = useState(false);
+  const [newDocName, setNewDocName] = useState("");
+  const [docForm] = Form.useForm();
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getCurrentUser();
@@ -173,6 +182,55 @@ export const StatusUpdate = () => {
 
   const showModal = () => {
     setIsModalOpen(true);
+  };
+
+  const [costInfoOpen, setCostInfoOpen] = useState(false);
+  const [costInfoData, setCostInfoData] = useState<any | null>(null);
+  const getCode = (x: any) => String(x?.Code ?? x?.code ?? "");
+  const asNumber = (v: any) => (v === null || v === undefined || v === "" ? 0 : Number(v));
+
+  const getDelayDays = (act: any) => {
+    const plannedEnd = act?.end ? dayjs(act.end) : null;
+    if (!plannedEnd || !plannedEnd.isValid()) return 0;
+
+    if (act?.actualFinish) {
+      const af = dayjs(act.actualFinish, ["DD-MM-YYYY", "YYYY-MM-DD"], true);
+      if (af.isValid() && af.isAfter(plannedEnd)) {
+        return af.diff(plannedEnd, "day");
+      }
+      return 0;
+    }
+
+    const today = dayjs();
+    return today.isAfter(plannedEnd) ? today.diff(plannedEnd, "day") : 0;
+  };
+
+  const getDelayPerDay = (act: any) => {
+    const c = act?.cost ?? {};
+    if (c.delayPerDay != null && c.delayPerDay !== "") return asNumber(c.delayPerDay);
+    const proj = asNumber(c.projectCost);
+    const op = asNumber(c.opCost);
+    const denom = asNumber(act?.expectedDuration ?? act?.duration);
+    return denom > 0 ? (proj + op) / denom : 0;
+  };
+
+  const openCostInfoForActivity = (activityKey: string) => {
+    const activity = findActivityByKey(dataSource, activityKey);
+    if (!activity) return;
+
+    const delayDays = getDelayDays(activity);
+    const perDay = getDelayPerDay(activity);
+    const incurred = delayDays * perDay;
+
+    setCostInfoData({
+      name: activity?.keyActivity || activity?.activityName || getCode(activity),
+      projectCost: asNumber(activity?.cost?.projectCost),
+      opCost: asNumber(activity?.cost?.opCost),
+      delayPerDay: perDay,
+      delayDays,
+      incurred,
+    });
+    setCostInfoOpen(true);
   };
 
   const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
@@ -402,6 +460,18 @@ export const StatusUpdate = () => {
         Object.assign(cell, moduleHeaderStyle);
       });
 
+      const formatDate = (val: any) =>
+        val && dayjs(val, ["YYYY-MM-DD", "DD-MM-YYYY"], true).isValid()
+          ? dayjs(val, ["YYYY-MM-DD", "DD-MM-YYYY"], true).format("DD-MMM-YYYY")
+          : "-";
+
+      const formatStatus = (status: any) =>
+        status
+          ? status
+            .replace(/([a-z])([A-Z])/g, "$1 $2")
+            .replace(/^\w/, (c: any) => c.toUpperCase())
+          : "-";
+
       rowIndex++;
       module.activities.forEach((activity, activityIndex) => {
         const row = worksheet.addRow([
@@ -411,11 +481,11 @@ export const StatusUpdate = () => {
           activity.actualDuration || 0,
           activity.prerequisite || "-",
           activity.slack || 0,
-          activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
-          activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
-          activity.actualStart ? dayjs(activity.actualStart).format("DD-MM-YYYY") : "-",
-          activity.actualFinish ? dayjs(activity.actualFinish).format("DD-MM-YYYY") : "-",
-          activity.activityStatus || "-",
+          formatDate(activity.start),
+          formatDate(activity.end),
+          formatDate(activity.actualStart),
+          formatDate(activity.actualFinish),
+          formatStatus(activity.activityStatus),
         ]);
 
         row.eachCell((cell: any) => {
@@ -692,58 +762,104 @@ export const StatusUpdate = () => {
       key: "keyActivity",
       width: 250,
       align: "left",
-      render: (_, record) => {
+      render: (_: any, record: any) => {
         const {
-          activityStatus, keyActivity, duration, actualStart, actualFinish, plannedStart, plannedFinish,
+          activityStatus,
+          keyActivity,
+          duration,
+          actualStart,
+          actualFinish,
+          plannedStart,
+          plannedFinish,
         } = record;
 
-        const plannedStartDate = plannedStart ? dayjs(plannedStart, 'DD-MM-YYYY') : null;
-        const actualStartDate = actualStart ? dayjs(actualStart, 'DD-MM-YYYY') : null;
-        const plannedFinishDate = plannedFinish ? dayjs(plannedFinish, 'DD-MM-YYYY') : null;
-        const actualFinishDate = actualFinish ? dayjs(actualFinish, 'DD-MM-YYYY') : null;
+        const plannedStartDate = plannedStart ? dayjs(plannedStart, "DD-MM-YYYY") : null;
+        const actualStartDate = actualStart ? dayjs(actualStart, "DD-MM-YYYY") : null;
+        const plannedFinishDate = plannedFinish ? dayjs(plannedFinish, "DD-MM-YYYY") : null;
+        const actualFinishDate = actualFinish ? dayjs(actualFinish, "DD-MM-YYYY") : null;
 
-        let iconSrc = '';
-        const isStartSame = plannedStartDate && actualStartDate && plannedStartDate.isSame(actualStartDate, 'day');
-        const isFinishSame = plannedFinishDate && actualFinishDate && plannedFinishDate.isSame(actualFinishDate, 'day');
+        let iconSrc = "";
+        const isStartSame =
+          plannedStartDate && actualStartDate && plannedStartDate.isSame(actualStartDate, "day");
+        const isFinishSame =
+          plannedFinishDate && actualFinishDate && plannedFinishDate.isSame(actualFinishDate, "day");
         const isWithinPlannedDuration =
-          plannedStartDate && plannedFinishDate && actualStartDate &&
+          plannedStartDate &&
+          plannedFinishDate &&
+          actualStartDate &&
           getBusinessDays(actualStartDate, dayjs()) <= getBusinessDays(plannedStartDate, plannedFinishDate);
 
-        if (activityStatus == 'completed') {
+        if (activityStatus === "completed") {
           const isCompletedOnTime = isStartSame && isFinishSame;
-          iconSrc = isCompletedOnTime ? '/images/icons/completed.png' : '/images/icons/overdue.png';
-        } else if (activityStatus == 'inProgress') {
-          iconSrc = isWithinPlannedDuration ? '/images/icons/inprogress.png' : '/images/icons/overdue.png';
+          iconSrc = isCompletedOnTime ? "/images/icons/completed.png" : "/images/icons/overdue.png";
+        } else if (activityStatus === "inProgress") {
+          iconSrc = isWithinPlannedDuration ? "/images/icons/inprogress.png" : "/images/icons/overdue.png";
         } else {
-          iconSrc = '/images/icons/yettostart.png';
+          iconSrc = "/images/icons/yettostart.png";
         }
+
+        // Show cost icon if any cost field is present (project/op/delayPerDay)
+        const hasCost =
+          !!record?.cost &&
+          (record.cost.delayPerDay != null ||
+            record.cost.projectCost != null ||
+            record.cost.opCost != null);
 
         return (
           <span
-            style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+            style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}
             onClick={() => {
-              if (record.duration != undefined)
-                setSelectedActivityKey((prevKey: any) => prevKey == record.key ? null : record.key);
+              if (record.duration !== undefined)
+                setSelectedActivityKey((prevKey: any) => (prevKey === record.key ? null : record.key));
             }}
           >
-            {record.notes?.length > 0 && (
+            {/* Notes icon (existing behavior) */}
+            {Array.isArray(record.notes) && record.notes.length > 0 && (
               <span
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedActivityKey(record.key);
                   setNoteModalVisible(true);
-                  setNoteInput('');
+                  setNoteInput("");
                   setEditNoteId(null);
                 }}
               >
-                <FileTextOutlined style={{ fontSize: 22, color: '#1890ff' }} />
+                <FileTextOutlined style={{ fontSize: 22, color: "#1890ff" }} />
               </span>
             )}
+
+            {/* Cost icon (new, same style as notes, opens read-only cost popup) */}
+            <span
+              onClick={(e) => {
+                e.stopPropagation();
+                if (hasCost) {
+                  // This should open your cost popup for the selected activity
+                  // Implemented earlier as: openCostInfoForActivity(record.key)
+                  openCostInfoForActivity(record.key);
+                  setSelectedActivityKey(record.key);
+                }
+              }}
+              title={hasCost ? "Show Delay Cost" : "No cost defined"}
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                width: 24,
+                height: 24,
+                cursor: hasCost ? "pointer" : "not-allowed",
+                opacity: hasCost ? 1 : 0.5,
+              }}
+            >
+              <DollarOutlined style={{ fontSize: 20, color: hasCost ? "#e67e22" : "#bfbfbf" }} />
+            </span>
+
+            {/* Status icon */}
             {duration ? (
               <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
             ) : (
               <span style={{ width: 34, height: 34 }} />
             )}
+
             {keyActivity}
           </span>
         );
@@ -1939,14 +2055,6 @@ export const StatusUpdate = () => {
     }
   };
 
-  const [docMilestone, setDocMilestone] = useState("");
-  const [docActivity, setDocActivity] = useState("");
-  const [docNameOptions, setDocNameOptions] = useState<string[]>([]);
-  const [addNameOpen, setAddNameOpen] = useState(false);
-  const [newDocName, setNewDocName] = useState("");
-  const [docForm] = Form.useForm();
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
-
   const resetDocModalState = () => {
     docForm.resetFields();
     setDocName("");
@@ -2879,6 +2987,53 @@ export const StatusUpdate = () => {
           </Form.Item>
         </Form>
 
+      </Modal>
+
+      <Modal
+        title="Activity Delay Cost"
+        open={costInfoOpen}
+        onCancel={() => setCostInfoOpen(false)}
+        footer={null}
+        className="modal-container"
+        maskClosable={false}
+        keyboard={false}
+      >
+        {costInfoData ? (
+          <div style={{ padding: "6px 10px" }}>
+            <div style={{ marginBottom: 8 }}>
+              <strong>Activity:</strong> {costInfoData.name}
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", rowGap: 8 }}>
+              <div style={{ color: "#6c757d", fontWeight: 700 }}>Project Cost</div>
+              <div>₹ {costInfoData.projectCost.toLocaleString("en-IN")}</div>
+
+              <div style={{ color: "#6c757d", fontWeight: 700 }}>Opportunity Cost</div>
+              <div>₹ {costInfoData.opCost.toLocaleString("en-IN")}</div>
+
+              <div style={{ color: "#6c757d", fontWeight: 700 }}>Delay Cost / Day</div>
+              <div>
+                {costInfoData.delayPerDay > 0
+                  ? `₹ ${Math.round(costInfoData.delayPerDay).toLocaleString("en-IN")} / day`
+                  : <span style={{ color: "#ff4d4f" }}>Not defined</span>}
+              </div>
+
+              <div style={{ color: "#6c757d", fontWeight: 700 }}>Delayed Days</div>
+              <div>{costInfoData.delayDays} day(s)</div>
+
+              <div style={{ color: "#6c757d", fontWeight: 700 }}>Incurred (till now)</div>
+              <div style={{ fontWeight: 700, color: "#d35400" }}>
+                ₹ {Math.round(costInfoData.incurred).toLocaleString("en-IN")}
+              </div>
+            </div>
+
+            {costInfoData.delayPerDay === 0 && (
+              <div style={{ marginTop: 12, color: "#8a6d3b" }}>
+                Tip: Set “Delay Cost / Day” while defining cost to get accurate incurred value.
+              </div>
+            )}
+          </div>
+        ) : null}
       </Modal>
 
       <Modal

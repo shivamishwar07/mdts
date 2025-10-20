@@ -85,16 +85,16 @@ const Projects = () => {
     const [currentUser, setCurrentUser] = useState<any>(null);
 
     const tabs = [
-        { key: 'projectStatistics', label: 'Project Statistics' },
         { key: 'fdpp', label: 'FDPP' },
         { key: 'project-timeline', label: 'Project Timeline' },
+        { key: 'projectStatistics', label: 'Project Statistics' },
         { key: 'capex', label: 'CAPEX-Performance' },
         { key: 'documents', label: 'Documents' },
         { key: 'csr', label: 'Corporate Social Responsibility' },
         { key: 'mineInfra', label: 'Mine Infra Updated' }
     ];
 
-    const [activeTab, setActiveTab] = useState('projectStatistics');
+    const [activeTab, setActiveTab] = useState('fdpp');
     const getAllProjects = async () => {
         if (!currentUser) return;
 
