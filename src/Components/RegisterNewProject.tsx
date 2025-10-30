@@ -21,6 +21,7 @@ import ImageContainer from "../Components/ImageContainer";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
 import { useNavigate, useParams } from "react-router-dom";
+import dayjs from "dayjs";
 const { Text } = Typography;
 export const RegisterNewProject: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
@@ -95,13 +96,16 @@ export const RegisterNewProject: React.FC = () => {
       setIsEditMode(true);
       db.getProjectById(id).then((project) => {
         if (project) {
-          setFormStepsData([
-            project.projectParameters,
-            project.locations,
-            project.contractualDetails,
-          ]);
-            setFormData(project);
-             setProjectTimeline(project.projectTimeline || []);
+          const stepsData = [
+            project.projectParameters || {},
+            project.locations || {},
+            project.contractualDetails || {},
+          ];
+          console.log(stepsData);
+
+          setFormStepsData(stepsData);
+          setFormData(project);
+          setProjectTimeline(project.projectTimeline || []);
         }
       });
     }
@@ -537,7 +541,7 @@ export const RegisterNewProject: React.FC = () => {
                     <Select
                       value={formData.typeOfMine || ""}
                       style={{ marginLeft: "4px" }}
-                        disabled={isEditMode && projectTimeline.length > 0}
+                      disabled={isEditMode && projectTimeline.length > 0}
                       onChange={(value) => {
                         handleChange("typeOfMine", value);
                         const updatedLibraries = allLibrariesName.filter((name: any) => name.mineType === value);
@@ -665,7 +669,7 @@ export const RegisterNewProject: React.FC = () => {
                   >
                     <DatePicker
                       style={{ width: "100%" }}
-                      value={formData[key] || null}
+                      value={toDayjs(formData[key])}
                       onChange={(date) => handleChange(key, date)}
                     />
                   </Form.Item>
@@ -733,6 +737,32 @@ export const RegisterNewProject: React.FC = () => {
       default:
         return null;
     }
+  };
+
+  const toDayjs = (val: any) => {
+    if (!val) return null;
+    if (dayjs.isDayjs(val)) return val;
+    if (val instanceof Date) return dayjs(val);
+
+    if (typeof val === "number") {
+      return dayjs(val > 1e12 ? val : val * 1000);
+    }
+
+    if (typeof val === "string") {
+      let d = dayjs(val);
+      if (d.isValid()) return d;
+
+      const candidates = ["YYYY-MM-DD", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY/MM/DD"];
+      for (const fmt of candidates) {
+        d = dayjs(val, fmt, true);
+        if (d.isValid()) return d;
+      }
+
+      const n = Number(val);
+      if (!Number.isNaN(n)) return dayjs(n > 1e12 ? n : n * 1000);
+    }
+
+    return null;
   };
 
   const onDrop = (acceptedFiles: File[]) => {

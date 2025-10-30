@@ -7,30 +7,24 @@ import { useDropzone, Accept } from "react-dropzone";
 import { Typography } from "antd";
 import "../styles/documents.css";
 import { db } from "../Utils/dataStorege.ts";
-import { v4 as uuidv4 } from 'uuid';
+import { v4 as uuidv4 } from "uuid";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
+
 const { Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 
-interface Document {
-    id: number;
-    documentName: string;
-    fileName: string;
-    milestone: string;
-    description: string;
-    actions: string[];
-}
 interface Module {
     moduleName: string;
-    activities: any
+    activities: any;
 }
 
 const Document: React.FC = () => {
-    const [documents, setDocuments] = useState<any>([]);
+    const [documents, setDocuments] = useState<any[]>([]);
     const [isModalVisible, setIsModalVisible] = useState(false);
     const [selectedDocumentId, setSelectedDocumentId] = useState<number | null>(null);
+
     const [documentName, setDocumentName] = useState<string>("");
     const [description, setDescription] = useState<string>("");
     const [milestone, setMilestone] = useState<string>("");
@@ -45,6 +39,35 @@ const Document: React.FC = () => {
     const [previewVisible, setPreviewVisible] = useState(false);
     const [previewContent, setPreviewContent] = useState<string | null>(null);
 
+    const [docTypes, setDocTypes] = useState<any[]>([]);
+    const [docType, setDocType] = useState<string | null>(null);
+    const [addTypeVisible, setAddTypeVisible] = useState(false);
+    const [newTypeName, setNewTypeName] = useState("");
+
+    useEffect(() => {
+        db.getAllDocTypes().then(setDocTypes);
+    }, []);
+
+    const handleAddType = async () => {
+        const name = newTypeName.trim();
+        if (!name) {
+            notification.warning({ message: "Please enter a type name" });
+            return;
+        }
+        try {
+            const id = await db.addDocType(name);
+            const list = await db.getAllDocTypes();
+            setDocTypes(list);
+            const added = await db.docTypes.get(id);
+            setDocType(added?.name || null);
+            setNewTypeName("");
+            setAddTypeVisible(false);
+            notification.success({ message: "Type added" });
+        } catch (e: any) {
+            notification.error({ message: e?.message || "Failed to add type" });
+        }
+    };
+
     useEffect(() => {
         const savedDocuments = getAllDocuments();
         setDocuments(savedDocuments);
@@ -52,9 +75,7 @@ const Document: React.FC = () => {
 
     useEffect(() => {
         const savedModules = getModules();
-        if (Array.isArray(savedModules)) {
-            setMilestones(savedModules);
-        }
+        if (Array.isArray(savedModules)) setMilestones(savedModules);
     }, []);
 
     useEffect(() => {
@@ -69,7 +90,6 @@ const Document: React.FC = () => {
         if (record.files && record.files.length > 0) {
             const filePath = record.files[0]?.path;
             const fileData = await db.getDiskEntry(filePath);
-
             if (fileData) {
                 setPreviewContent(fileData);
                 setPreviewVisible(true);
@@ -80,32 +100,45 @@ const Document: React.FC = () => {
     };
 
     const columns: any = [
-        {
-            title: "Id",
-            dataIndex: "id",
-            key: "id",
-            width: "10%",
-        },
+        { title: "Id", dataIndex: "id", key: "id", width: "8%" },
         {
             title: "Document Name",
-            dataIndex: "documentname",
-            key: "documentname",
+            dataIndex: "documentName",
+            key: "documentName",
             width: "20%",
             align: "left",
+            render: (val: string, rec: any) => val || rec?.linkedDoc || "-"
+        },
+        {
+            title: "Type",
+            dataIndex: "documentType",
+            key: "documentType",
+            width: "12%",
+            align: "left",
+            render: (val: string) => val || "-"
         },
         {
             title: "Milestone",
             dataIndex: "milestone",
             key: "milestone",
-            width: "30%",
-            align: "left",
+            width: "18%",
+            align: "left"
         },
         {
             title: "Description",
             dataIndex: "description",
             key: "description",
-            width: "30%",
+            width: "22%",
             align: "left",
+            ellipsis: true
+        },
+        {
+            title: "Uploaded",
+            dataIndex: "createdAt",
+            key: "createdAt",
+            width: "15%",
+            align: "left",
+            render: (val: string) => (val ? new Date(val).toLocaleString() : "-")
         },
         {
             title: "Actions",
@@ -114,24 +147,12 @@ const Document: React.FC = () => {
             render: (_: any, record: any) => (
                 <Space size="middle" style={{ display: "flex", gap: "28px", justifyContent: "center" }}>
                     {record.files && record.files.length > 0 && (
-                        <Button
-                            className="view-btn"
-                            icon={<EyeOutlined />}
-                            onClick={() => handlePreview(record)}
-                            size="small"
-                        />
-
+                        <Button className="view-btn" icon={<EyeOutlined />} onClick={() => handlePreview(record)} size="small" />
                     )}
-                    <Button
-                        className="delete-btn"
-                        icon={<DeleteOutlined />}
-                        onClick={() => showDeleteModal(record.id)}
-                        danger
-                        size="small"
-                    />
+                    <Button className="delete-btn" icon={<DeleteOutlined />} onClick={() => showDeleteModal(record.id)} danger size="small" />
                 </Space>
-            ),
-        },
+            )
+        }
     ];
 
     const showDeleteModal = (id: number) => {
@@ -144,12 +165,7 @@ const Document: React.FC = () => {
             await db.deleteDocument(selectedDocumentId);
             const updatedDocs = await db.getAllDocuments();
             setDocuments(updatedDocs);
-
-            notification.success({
-                message: "Document Deleted",
-                description: "The document has been successfully deleted.",
-            });
-
+            notification.success({ message: "Document Deleted", description: "The document has been successfully deleted." });
             setIsModalVisible(false);
             setSelectedDocumentId(null);
         }
@@ -166,13 +182,17 @@ const Document: React.FC = () => {
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
-        accept: 'image/*,application/pdf' as unknown as Accept,
-        multiple: true,
+        accept: "image/*,application/pdf" as unknown as Accept,
+        multiple: true
     });
 
     const handleSave = async () => {
         if (!milestone || files.length === 0 || !linkedActivity) {
             notify.error("Please fill all fields and upload files.");
+            return;
+        }
+        if (!docType) {
+            notify.error("Please select a Document Type.");
             return;
         }
 
@@ -182,11 +202,7 @@ const Document: React.FC = () => {
             for (const file of files) {
                 const docId = uuidv4();
                 await saveFileToDisk(file, docId);
-                encodedFiles.push({
-                    docId,
-                    name: file.name,
-                    path: `documents/${docId}`
-                });
+                encodedFiles.push({ docId, name: file.name, path: `documents/${docId}` });
             }
 
             const documentGUID = uuidv4();
@@ -198,22 +214,27 @@ const Document: React.FC = () => {
                 return;
             }
 
+            const nowIso = new Date().toISOString();
+
             const newDocumentEntry = {
                 guid: documentGUID,
-                documentName,
+                documentName: selectedDocName || documentName || "",
+                documentType: docType,
                 description,
                 milestone,
                 linkedActivity,
                 linkedDoc: selectedDocName || null,
                 files: encodedFiles,
-                uploadedAt: new Date().toISOString(),
+                uploadedAt: nowIso,
+                createdAt: nowIso,
+                updatedAt: nowIso,
                 uploadedBy: {
                     userId: user.id,
                     name: user.name,
                     email: user.email,
                     role: user.role,
-                    company: user.company,
-                },
+                    company: user.company
+                }
             };
 
             await db.documents.add(newDocumentEntry);
@@ -234,16 +255,15 @@ const Document: React.FC = () => {
         setMilestone("");
         SetLinkedActivity("");
         setSelectedDocName(null);
+        setDocType(null);
         setFiles([]);
     };
 
     async function saveFileToDisk(file: File, fileId: string) {
         const reader = new FileReader();
-
         reader.onload = async function () {
             const base64 = reader.result as string;
             const filePath = `documents/${fileId}`;
-
             const existing = await db.diskStorage.where("path").equals(filePath).first();
             if (!existing) {
                 await db.diskStorage.add({ path: filePath, content: base64 });
@@ -251,15 +271,11 @@ const Document: React.FC = () => {
                 console.log(`File already exists in diskStorage: ${filePath}`);
             }
         };
-
         reader.readAsDataURL(file);
     }
 
     const handleCancelAddedDoc = () => {
-        setDocumentName("");
-        setDescription("");
-        setMilestone("");
-        setFiles([]);
+        resetForm();
         setIsAddModalVisible(false);
     };
 
@@ -292,22 +308,35 @@ const Document: React.FC = () => {
                 </div>
             </div>
 
-            <Modal
-                title="Confirm Delete"
-                visible={isModalVisible}
-                onOk={handleDelete}
-                onCancel={handleCancel}
-                okText="Delete"
-                cancelText="Cancel"
-                okType="danger"
-            >
+            <Modal title="Confirm Delete" open={isModalVisible} onOk={handleDelete} onCancel={handleCancel} okText="Delete" cancelText="Cancel" okType="danger">
                 <p>
                     <ExclamationCircleOutlined style={{ color: "red", marginRight: "8px" }} />
                     Are you sure you want to delete this document? This action cannot be undone.
                 </p>
             </Modal>
 
-            <Modal title="Create Document" centered className="modal-container" width={"65%"} visible={isAddModalVisible} onCancel={handleCancelAddedDoc} onOk={handleSave} okText="Save" cancelText="Cancel" okButtonProps={{ className: "bg-secondary" }}>
+            <Modal open={addTypeVisible} title="Add New Document Type" onCancel={() => setAddTypeVisible(false)} onOk={handleAddType} okText="Add">
+                <Input
+                    placeholder="e.g., Work Order, Drawing, Permit..."
+                    value={newTypeName}
+                    onChange={(e) => setNewTypeName(e.target.value)}
+                    onPressEnter={handleAddType}
+                    maxLength={60}
+                />
+            </Modal>
+
+            <Modal
+                title="Create Document"
+                centered
+                className="modal-container"
+                width={"65%"}
+                open={isAddModalVisible}
+                onCancel={handleCancelAddedDoc}
+                onOk={handleSave}
+                okText="Save"
+                cancelText="Cancel"
+                okButtonProps={{ className: "bg-secondary" }}
+            >
                 <Form layout="horizontal" onFinish={handleSave} labelCol={{ span: 6 }} wrapperCol={{ span: 18 }} requiredMark={false}>
                     <div className="main-doc-container" style={{ width: "99%" }}>
                         <div className="left-create-document">
@@ -325,9 +354,9 @@ const Document: React.FC = () => {
                                             value={milestone}
                                             onChange={(value) => {
                                                 setMilestone(value);
-                                                const selectedModule = modulesData.find(mod => mod.moduleName === value);
-                                                const activities = selectedModule?.activities || [];
-                                                setActivities(activities);
+                                                const selectedModule = modulesData.find((mod) => mod.moduleName === value);
+                                                const acts = selectedModule?.activities || [];
+                                                setActivities(acts);
                                                 SetLinkedActivity("");
                                                 setActivityDocs([]);
                                                 setSelectedDocName(null);
@@ -354,7 +383,7 @@ const Document: React.FC = () => {
                                             value={linkedActivity}
                                             onChange={(value) => {
                                                 SetLinkedActivity(value);
-                                                const selectedActivity = activities.find(act => act.activityName === value);
+                                                const selectedActivity = activities.find((act) => act.activityName === value);
                                                 setActivityDocs(selectedActivity?.documents || []);
                                                 setSelectedDocName(null);
                                             }}
@@ -365,27 +394,36 @@ const Document: React.FC = () => {
                                                 </Option>
                                             ))}
                                         </Select>
-
                                     </Form.Item>
 
-                                    <Form.Item
-                                        label="Document Name"
-                                        name="documentname"
-                                        labelAlign="left"
-                                        colon={false}
-                                    >
-                                        <Select
-                                            placeholder="Select Document Name"
-                                            value={selectedDocName}
-                                            onChange={setSelectedDocName}
-                                            allowClear
-                                        >
+                                    <Form.Item label="Document Name" name="documentname" labelAlign="left" colon={false}>
+                                        <Select placeholder="Select Document Name" value={selectedDocName ?? undefined} onChange={setSelectedDocName} allowClear>
                                             {activityDocs.map((doc, index) => (
                                                 <Option key={index} value={doc}>
                                                     {doc}
                                                 </Option>
                                             ))}
                                         </Select>
+                                    </Form.Item>
+
+                                    {/* If you want to allow manual entry as fallback */}
+                                    <Form.Item label="(or) Custom Name" name="customDocName" labelAlign="left" colon={false}>
+                                        <Input placeholder="Type a custom name" value={documentName} onChange={(e) => setDocumentName(e.target.value)} />
+                                    </Form.Item>
+
+                                    <Form.Item label={<span style={{ textAlign: "left" }}> Document Type </span>} required labelAlign="left" colon={false}>
+                                        <div style={{ display: "flex", gap: 8 }}>
+                                            <Select
+                                                placeholder="Select Document Type"
+                                                value={docType ?? undefined}
+                                                onChange={setDocType}
+                                                style={{ flex: 1, minWidth: 200 }}
+                                                showSearch
+                                                options={docTypes.map((dt: any) => ({ label: dt.name, value: dt.name }))}
+                                                filterOption={(input, option) => String(option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
+                                            />
+                                            <Button type="dashed" icon={<PlusOutlined />} onClick={() => setAddTypeVisible(true)} />
+                                        </div>
                                     </Form.Item>
 
                                     <Form.Item
@@ -395,22 +433,10 @@ const Document: React.FC = () => {
                                         labelAlign="left"
                                         colon={false}
                                     >
-                                        <TextArea
-                                            rows={4}
-                                            placeholder="Description"
-                                            value={description}
-                                            style={{ marginBottom: "15px" }}
-                                            onChange={(e) => setDescription(e.target.value)}
-                                        />
+                                        <TextArea rows={4} placeholder="Description" value={description} style={{ marginBottom: "15px" }} onChange={(e) => setDescription(e.target.value)} />
                                     </Form.Item>
 
-                                    <Form.Item
-                                        label={<span style={{ textAlign: "left" }}> Upload Files </span>}
-                                        name="files"
-                                        // rules={[{ required: files.length === 0, message: "Please upload at least one file" }]}
-                                        labelAlign="left"
-                                        colon={false}
-                                    >
+                                    <Form.Item label={<span style={{ textAlign: "left" }}> Upload Files </span>} name="files" labelAlign="left" colon={false}>
                                         <div
                                             {...getRootProps()}
                                             style={{
@@ -419,15 +445,13 @@ const Document: React.FC = () => {
                                                 textAlign: "center",
                                                 borderRadius: 8,
                                                 cursor: "pointer",
-                                                background: isDragActive ? "#f0f8ff" : "#fafafa",
+                                                background: isDragActive ? "#f0f8ff" : "#fafafa"
                                             }}
                                         >
                                             <input {...getInputProps()} />
-                                            <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
+                                            <UploadOutlined style={{ fontSize: 32 }} />
                                             <Text style={{ display: "block", marginTop: 8 }}>
-                                                {isDragActive
-                                                    ? "Drop the files here..."
-                                                    : "Drag and drop files here, or click to select files"}
+                                                {isDragActive ? "Drop the files here..." : "Drag and drop files here, or click to select files"}
                                             </Text>
                                         </div>
                                     </Form.Item>
@@ -438,11 +462,7 @@ const Document: React.FC = () => {
                                             renderItem={(file, index) => (
                                                 <List.Item
                                                     actions={[
-                                                        <CloseCircleOutlined
-                                                            key="remove"
-                                                            onClick={() => handleRemoveFile(index)}
-                                                            style={{ color: "#888" }}
-                                                        />,
+                                                        <CloseCircleOutlined key="remove" onClick={() => handleRemoveFile(index)} style={{ color: "#888" }} />
                                                     ]}
                                                 >
                                                     <Text>{file.name}</Text>
@@ -450,39 +470,19 @@ const Document: React.FC = () => {
                                             )}
                                         />
                                     )}
-
                                 </div>
                             </div>
-
                         </div>
                     </div>
                 </Form>
             </Modal>
 
-            <Modal
-                visible={previewVisible}
-                onCancel={() => setPreviewVisible(false)}
-                footer={null}
-                width="80%"
-                bodyStyle={{ height: '75vh' }}
-                title="Preview Document"
-                className="modal-container"
-            >
+            <Modal open={previewVisible} onCancel={() => setPreviewVisible(false)} footer={null} width="80%" bodyStyle={{ height: "75vh" }} title="Preview Document" className="modal-container">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px", height: "calc(100vh - 180px)" }}>
                     {previewContent?.startsWith("data:application/pdf") ? (
-                        <iframe
-                            src={previewContent}
-                            title="PDF Preview"
-                            width="100%"
-                            height="100%"
-                            style={{ border: "none" }}
-                        />
+                        <iframe src={previewContent} title="PDF Preview" width="100%" height="100%" style={{ border: "none" }} />
                     ) : previewContent?.startsWith("data:image/") ? (
-                        <img
-                            src={previewContent}
-                            alt="Document Preview"
-                            style={{ maxWidth: "100%", maxHeight: "100%" }}
-                        />
+                        <img src={previewContent} alt="Document Preview" style={{ maxWidth: "100%", maxHeight: "100%" }} />
                     ) : (
                         <div>
                             <p>Preview not available for this file type. Please download to view.</p>
@@ -490,6 +490,7 @@ const Document: React.FC = () => {
                     )}
                 </div>
             </Modal>
+
             <ToastContainer />
         </>
     );
