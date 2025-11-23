@@ -2278,19 +2278,22 @@ const TimeBuilder = () => {
     });
   };
 
-  const handleDeleteModuleOk = () => {
+  const handleDeleteModuleOk = async () => {
     const module = deleteModuleModal.module;
-    if (!module) return;
+    if (!module || !selectedProject || !selectedProjectId) return;
 
     const moduleCode = module.parentModuleCode;
 
-    setSequencedModules(prev =>
-      prev.filter((m: any) => m.parentModuleCode !== moduleCode)
+    const updatedSequenced = sequencedModules.filter(
+      (m: any) => m.parentModuleCode !== moduleCode
     );
 
-    setFinalData(prev =>
-      prev.filter((m: any) => m.parentModuleCode !== moduleCode)
+    const updatedFinal = finalData.filter(
+      (m: any) => m.parentModuleCode !== moduleCode
     );
+
+    setSequencedModules(updatedSequenced);
+    setFinalData(updatedFinal);
 
     setSelectedActivities(prev =>
       prev.filter(
@@ -2298,7 +2301,33 @@ const TimeBuilder = () => {
       )
     );
 
-    notify.success("Module deleted successfully.");
+    let updatedInitialStatus = selectedProject.initialStatus;
+    if (selectedProject.initialStatus?.items) {
+      const newItems = selectedProject.initialStatus.items.filter(
+        (m: any) => m.parentModuleCode !== moduleCode
+      );
+
+      updatedInitialStatus = {
+        ...selectedProject.initialStatus,
+        items: newItems,
+      };
+    }
+
+    const updatedProject = {
+      ...selectedProject,
+      initialStatus: updatedInitialStatus,
+      processedTimelineData: updatedSequenced,
+    };
+
+    setSelectedProject(updatedProject);
+
+    if (isUpdateMode && selectedTimelineId) {
+      await db.updateProjectTimeline(selectedTimelineId, updatedSequenced);
+    }
+
+    await db.updateProject(selectedProjectId, updatedProject);
+
+    notify.success("Module permanently deleted.");
     setDeleteModuleModal({ visible: false, module: null });
   };
 
@@ -2306,48 +2335,83 @@ const TimeBuilder = () => {
     setDeleteModuleModal({ visible: false, module: null });
   };
 
-  const handleDeleteActivityOk = () => {
+  const handleDeleteActivityOk = async () => {
     const { module, activity } = deleteActivityModal;
-    if (!module || !activity) return;
+    if (!module || !activity || !selectedProject || !selectedProjectId) return;
 
     const activityCode = activity.code;
     const parentModuleCode = module.parentModuleCode;
 
-    setSequencedModules(prev =>
-      prev
-        .map((m: any) =>
-          m.parentModuleCode === parentModuleCode
-            ? {
-              ...m,
-              activities: (m.activities || []).filter(
-                (a: any) => a.code !== activityCode
-              ),
-            }
-            : m
-        )
-        .filter((m: any) => (m.activities || []).length > 0)
-    );
+    const updatedSequenced = sequencedModules
+      .map((m: any) =>
+        m.parentModuleCode === parentModuleCode
+          ? {
+            ...m,
+            activities: (m.activities || []).filter(
+              (a: any) => a.code !== activityCode
+            ),
+          }
+          : m
+      )
+      .filter((m: any) => (m.activities || []).length > 0);
 
-    setFinalData(prev =>
-      prev
-        .map((m: any) =>
-          m.parentModuleCode === parentModuleCode
-            ? {
-              ...m,
-              activities: (m.activities || []).filter(
-                (a: any) => a.code !== activityCode
-              ),
-            }
-            : m
-        )
-        .filter((m: any) => (m.activities || []).length > 0)
-    );
+    const updatedFinal = finalData
+      .map((m: any) =>
+        m.parentModuleCode === parentModuleCode
+          ? {
+            ...m,
+            activities: (m.activities || []).filter(
+              (a: any) => a.code !== activityCode
+            ),
+          }
+          : m
+      )
+      .filter((m: any) => (m.activities || []).length > 0);
+
+    setSequencedModules(updatedSequenced);
+    setFinalData(updatedFinal);
 
     setSelectedActivities(prev =>
       prev.filter(code => code !== activityCode)
     );
 
-    notify.success("Activity deleted successfully.");
+    let updatedInitialStatus = selectedProject.initialStatus;
+
+    if (selectedProject.initialStatus?.items) {
+      const newItems = selectedProject.initialStatus.items
+        .map((m: any) =>
+          m.parentModuleCode === parentModuleCode
+            ? {
+              ...m,
+              activities: (m.activities || []).filter(
+                (a: any) => a.code !== activityCode
+              ),
+            }
+            : m
+        )
+        .filter((m: any) => (m.activities || []).length > 0);
+
+      updatedInitialStatus = {
+        ...selectedProject.initialStatus,
+        items: newItems,
+      };
+    }
+
+    const updatedProject = {
+      ...selectedProject,
+      initialStatus: updatedInitialStatus,
+      processedTimelineData: updatedSequenced,
+    };
+
+    setSelectedProject(updatedProject);
+
+    if (isUpdateMode && selectedTimelineId) {
+      await db.updateProjectTimeline(selectedTimelineId, updatedSequenced);
+    }
+
+    await db.updateProject(selectedProjectId, updatedProject);
+
+    notify.success("Activity permanently deleted.");
     setDeleteActivityModal({ visible: false, module: null, activity: null });
   };
 
