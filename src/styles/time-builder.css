@@ -18,7 +18,7 @@
 }
 
 .ant-table-cell.first-column-red {
-    background-color: #f0f8ff !important;
+    background-color: rgb(78, 199, 239) !important;
     color: white !important;
 }
 
@@ -274,6 +274,6 @@
 .highlighted-select .ant-select-selector,
 .highlighted-input .ant-input,
 .highlighted-datepicker .ant-picker {
-    border: 2px solid rgb(17, 205, 83) !important;
+    border: 2px solid rgb(78, 199, 239) !important;
     box-shadow: 0 0 5px rgba(7, 125, 13, 0.5);
 }

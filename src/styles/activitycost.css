@@ -1,0 +1,17 @@
+.activity-main-container {
+    border: 2px solid #ddd;
+    margin: 10px;
+    border-radius: 5px;
+    height: calc(100vh - 95px);
+    overflow-y: auto;
+}
+.activity-title{
+    font-size: 18px;
+    font-weight: bold;
+    color: grey;
+}
+.activity-heading {
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+}

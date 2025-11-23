@@ -935,7 +935,7 @@ export const RegisterNewProject: React.FC = () => {
                       textAlign: "center",
                       borderRadius: 8,
                       cursor: "pointer",
-                      background: isDragActive ? "#f0f8ff" : "#fafafa",
+                      background: isDragActive ? "#81acd2ff" : "#fafafa",
                     }}
                   >
                     <input {...getInputProps()} />

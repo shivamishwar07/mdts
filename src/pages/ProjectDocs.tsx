@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState, useCallback } from "react";
 import { db } from "../Utils/dataStorege.ts";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
+
 const { Text, Title } = Typography;
 
 type DocRow = {
@@ -18,6 +19,7 @@ type DocRow = {
     linkedActivity?: string;
     documentName: string;
     description: string;
+    documentType?: string;
     fileName: string;
     filePath: string;
     milestone?: string;
@@ -33,6 +35,8 @@ const ProjectDocs = (project: any) => {
     const [previewVisible, setPreviewVisible] = useState(false);
     const [previewContent, setPreviewContent] = useState<string | null>(null);
     const [q, setQ] = useState("");
+    const [docTypes, setDocTypes] = useState<any[]>([]);
+    const [selectedType, setSelectedType] = useState<string | null>(null);
 
     const showModal = () => setIsModalVisible(true);
     const handleCancel = () => setIsModalVisible(false);
@@ -44,34 +48,32 @@ const ProjectDocs = (project: any) => {
         "linear-gradient(135deg, #fddb92, #d1fdff)",
     ];
 
-    const dataSummary = [
-        { count: 15, label: "Notification" },
-        { count: 8, label: "Letters" },
-        { count: 12, label: "Review Meeting MoM" },
-        { count: 25, label: "Approved NFAs" },
-    ];
+    useEffect(() => {
+        db.getAllDocTypes().then(setDocTypes);
+    }, []);
+
+    useEffect(() => {
+        if (docTypes.length && !selectedType) {
+            setSelectedType(docTypes[0].name);
+        }
+    }, [docTypes, selectedType]);
 
     const pickTimelineEntry = (pr: any) => {
         const pt = Array.isArray(pr?.projectTimeline) ? pr.projectTimeline : [];
         if (!pt.length) return { entry: null, data: [] };
-
         const v = localStorage.getItem("latestProjectVersion");
         const byStored = v ? pt.find((t: any) => String(t?.version) === String(v)) : null;
         if (Array.isArray(byStored?.data)) return { entry: byStored, data: byStored.data };
-
         const approved = pt.find((t: any) => String(t?.status || "").toLowerCase() === "approved");
         if (Array.isArray(approved?.data)) return { entry: approved, data: approved.data };
-
         const last = pt[pt.length - 1];
         if (Array.isArray(last?.data)) return { entry: last, data: last.data };
-
         if (Array.isArray(pr?.processedTimelineData)) return { entry: null, data: pr.processedTimelineData };
-
         return { entry: null, data: [] };
     };
 
     const flattenDocs = (mods: any[], projectId: string) => {
-        const rows: any[] = [];
+        const rows: DocRow[] = [];
         (mods || []).forEach((mod: any) => {
             const moduleName = mod?.moduleName ?? mod?.keyActivity ?? mod?.SrNo ?? "";
             const moduleCode = mod?.SrNo ?? mod?.moduleCode;
@@ -84,11 +86,14 @@ const ProjectDocs = (project: any) => {
                         guid: String(d.id),
                         id: String(d.id),
                         projectId,
-                        moduleName, moduleCode,
-                        activityName, activityCode,
+                        moduleName,
+                        moduleCode,
+                        activityName,
+                        activityCode,
                         linkedActivity: d.linkedActivity,
                         documentName: d.documentName,
                         description: d.description,
+                        documentType: d.documentType,
                         fileName: d.fileName,
                         filePath: d.filePath,
                         milestone,
@@ -106,24 +111,21 @@ const ProjectDocs = (project: any) => {
         if (!project?.code) return;
         setLoading(true);
         try {
-            let projects = await db.getProjects();
+            const projects = await db.getProjects();
             const pr = (projects || []).find((p: any) => p.id === project.code);
             if (!pr) {
                 setProjectDetails({});
                 setDocuments([]);
-                console.warn("Project not found for code:", project.code);
                 setLoading(false);
                 return;
             }
             setProjectDetails(pr);
-
             const { data } = pickTimelineEntry(pr);
             if (!Array.isArray(data)) {
                 setDocuments([]);
                 setLoading(false);
                 return;
             }
-
             const rows = flattenDocs(data, pr.id);
             setDocuments(rows);
         } catch (err) {
@@ -139,36 +141,57 @@ const ProjectDocs = (project: any) => {
     }, [hydrate]);
 
     useEffect(() => {
-        const hydrate = async () => {
+        const hydrateLocal = async () => {
             if (!project?.code) return;
             const all = await db.getProjects();
             const pr = (all || []).find((p: any) => p.id === project.code);
-            if (!pr) { setDocuments([]); return; }
-
+            if (!pr) {
+                setDocuments([]);
+                return;
+            }
             const tl = Array.isArray(pr.projectTimeline) ? pr.projectTimeline : [];
             const storedV = localStorage.getItem("latestProjectVersion");
             const byStored = storedV ? tl.find((t: any) => String(t.version) === String(storedV)) : null;
             const approved = tl.find((t: any) => String(t.status || "").toLowerCase() === "approved");
             const last = tl[tl.length - 1];
-
             const seqMods =
                 (Array.isArray(byStored?.data) && byStored.data) ||
                 (Array.isArray(approved?.data) && approved.data) ||
                 (Array.isArray(last?.data) && last.data) ||
                 (Array.isArray(pr.processedTimelineData) && pr.processedTimelineData) ||
                 [];
-
             const rows = flattenDocs(seqMods, pr.id);
-            console.log("[ProjectDocs] total docs:", rows.length, rows.slice(0, 5));
             setDocuments(rows);
         };
-
-        hydrate();
+        hydrateLocal();
     }, [project?.code]);
 
+    const filtered = useMemo(() => {
+        let base = documents;
+        if (selectedType) {
+            base = base.filter(
+                d => String(d.documentType || "").trim() === selectedType
+            );
+        }
+        const s = q.trim().toLowerCase();
+        if (!s) return base;
+        return base.filter(r =>
+            (r.moduleName || "").toLowerCase().includes(s) ||
+            (r.activityName || "").toLowerCase().includes(s) ||
+            (r.documentName || "").toLowerCase().includes(s) ||
+            (r.description || "").toLowerCase().includes(s) ||
+            (r.fileName || "").toLowerCase().includes(s) ||
+            (r.linkedActivity || "").toLowerCase().includes(s) ||
+            (r.milestone || "").toLowerCase().includes(s) ||
+            (r.uploadedBy || "").toLowerCase().includes(s)
+        );
+    }, [documents, q, selectedType]);
 
     const handlePreview = async (record: DocRow) => {
-        if (!record?.filePath) return notify.error("Invalid file path.");
+        if (!record?.filePath) {
+            notify.error("Invalid file path.");
+            return;
+        }
         const fileData = await db.getDiskEntry(record.filePath);
         if (fileData) {
             setPreviewContent(fileData);
@@ -179,9 +202,15 @@ const ProjectDocs = (project: any) => {
     };
 
     const handleDownload = async (record: DocRow) => {
-        if (!record?.filePath) return notify.error("Invalid file path.");
+        if (!record?.filePath) {
+            notify.error("Invalid file path.");
+            return;
+        }
         const fileData = await db.getDiskEntry(record.filePath);
-        if (!fileData) return notify.error("File not found.");
+        if (!fileData) {
+            notify.error("File not found.");
+            return;
+        }
         const a = document.createElement("a");
         a.href = fileData;
         a.download = record.fileName || record.documentName || "download";
@@ -189,21 +218,6 @@ const ProjectDocs = (project: any) => {
         a.click();
         a.remove();
     };
-
-    const filtered = useMemo(() => {
-        const s = q.trim().toLowerCase();
-        if (!s) return documents;
-        return documents.filter(r =>
-            (r.moduleName || "").toLowerCase().includes(s) ||
-            (r.activityName || "").toLowerCase().includes(s) ||
-            (r.documentName || "").toLowerCase().includes(s) ||
-            (r.description || "").toLowerCase().includes(s) ||
-            (r.fileName || "").toLowerCase().includes(s) ||
-            (r.linkedActivity || "").toLowerCase().includes(s) ||
-            (r.milestone || "").toLowerCase().includes(s) ||
-            (r.uploadedBy || "").toLowerCase().includes(s)
-        );
-    }, [q, documents]);
 
     const handleDeleteDoc = async (row: any) => {
         Modal.confirm({
@@ -218,22 +232,27 @@ const ProjectDocs = (project: any) => {
             okButtonProps: { danger: true },
             cancelText: "Cancel",
             async onOk() {
+                const docId = String(row.id);
                 try {
                     const projects = await db.getProjects();
                     const pr = (projects || []).find((p: any) => p.id === row.projectId || p.id === project.code);
-                    if (!pr) return notify.error("Project not found.");
+                    if (!pr) {
+                        notify.error("Project not found.");
+                        return;
+                    }
                     const { entry, data } = pickTimelineEntry(pr);
-                    if (!Array.isArray(data)) return notify.error("No timeline data found.");
-
+                    if (!Array.isArray(data)) {
+                        notify.error("No timeline data found.");
+                        return;
+                    }
                     const updatedMods = (data || []).map((mod: any) => ({
                         ...mod,
                         activities: (mod?.activities || []).map((act: any) => {
                             const docs = Array.isArray(act?.activityDocuments) ? act.activityDocuments : [];
-                            const filtered = docs.filter((d: any) => String(d.id) !== String(row.id));
-                            return filtered.length !== docs.length ? { ...act, activityDocuments: filtered } : act;
+                            const filteredDocs = docs.filter((d: any) => String(d.id) !== docId);
+                            return filteredDocs.length !== docs.length ? { ...act, activityDocuments: filteredDocs } : act;
                         }),
                     }));
-
                     if (entry) {
                         const targetId = entry.versionId || entry.timelineId;
                         await db.updateProjectTimeline(targetId, updatedMods);
@@ -245,15 +264,45 @@ const ProjectDocs = (project: any) => {
                     } else {
                         await db.updateProject(pr.id, { ...pr, processedTimelineData: updatedMods });
                     }
-
                     if (row.filePath) {
                         try {
-                            await db.diskStorage.where("path").equals(row.filePath).delete();
-                        } catch (_e) {
+                            const existing: any = await db.diskStorage.where("path").equals(row.filePath).first();
+                            if (existing) {
+                                await db.diskStorage.delete(existing.id ?? existing.path);
+                            } else {
+                                await db.diskStorage.where("path").equals(row.filePath).delete();
+                            }
+                        } catch (e) {
+                            console.error(e);
                         }
                     }
-
-                    notify.success("Document deleted.");
+                    const allDocs = await db.getAllDocuments();
+                    for (const d of allDocs) {
+                        const originalFiles = Array.isArray(d.files) ? d.files : [];
+                        const remainingFiles = originalFiles.filter(
+                            (f: any) => String(f.docId || f.id) !== docId
+                        );
+                        if (remainingFiles.length === originalFiles.length) continue;
+                        if (remainingFiles.length === 0) {
+                            for (const f of originalFiles) {
+                                if (f.path) {
+                                    const existing: any = await db.diskStorage.where("path").equals(f.path).first();
+                                    if (existing) {
+                                        await db.diskStorage.delete(existing.id ?? existing.path);
+                                    } else {
+                                        await db.diskStorage.where("path").equals(f.path).delete();
+                                    }
+                                }
+                            }
+                            await db.deleteDocument(d.id ?? d.guid);
+                        } else {
+                            await db.documents.update(d.id ?? d.guid, {
+                                files: remainingFiles,
+                                updatedAt: new Date().toISOString()
+                            });
+                        }
+                    }
+                    notify.success("Document deleted everywhere.");
                     await hydrate();
                 } catch (e) {
                     console.error("Delete failed:", e);
@@ -272,7 +321,7 @@ const ProjectDocs = (project: any) => {
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <FileTextOutlined />
                     <span style={{ fontWeight: 600 }}>{r.documentName || r.fileName || "Unnamed Document"}</span>
-                    <Tag>{r.description || "—"}</Tag>
+                    <Tag>{r.documentType || r.description || "—"}</Tag>
                 </div>
             ),
             sorter: (a: DocRow, b: DocRow) => String(a.documentName || "").localeCompare(String(b.documentName || "")),
@@ -280,14 +329,14 @@ const ProjectDocs = (project: any) => {
         {
             title: "Date Of Issuance",
             dataIndex: "uploadedAt",
-            width: 100,
+            width: 120,
             render: (text: string) => (text ? new Date(text).toLocaleDateString() : "—"),
             sorter: (a: DocRow, b: DocRow) => String(a.uploadedAt || "").localeCompare(String(b.uploadedAt || "")),
         },
         {
             title: "Linked Activity",
             dataIndex: "activityName",
-            width: 200,
+            width: 220,
             render: (_: any, r: DocRow) => (
                 <div>
                     <div style={{ fontWeight: 600 }}>{r.activityName || "-"}</div>
@@ -302,7 +351,7 @@ const ProjectDocs = (project: any) => {
         {
             title: "Milestone",
             dataIndex: "milestone",
-            width: 150,
+            width: 180,
             render: (v: string) => v || "—",
             sorter: (a: DocRow, b: DocRow) => String(a.milestone || "").localeCompare(String(b.milestone || "")),
         },
@@ -322,7 +371,6 @@ const ProjectDocs = (project: any) => {
                         danger
                         onClick={() => handleDeleteDoc(record)}
                     />
-
                 </Space>
             ),
         },
@@ -347,21 +395,53 @@ const ProjectDocs = (project: any) => {
                 </div>
             </div>
 
-            <Row gutter={[16, 16]} className="summary-cards-flex">
-                {dataSummary.map((item, index) => (
-                    <Col xs={12} sm={12} md={6} key={index}>
-                        <Card
-                            className="summary-card"
-                            hoverable
-                            style={{ background: gradientColors[index % gradientColors.length] }}
-                        >
-                            <Text className="count">{item.count}</Text>
-                            <br />
-                            <Text className="label">{item.label}</Text>
-                        </Card>
-                    </Col>
-                ))}
-            </Row>
+            <div style={{ overflowX: "auto", paddingBottom: 8 }}>
+                <Row
+                    gutter={[16, 16]}
+                    className="summary-cards-flex"
+                    style={{ flexWrap: "nowrap", minWidth: "max-content" }}
+                >
+                    {docTypes.length > 0 ? (
+                        docTypes.map((dt: any, index: number) => {
+                            const isActive = selectedType === dt.name;
+                            const count = documents.filter(
+                                d => String(d.documentType || "").trim() === dt.name
+                            ).length;
+                            return (
+                                <Col
+                                    xs={12}
+                                    sm={8}
+                                    md={6}
+                                    key={dt.id || dt.name}
+                                    style={{ minWidth: 180 }}
+                                >
+                                    <Card
+                                        hoverable
+                                        className={`summary-card ${isActive ? "active" : ""}`}
+                                        onClick={() => setSelectedType(dt.name)}
+                                        style={{
+                                            background: gradientColors[index % gradientColors.length],
+                                            border: isActive ? "2px solid #1890ff" : "1px solid transparent",
+                                            boxShadow: isActive
+                                                ? "0 4px 14px rgba(0,0,0,0.18)"
+                                                : "0 1px 4px rgba(0,0,0,0.08)",
+                                            cursor: "pointer",
+                                        }}
+                                    >
+                                        <Text className="count">{count}</Text>
+                                        <br />
+                                        <Text className="label">{dt.name}</Text>
+                                    </Card>
+                                </Col>
+                            );
+                        })
+                    ) : (
+                        <Col span={24}>
+                            <Empty description="No Document Types Found" />
+                        </Col>
+                    )}
+                </Row>
+            </div>
 
             <div className="table-data">
                 <Spin spinning={loading}>
@@ -406,7 +486,7 @@ const ProjectDocs = (project: any) => {
                 onCancel={() => setPreviewVisible(false)}
                 footer={null}
                 width="80%"
-                bodyStyle={{ height: '75vh' }}
+                bodyStyle={{ height: "75vh" }}
                 title="Preview Document"
                 className="modal-container"
             >

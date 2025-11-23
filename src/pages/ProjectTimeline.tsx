@@ -15,7 +15,7 @@ import { Spin } from 'antd';
 import debounce from 'lodash/debounce';
 import { Tabs } from 'antd';
 const { TabPane } = Tabs;
-
+import type { ActivityBudget, ActivityCost } from "../Utils/dataStorege";
 interface Activity {
     code: string;
     activityName: string;
@@ -76,6 +76,13 @@ const ProjectTimeline = (project: any) => {
     const [selectedActivity, setSelectedActivity] = useState<any>(null);
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [activeTab, setActiveTab] = useState(0);
+    const [activityBudget, setActivityBudget] = useState<ActivityBudget | null>(null);
+    const [budgetLoading, setBudgetLoading] = useState(false);
+    const [detailsActiveTab, setDetailsActiveTab] = useState<string>('notes');
+    const [activityCost, setActivityCost] = useState<ActivityCost | null>(null);
+    const [costLoading, setCostLoading] = useState(false);
+
+
     const showModal = () => {
         setIsModalOpen(true);
     };
@@ -87,7 +94,7 @@ const ProjectTimeline = (project: any) => {
 
     useEffect(() => {
         const fetchUser = async () => {
-            const user = await getCurrentUser(); // if it's async
+            const user = await getCurrentUser();
             setCurrentUser(user);
         };
         fetchUser();
@@ -98,7 +105,6 @@ const ProjectTimeline = (project: any) => {
             defaultSetup();
         }
     }, [currentUser]);
-
 
     const getProjectTimeline = async (project: any) => {
         if (Array.isArray(project?.projectTimeline)) {
@@ -455,17 +461,10 @@ const ProjectTimeline = (project: any) => {
                                 setSelectedActivityKey(prevKey => prevKey === record.key ? null : record.key);
                         }}
                     >
-                        {record.notes?.length > 0 && (
-                            <span
-                                onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSelectedActivityKey(record.key);
-                                    setSelectedActivity(record);
-                                    setNoteModalVisible(true);
-                                    setNoteInput('');
-                                    setEditNoteId(null);
-                                }}
 
+                        {!record.isModule && (
+                            <span
+                                onClick={(e) => openActivityModal(record, e)}
                             >
                                 <InfoCircleOutlined style={{ fontSize: 22, color: '#1890ff' }} />
                             </span>
@@ -569,6 +568,7 @@ const ProjectTimeline = (project: any) => {
             render: (_, record) => record.actualFinish || "",
         },
     ];
+
     const finalColumns: ColumnsType = isEditing ? [...baseColumns, ...editingColumns] : baseColumns;
 
     const getProjectTimelineById = (id: any) => {
@@ -770,6 +770,78 @@ const ProjectTimeline = (project: any) => {
         return Object.fromEntries(usersOptions.map((user: any) => [user.id, user.name]));
     }, [usersOptions]);
 
+    // const openActivityModal = async (record: any, e?: any) => {
+    //     if (e) {
+    //         e.stopPropagation();
+    //     }
+
+    //     setDetailsActiveTab('notes');
+    //     setSelectedActivityKey(record.key);
+    //     setSelectedActivity(record);
+    //     setNoteModalVisible(true);
+    //     setNoteInput('');
+    //     setEditNoteId(null);
+    //     setActivityBudget(null);
+
+    //     if (!selectedProjectId || !record.Code) {
+    //         return;
+    //     }
+
+    //     try {
+    //         setBudgetLoading(true);
+    //         const budget = await db.getActivityBudget(
+    //             String(selectedProjectId),
+    //             String(record.Code)
+    //         );
+    //         setActivityBudget(budget);
+    //     } catch (err) {
+    //         console.error("Failed to load activity budget", err);
+    //         setActivityBudget(null);
+    //     } finally {
+    //         setBudgetLoading(false);
+    //     }
+    // };
+
+    const openActivityModal = async (record: any, e?: any) => {
+        if (e) {
+            e.stopPropagation();
+        }
+
+        setSelectedActivityKey(record.key);
+        setSelectedActivity(record);
+        setNoteModalVisible(true);
+        setNoteInput('');
+        setEditNoteId(null);
+
+        // reset previous data
+        setActivityBudget(null);
+        setActivityCost(null);
+
+        if (!selectedProjectId || !record.Code) {
+            return;
+        }
+
+        try {
+            setBudgetLoading(true);
+            setCostLoading(true);
+
+            const [budget, cost] = await Promise.all([
+                db.getActivityBudget(String(selectedProjectId), String(record.Code)),
+                db.getActivityCost(String(selectedProjectId), String(record.Code)),
+            ]);
+
+            setActivityBudget(budget);
+            setActivityCost(cost);
+        } catch (err) {
+            console.error("Failed to load activity details", err);
+            setActivityBudget(null);
+            setActivityCost(null);
+        } finally {
+            setBudgetLoading(false);
+            setCostLoading(false);
+        }
+    };
+
     return (
         <>
             <div className="timeline-main">
@@ -969,12 +1041,14 @@ const ProjectTimeline = (project: any) => {
                     setNoteModalVisible(false);
                     setNoteInput('');
                     setEditNoteId(null);
+                    setActivityBudget(null);
+                    setActivityCost(null);
                 }}
                 width={'60%'}
                 footer={null}
                 className="modal-container"
             >
-                <Tabs defaultActiveKey="notes" style={{ padding: '0 24px 24px 10px' }}>
+                <Tabs activeKey={detailsActiveTab} onChange={setDetailsActiveTab} style={{ padding: '0 24px 24px 10px' }}>
                     <TabPane tab="Notes" key="notes">
                         <List
                             dataSource={selectedNotes}
@@ -1007,7 +1081,7 @@ const ProjectTimeline = (project: any) => {
                         />
                     </TabPane>
 
-                    <TabPane tab="Cost" key="cost">
+                    {/* <TabPane tab="Cost" key="cost">
                         {selectedActivity?.cost ? (
                             <div style={{ lineHeight: '2' }}>
                                 <div><strong>Project Cost:</strong> ₹{selectedActivity.cost.projectCost}</div>
@@ -1015,6 +1089,33 @@ const ProjectTimeline = (project: any) => {
                             </div>
                         ) : (
                             <div>No cost information available</div>
+                        )}
+                    </TabPane> */}
+                    <TabPane tab="Cost" key="cost">
+                        {costLoading ? (
+                            <Spin />
+                        ) : activityCost ? (
+                            <div style={{ lineHeight: '2' }}>
+                                <div>
+                                    <strong>Project Cost:</strong>{" "}
+                                    {activityCost.projectCost != null
+                                        ? `₹${activityCost.projectCost.toLocaleString("en-IN")}`
+                                        : "—"}
+                                </div>
+                                <div>
+                                    <strong>Opportunity Cost:</strong>{" "}
+                                    {activityCost.opportunityCost != null
+                                        ? `₹${activityCost.opportunityCost.toLocaleString("en-IN")}`
+                                        : "—"}
+                                </div>
+                                {activityCost.updatedAt && (
+                                    <div style={{ marginTop: 8, fontSize: 12, color: "#888" }}>
+                                        Last updated: {dayjs(activityCost.updatedAt).format("DD MMM YYYY HH:mm")}
+                                    </div>
+                                )}
+                            </div>
+                        ) : (
+                            <div>No cost information available for this activity.</div>
                         )}
                     </TabPane>
 
@@ -1050,6 +1151,52 @@ const ProjectTimeline = (project: any) => {
                             <div>No RACI information available</div>
                         )}
                     </TabPane>
+
+                    <TabPane tab="Budget" key="budget">
+                        {budgetLoading ? (
+                            <Spin />
+                        ) : activityBudget ? (
+                            <div style={{ lineHeight: 2 }}>
+                                <div>
+                                    <strong>Budget:</strong>{" "}
+                                    {activityBudget.originalBudget != null
+                                        ? `₹${activityBudget.originalBudget.toLocaleString("en-IN")}`
+                                        : "—"}
+                                </div>
+
+                                <div>
+                                    <strong>Budgeted On:</strong>{" "}
+                                    {activityBudget.originalBudgetDate
+                                        ? dayjs(activityBudget.originalBudgetDate).format("DD MMM YYYY")
+                                        : "—"}
+                                </div>
+
+                                <div>
+                                    <strong>Revised Budget:</strong>{" "}
+                                    {activityBudget.revisedBudget != null
+                                        ? `₹${activityBudget.revisedBudget.toLocaleString("en-IN")}`
+                                        : "—"}
+                                </div>
+
+                                <div>
+                                    <strong>Revised On:</strong>{" "}
+                                    {activityBudget.revisionHistory && activityBudget.revisionHistory.length > 0
+                                        ? dayjs(
+                                            activityBudget.revisionHistory[
+                                                activityBudget.revisionHistory.length - 1
+                                            ].date
+                                        ).format("DD MMM YYYY")
+                                        : activityBudget.revisedBudgetDate
+                                            ? dayjs(activityBudget.revisedBudgetDate).format("DD MMM YYYY")
+                                            : "—"}
+                                </div>
+
+                            </div>
+                        ) : (
+                            <div>No budget information available for this activity.</div>
+                        )}
+                    </TabPane>
+
 
 
                 </Tabs>

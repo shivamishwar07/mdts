@@ -28,6 +28,42 @@ export interface DocType {
   name: string;
 }
 
+export interface ActivityBudget {
+  id?: number;
+  projectId: string;
+  moduleCode?: string;
+  moduleName?: string;
+  activityCode: string;
+  activityName?: string;
+
+  originalBudget?: number;
+  originalBudgetDate?: string;
+
+  revisedBudget?: number;
+  revisedBudgetDate?: string;
+  revisionHistory?: RevisionEntry[];
+
+  currency?: string;
+  updatedAt?: string;
+}
+
+export interface ActivityCost {
+  id?: number;
+  projectId: string;
+  moduleCode?: string;
+  moduleName?: string;
+  activityCode: string;
+  activityName?: string;
+  projectCost?: number;
+  opportunityCost?: number;
+  currency?: string;
+  updatedAt?: string;
+}
+
+export interface RevisionEntry {
+  amount: number;
+  date: string;
+}
 
 export class DataStorage extends Dexie {
   mineTypes!: Table<MineType, number>;
@@ -41,6 +77,8 @@ export class DataStorage extends Dexie {
   diskStorage!: Table<DiskStorage, number>;
   companies!: Table<any, number>;
   docTypes!: Table<DocType, number>;
+  activityBudgets!: Table<ActivityBudget, number>;
+  activityCosts!: Table<ActivityCost, number>;
 
   constructor() {
     super("MTDS");
@@ -71,6 +109,14 @@ export class DataStorage extends Dexie {
       }
     });
 
+    this.version(3).stores({
+      activityBudgets: "++id, projectId, activityCode",
+    });
+
+    this.version(4).stores({
+      activityCosts: "++id, projectId, activityCode",
+    });
+
     this.mineTypes = this.table("mineTypes");
     this.modules = this.table("modules");
     this.moduleLibrary = this.table("moduleLibrary");
@@ -82,6 +128,8 @@ export class DataStorage extends Dexie {
     this.diskStorage = this.table("diskStorage");
     this.companies = this.table("companies");
     this.docTypes = this.table("docTypes");
+    this.activityBudgets = this.table("activityBudgets");
+    this.activityCosts = this.table("activityCosts");
   }
 
   async addModule(module: any): Promise<number> {
@@ -425,6 +473,109 @@ export class DataStorage extends Dexie {
     return this.docTypes.orderBy("name").toArray();
   }
 
+  async upsertActivityBudget(data: Omit<ActivityBudget, "id">): Promise<number> {
+    const projectId = String(data.projectId);
+    const activityCode = String(data.activityCode);
+
+    const existing = await this.activityBudgets
+      .where({ projectId, activityCode })
+      .first();
+
+    const nowIso = new Date().toISOString();
+
+    const payload: ActivityBudget = {
+      ...(existing || { projectId, activityCode }),
+      ...data,
+      projectId,
+      activityCode,
+      updatedAt: nowIso,
+    };
+
+    if (existing?.id) {
+      await this.activityBudgets.update(existing.id, payload);
+      return existing.id;
+    }
+
+    return this.activityBudgets.add(payload);
+  }
+
+  async getActivityBudgetsForProject(projectId: string): Promise<ActivityBudget[]> {
+    return this.activityBudgets.where("projectId").equals(String(projectId)).toArray();
+  }
+
+  async deleteActivityBudget(projectId: string, activityCode: string): Promise<void> {
+    const existing = await this.activityBudgets
+      .where({ projectId: String(projectId), activityCode: String(activityCode) })
+      .first();
+
+    if (existing?.id) {
+      await this.activityBudgets.delete(existing.id);
+    }
+  }
+
+  async getActivityBudget(
+    projectId: string,
+    activityCode: string
+  ): Promise<ActivityBudget | null> {
+    const record = await this.activityBudgets
+      .where({
+        projectId: String(projectId),
+        activityCode: String(activityCode),
+      })
+      .first();
+
+    return record ?? null;
+  }
+
+  async upsertActivityCost(data: Omit<ActivityCost, "id">): Promise<number> {
+    const projectId = String(data.projectId);
+    const activityCode = String(data.activityCode);
+
+    const existing = await this.activityCosts
+      .where({ projectId, activityCode })
+      .first();
+
+    const nowIso = new Date().toISOString();
+
+    const payload: ActivityCost = {
+      ...(existing || { projectId, activityCode }),
+      ...data,
+      projectId,
+      activityCode,
+      updatedAt: nowIso,
+    };
+
+    if (existing?.id) {
+      await this.activityCosts.update(existing.id, payload);
+      return existing.id;
+    }
+
+    return this.activityCosts.add(payload);
+  }
+
+  async getActivityCostsForProject(projectId: string): Promise<ActivityCost[]> {
+    return this.activityCosts.where("projectId").equals(String(projectId)).toArray();
+  }
+
+  async getActivityCost(
+    projectId: string,
+    activityCode: string
+  ): Promise<ActivityCost | null> {
+    const record = await this.activityCosts
+      .where({ projectId: String(projectId), activityCode: String(activityCode) })
+      .first();
+    return record ?? null;
+  }
+
+  async deleteActivityCost(projectId: string, activityCode: string): Promise<void> {
+    const existing = await this.activityCosts
+      .where({ projectId: String(projectId), activityCode: String(activityCode) })
+      .first();
+
+    if (existing?.id) {
+      await this.activityCosts.delete(existing.id);
+    }
+  }
 }
 
 export const db = new DataStorage();

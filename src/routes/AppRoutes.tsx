@@ -33,6 +33,8 @@ import DPRCostBuilder from "../Components/DPRCostBuilder";
 import ProtectedRoute from "./ProtectedRoutes";
 import ProjectList from "../pages/ProjectList";
 import KnowledgeCenter from "../Components/KnowledgeCenter";
+import ActivityBudget from "../pages/ActivityBudget";
+import ActivityCost from "../pages/ActivityCost";
 
 const AppRoutes = () => {
     const isAuthenticated = !!localStorage.getItem("user");
@@ -246,6 +248,15 @@ const AppRoutes = () => {
                     />
 
                     <Route
+                        path="/budgets"
+                        element={
+                            <ProtectedRoute action="VIEW_NAVBAR_MENUS">
+                                <ActivityBudget />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
                         path="/create/notification"
                         element={
                             <ProtectedRoute action="SET_NOTIFICATIONS">
@@ -268,6 +279,15 @@ const AppRoutes = () => {
                         element={
                             <ProtectedRoute action="ADD_COST_IN_ACTIVITY">
                                 <DPRCostBuilder />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/create/activitycost"
+                        element={
+                            <ProtectedRoute action="ADD_COST_IN_ACTIVITY">
+                                <ActivityCost />
                             </ProtectedRoute>
                         }
                     />

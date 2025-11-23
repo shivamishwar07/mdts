@@ -7,7 +7,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, Tag, Space, Tooltip } from "antd";
-import { ClockCircleOutlined, CloseCircleOutlined, DeleteOutlined, DollarOutlined, DownloadOutlined, EditOutlined, EyeOutlined, FileSyncOutlined, FileTextOutlined, FormOutlined, LikeOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined, UploadOutlined } from "@ant-design/icons";
+import { ClockCircleOutlined, CloseCircleOutlined, DeleteOutlined, DollarOutlined, DownloadOutlined, EditOutlined, EyeOutlined, FileSyncOutlined, FileTextOutlined, FormOutlined, LikeOutlined, PlusOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined, UploadOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -87,8 +87,17 @@ export const StatusUpdate = () => {
   const [docNameOptions, setDocNameOptions] = useState<string[]>([]);
   const [addNameOpen, setAddNameOpen] = useState(false);
   const [newDocName, setNewDocName] = useState("");
+  const [docTypeOptions, setDocTypeOptions] = useState<any[]>([]);
+  const [addTypeOpen, setAddTypeOpen] = useState(false);
+  const [newDocType, setNewDocType] = useState("");
+  const [description, setDescription] = useState<string>("");
   const [docForm] = Form.useForm();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [costInfoOpen, setCostInfoOpen] = useState(false);
+  const [costInfoData, setCostInfoData] = useState<any | null>(null);
+  const getCode = (x: any) => String(x?.Code ?? x?.code ?? "");
+  const asNumber = (v: any) => (v === null || v === undefined || v === "" ? 0 : Number(v));
+
   useEffect(() => {
     const fetchUser = async () => {
       const user = await getCurrentUser();
@@ -183,11 +192,6 @@ export const StatusUpdate = () => {
   const showModal = () => {
     setIsModalOpen(true);
   };
-
-  const [costInfoOpen, setCostInfoOpen] = useState(false);
-  const [costInfoData, setCostInfoData] = useState<any | null>(null);
-  const getCode = (x: any) => String(x?.Code ?? x?.code ?? "");
-  const asNumber = (v: any) => (v === null || v === undefined || v === "" ? 0 : Number(v));
 
   const getDelayDays = (act: any) => {
     const plannedEnd = act?.end ? dayjs(act.end) : null;
@@ -798,7 +802,6 @@ export const StatusUpdate = () => {
           iconSrc = "/images/icons/yettostart.png";
         }
 
-        // Show cost icon if any cost field is present (project/op/delayPerDay)
         const hasCost =
           !!record?.cost &&
           (record.cost.delayPerDay != null ||
@@ -813,7 +816,6 @@ export const StatusUpdate = () => {
                 setSelectedActivityKey((prevKey: any) => (prevKey === record.key ? null : record.key));
             }}
           >
-            {/* Notes icon (existing behavior) */}
             {Array.isArray(record.notes) && record.notes.length > 0 && (
               <span
                 onClick={(e) => {
@@ -828,13 +830,10 @@ export const StatusUpdate = () => {
               </span>
             )}
 
-            {/* Cost icon (new, same style as notes, opens read-only cost popup) */}
             <span
               onClick={(e) => {
                 e.stopPropagation();
                 if (hasCost) {
-                  // This should open your cost popup for the selected activity
-                  // Implemented earlier as: openCostInfoForActivity(record.key)
                   openCostInfoForActivity(record.key);
                   setSelectedActivityKey(record.key);
                 }
@@ -853,7 +852,6 @@ export const StatusUpdate = () => {
               <DollarOutlined style={{ fontSize: 20, color: hasCost ? "#e67e22" : "#bfbfbf" }} />
             </span>
 
-            {/* Status icon */}
             {duration ? (
               <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
             ) : (
@@ -2090,6 +2088,7 @@ export const StatusUpdate = () => {
       }
     }
 
+
     let docs: any[] = Array.isArray(activity?.documents) ? activity.documents : [];
 
     if ((!docs || docs.length === 0) && activity) {
@@ -2194,7 +2193,16 @@ export const StatusUpdate = () => {
   };
 
   const handleSaveDocument = async () => {
-    if (!docFile || !docName || !docType || !docMilestone || !docActivity || !selectedActivityKey || !selectedProjectId) {
+    if (
+      !docFile ||
+      !docName ||
+      !docType ||
+      !docMilestone ||
+      !docActivity ||
+      !selectedActivityKey ||
+      !selectedProjectId ||
+      !description 
+    ) {
       notify.error("All fields and file upload are required.");
       return;
     }
@@ -2215,7 +2223,8 @@ export const StatusUpdate = () => {
       activityName: docActivity,
       linkedActivity: activity.keyActivity,
       documentName: docName,
-      description: docType,
+      documentType: docType, 
+      description: description,   
       fileName: docFile.name,
       filePath,
       uploadedAt: new Date().toISOString(),
@@ -2249,7 +2258,9 @@ export const StatusUpdate = () => {
       ...module,
       activities: (module.activities || []).map((act: any) => {
         const key = String(act.Code ?? act.code ?? "");
-        return key && updatedMap.has(key) ? { ...act, activityDocuments: updatedMap.get(key) } : { ...act };
+        return key && updatedMap.has(key)
+          ? { ...act, activityDocuments: updatedMap.get(key) }
+          : { ...act };
       }),
     }));
 
@@ -2281,58 +2292,118 @@ export const StatusUpdate = () => {
 
   const columns: any = [
     {
-      title: "Name",
+      title: "Doc Name",
       dataIndex: "documentName",
       key: "documentName",
-      align: "left"
+      align: "left",
+      render: (_: any, r: any) => (
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <FileTextOutlined />
+          <span style={{ fontWeight: 600 }}>
+            {r.documentName || r.fileName || "Unnamed Document"}
+          </span>
+          <Tag>{r.description || "—"}</Tag>
+        </div>
+      ),
     },
-    { title: "Type", dataIndex: "description", align: "left" },
+    {
+      title: "Type",
+      dataIndex: "description",
+      key: "description",
+      align: "left",
+      render: (text: string) => text || "—",
+    },
+    {
+      title: "Uploaded By",
+      dataIndex: "uploadedBy",
+      key: "uploadedBy",
+      align: "left",
+      render: (text: string) => text || "—",
+    },
+    {
+      title: "Uploaded At",
+      dataIndex: "uploadedAt",
+      key: "uploadedAt",
+      align: "left",
+      render: (text: string) =>
+        text ? new Date(text).toLocaleDateString() : "—",
+    },
     {
       title: "Actions",
       key: "actions",
-      width: 70,
+      width: 110,
       align: "center",
       render: (_: any, record: any) => (
-        <Space size="small">
-          <EyeOutlined
-            style={{ cursor: "pointer" }}
-            onClick={() => handlePreviewDocument(record)}
-          />
-          <DeleteOutlined
-            style={{ cursor: "pointer", color: "red" }}
-            onClick={() => handleDeleteDocument(record.id)}
-          />
+        <Space size="middle">
+          <Tooltip title="Preview">
+            <EyeOutlined
+              style={{ cursor: "pointer" }}
+              onClick={() => handlePreviewDocument(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Download">
+            <DownloadOutlined
+              style={{ cursor: "pointer" }}
+              onClick={() => handleDownloadDocument(record)}
+            />
+          </Tooltip>
+          <Tooltip title="Delete">
+            <DeleteOutlined
+              style={{ cursor: "pointer", color: "red" }}
+              onClick={() => handleDeleteDocument(record.id)}
+            />
+          </Tooltip>
         </Space>
       ),
     },
   ];
 
-  const handleDeleteDocument = async (docId: string) => {
-    const updatedDocs = (selectedActivityDocs || []).filter((d: any) => String(d.id) !== String(docId));
-    setSelectedActivityDocs(updatedDocs);
+  useEffect(() => {
+    db.getAllDocTypes().then(setDocTypeOptions);
+  }, []);
 
-    const updatedDataSource = (Array.isArray(dataSource) ? dataSource : []).map((module: any) => {
-      if (!Array.isArray(module?.children)) return module;
-      return {
-        ...module,
-        children: module.children.map((child: any) => {
-          if (String(child?.key) !== String(selectedActivityKey)) return child;
-          return { ...child, activityDocuments: updatedDocs };
-        }),
-      };
-    });
+  const handleDeleteDocument = async (docId: string) => {
+    const updatedDocs = (selectedActivityDocs || []).filter(
+      (d: any) => String(d.id) !== String(docId)
+    );
+    setSelectedActivityDocs(updatedDocs);
+    const updatedDataSource = (Array.isArray(dataSource) ? dataSource : []).map(
+      (module: any) => {
+        if (!Array.isArray(module?.children)) return module;
+
+        return {
+          ...module,
+          children: module.children.map((child: any) => {
+            if (String(child?.key) !== String(selectedActivityKey)) return child;
+
+            const docs = Array.isArray(child?.activityDocuments)
+              ? child.activityDocuments.filter(
+                (d: any) => String(d.id) !== String(docId)
+              )
+              : [];
+
+            return { ...child, activityDocuments: docs };
+          }),
+        };
+      }
+    );
     setDataSource(updatedDataSource);
 
     const docsMap = new Map<string, any[]>();
     updatedDataSource.forEach((module: any) => {
       (module?.children || []).forEach((act: any) => {
         const code = act?.Code ?? act?.code;
-        const docs = Array.isArray(act?.activityDocuments) ? act.activityDocuments : [];
+        const docs = Array.isArray(act?.activityDocuments)
+          ? act.activityDocuments
+          : [];
         if (code) docsMap.set(String(code), docs);
       });
     });
 
-    const updatedSequencedModules = (Array.isArray(sequencedModules) ? sequencedModules : []).map((module: any) => ({
+    const updatedSequencedModules = (Array.isArray(sequencedModules)
+      ? sequencedModules
+      : []
+    ).map((module: any) => ({
       ...module,
       activities: (module?.activities || []).map((act: any) => {
         const code = String(act?.Code ?? act?.code ?? "");
@@ -2342,20 +2413,67 @@ export const StatusUpdate = () => {
     setSequencedModules(updatedSequencedModules);
 
     await db.updateProjectTimeline(
-      selectedProjectTimeline?.versionId || selectedProjectTimeline?.timelineId,
+      selectedProjectTimeline?.versionId ||
+      selectedProjectTimeline?.timelineId,
       updatedSequencedModules
     );
 
-    const updatedProjectTimeline = (selectedProject?.projectTimeline || []).map((t: any) => {
-      const tId = t?.versionId || t?.timelineId;
-      const selId = selectedProjectTimeline?.versionId || selectedProjectTimeline?.timelineId;
-      return tId === selId ? { ...t, data: updatedSequencedModules } : t;
-    });
+    const updatedProjectTimeline = (selectedProject?.projectTimeline || []).map(
+      (t: any) => {
+        const tId = t?.versionId || t?.timelineId;
+        const selId =
+          selectedProjectTimeline?.versionId ||
+          selectedProjectTimeline?.timelineId;
+        return tId === selId ? { ...t, data: updatedSequencedModules } : t;
+      }
+    );
 
-    const updatedProject = { ...(selectedProject || {}), projectTimeline: updatedProjectTimeline };
-    if (selectedProjectId) await db.updateProject(selectedProjectId, updatedProject);
+    const updatedProject = {
+      ...(selectedProject || {}),
+      projectTimeline: updatedProjectTimeline,
+    };
+    if (selectedProjectId) {
+      await db.updateProject(selectedProjectId, updatedProject);
+    }
 
-    notify.success("Document deleted.");
+    try {
+      const allDocs = await db.getAllDocuments();
+
+      for (const doc of allDocs) {
+        const originalFiles = Array.isArray(doc.files) ? doc.files : [];
+
+        const remainingFiles = originalFiles.filter(
+          (f: any) => String(f.docId || f.id) !== String(docId)
+        );
+
+        if (remainingFiles.length === originalFiles.length) continue;
+
+        if (remainingFiles.length === 0) {
+          for (const f of originalFiles) {
+            if (f.path) {
+              const existing: any = await db.diskStorage
+                .where("path")
+                .equals(f.path)
+                .first();
+              if (existing) {
+                await db.diskStorage.delete(existing.id ?? existing.path);
+              }
+            }
+          }
+
+          await db.deleteDocument(doc.id ?? doc.guid);
+        } else {
+          await db.documents.update(doc.id, {
+            files: remainingFiles,
+            updatedAt: new Date().toISOString(),
+          });
+        }
+      }
+    } catch (err) {
+      console.error("Failed to sync global documents on delete:", err);
+    }
+
+    notify.success("Document deleted everywhere.");
   };
 
   const handlePreviewDocument = async (doc: any) => {
@@ -2380,6 +2498,68 @@ export const StatusUpdate = () => {
     };
     reader.readAsDataURL(file);
   }
+
+  const handleDownloadDocument = async (doc: any) => {
+    if (!doc?.filePath) {
+      notify.error("Invalid file path.");
+      return;
+    }
+
+    const file: any = await db.diskStorage.where("path").equals(doc.filePath).first();
+
+    const content = file?.content;
+    if (!content) {
+      notify.error("Download failed. File not found.");
+      return;
+    }
+
+    const a = document.createElement("a");
+    a.href = content;
+    a.download = doc.fileName || doc.documentName || "download";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const onAddNewDocType = async () => {
+    const name = newDocType.trim();
+    if (!name) {
+      notify.warning("Please enter a type name");
+      return;
+    }
+
+    try {
+      const exists = docTypeOptions.some(
+        (t: any) => String(t.name).toLowerCase() === name.toLowerCase()
+      );
+      if (exists) {
+        setDocType(name);
+        setNewDocType("");
+        setAddTypeOpen(false);
+        notify.info("Type already exists, selected it.");
+        return;
+      }
+
+      // 1️⃣ Add to IndexedDB
+      const id = await db.addDocType(name);
+
+      // 2️⃣ Reload full list from IndexedDB
+      const list = await db.getAllDocTypes(); // [{ id, name }]
+      setDocTypeOptions(list);
+
+      // 3️⃣ Get the added record & select it in the dropdown
+      const added = await db.docTypes.get(id);
+      setDocType(added?.name || name);
+
+      // 4️⃣ Reset modal state
+      setNewDocType("");
+      setAddTypeOpen(false);
+      notify.success("Type added");
+    } catch (e: any) {
+      console.error("Failed to add doc type", e);
+      notify.error(e?.message || "Failed to add type");
+    }
+  };
 
   return (
     <>
@@ -3178,7 +3358,7 @@ export const StatusUpdate = () => {
         open={docModalVisible}
         onCancel={() => setDocModalVisible(false)}
         footer={null}
-        width="85%"
+        width="100%"
         className="modal-container"
         maskClosable={false}
         keyboard={false}
@@ -3187,8 +3367,12 @@ export const StatusUpdate = () => {
       >
         <div style={{ padding: "0px 20px 20px 10px" }}>
           <Row gutter={16}>
-            <Col xs={24} md={14} lg={15}>
+            <Col xs={24} md={10} lg={12} style={{ height: "500px", overflow: "auto" }}>
               <Form form={docForm} layout="vertical" onFinish={handleSaveDocument}>
+                <Form.Item label="Project Name" required>
+                  <Input value={selectedProject?.projectParameters?.projectName || ""} disabled />
+                </Form.Item>
+
                 <Form.Item label="Milestone Name" required>
                   <Input value={docMilestone} disabled />
                 </Form.Item>
@@ -3208,18 +3392,75 @@ export const StatusUpdate = () => {
                       showSearch
                       allowClear
                     />
-                    <Button size="small" style={{ padding: '15px' }} onClick={() => setAddNameOpen(true)}>+</Button>
+                    <Button size="small" style={{ padding: "15px" }} onClick={() => setAddNameOpen(true)}>
+                      +
+                    </Button>
                   </div>
                 </Form.Item>
 
-                <Form.Item label="Description" required>
-                  <Input.TextArea
-                    value={docType}
-                    onChange={(e) => setDocType(e.target.value)}
-                    rows={3}
-                    placeholder="Short description"
-                  />
+                {/* <Form.Item label="Document Type" required>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", width: "100%" }}>
+                    <Select
+                      value={docType || undefined}
+                      onChange={setDocType}
+                      placeholder="Select document type"
+                      style={{ flex: 1 }}
+                      options={docTypeOptions.map((o) => ({ label: o, value: o }))}
+                      showSearch
+                      allowClear
+                    />
+                    <Button size="small" style={{ padding: "15px" }} onClick={() => setAddTypeOpen(true)}>
+                      +
+                    </Button>
+                  </div>
+                </Form.Item> */}
+
+                <Form.Item label={<span style={{ textAlign: "left" }}> Document Type </span>} required labelAlign="left" colon={false}>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <Select
+                      placeholder="Select Document Type"
+                      value={docType ?? undefined}
+                      onChange={setDocType}
+                      style={{ flex: 1, minWidth: 200 }}
+                      showSearch
+                      options={docTypeOptions.map((dt: any) => ({ label: dt.name, value: dt.name }))}
+                      filterOption={(input, option) => String(option?.label ?? "").toLowerCase().includes(input.toLowerCase())}
+                    />
+                    <Button type="dashed" icon={<PlusOutlined />} onClick={() => setAddTypeOpen(true)} />
+                  </div>
                 </Form.Item>
+
+                <Form.Item
+                  label={<span style={{ textAlign: "left" }}> Description </span>}
+                  name="description"
+                  rules={[{ required: true, message: "Description is required" }]}
+                  labelAlign="left"
+                  colon={false}
+                >
+                  <TextArea rows={4} placeholder="Description" value={description} style={{ marginBottom: "15px" }} onChange={(e) => setDescription(e.target.value)} />
+                </Form.Item>
+                <Modal
+                  title="Add Document Type"
+                  open={addTypeOpen}
+                  onCancel={() => setAddTypeOpen(false)}
+                  onOk={onAddNewDocType}
+                  okText="Add"
+                  width={420}
+                  maskClosable={false}
+                  keyboard={false}
+                  destroyOnClose
+                  afterClose={() => setNewDocType("")}
+                >
+                  <Form style={{ padding: "10px 20px" }} layout="vertical" onFinish={onAddNewDocType}>
+                    <Form.Item label="New Document Type" required>
+                      <Input
+                        value={newDocType}
+                        onChange={(e) => setNewDocType(e.target.value)}
+                        placeholder="e.g., PO, LOI, Work Order, MOM"
+                      />
+                    </Form.Item>
+                  </Form>
+                </Modal>
 
                 <Form.Item label="Upload File" required>
                   <input
@@ -3235,8 +3476,8 @@ export const StatusUpdate = () => {
               </Form>
             </Col>
 
-            <Col xs={24} md={10} lg={9}>
-              <div style={{ marginBottom: 10, fontWeight: 500, marginTop: 10 }}>Documents</div>
+            <Col xs={24} md={10} lg={12}>
+              <div style={{ marginBottom: 10, fontWeight: 500, marginTop: 15 }}></div>
               <Table
                 dataSource={Array.isArray(selectedActivityDocs) ? selectedActivityDocs : []}
                 rowKey="id"
@@ -3245,7 +3486,7 @@ export const StatusUpdate = () => {
                 size="small"
                 scroll={{ y: 660, x: true }}
                 style={{ border: "1px solid #f0f0f0", borderRadius: 8 }}
-                showHeader={false}
+              // showHeader={false}
               />
             </Col>
           </Row>
@@ -3259,7 +3500,6 @@ export const StatusUpdate = () => {
         onOk={onAddNewDocName}
         okText="Add"
         width={420}
-        className="modal-container"
         maskClosable={false}
         keyboard={false}
         destroyOnClose

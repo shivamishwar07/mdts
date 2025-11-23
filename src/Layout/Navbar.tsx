@@ -68,6 +68,8 @@ const initialNavLinks: any[] = [
             { label: "DPR Cost Builder", action: "/create/dpr-cost-builder", isNull: true, requiredPermission: "DPR_COST_BUILDER" },
             { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true, requiredPermission: "CASH_FLOW_BUILDER" },
             { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true, requiredPermission: "DELAY_COST_CALCULATOR" },
+            { label: "Activity Budget", action: "/budgets", requiredPermission: "VIEW_NAVBAR_MENUS" },
+             { label: "Activity Costs", action: "/create/activitycost", requiredPermission: "VIEW_NAVBAR_MENUS" },
         ]
     }
 ];

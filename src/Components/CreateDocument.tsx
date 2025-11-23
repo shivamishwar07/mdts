@@ -178,7 +178,7 @@ const CreateDocument: React.FC = () => {
                       borderRadius: 8,
                       cursor: "pointer",
                       marginBottom: "30px",
-                      background: isDragActive ? "#f0f8ff" : "#fafafa",
+                      background: isDragActive ? "#082c4bff" : "#fafafa",
                     }}
                   >
                     <input {...getInputProps()} />

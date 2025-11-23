@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, Result, notification, Progress, Typography, Form, Row, Col, Tooltip } from "antd";
+import { Input, DatePicker, Select, Table, Button, Checkbox, Steps, Modal, Result, Typography, Form, Row, Col, Tooltip } from "antd";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import "../styles/time-builder.css";
 import type { ColumnsType } from "antd/es/table";
@@ -16,17 +16,22 @@ import { notify } from "../Utils/ToastNotify.tsx";
 import { Box } from "@mui/material";
 import { v4 as uuidv4 } from 'uuid';
 interface Activity {
-  [x: string]: string;
   code: string;
   activityName: string;
   prerequisite: string;
   slack: string;
   level: string;
   duration: string;
-  start: any;
-  end: any;
-  activityStatus: any;
+  start?: string | null;
+  end?: string | null;
+  activityStatus?: string;
+  actualStart?: string;
+  actualFinish?: string;
+  fin_status?: string;
+  guicode?: string;
+  holidays?: any[];
 }
+
 
 interface Module {
   parentModuleCode: string;
@@ -55,7 +60,7 @@ interface Column {
 const TimeBuilder = () => {
   const navigate = useNavigate();
   const [currentStep, setCurrentStep] = useState<number>(0);
-  const [selectedActivities, setSelectedActivities] = useState<string[]>([]);
+  const [_selectedActivities, setSelectedActivities] = useState<string[]>([]);
   const [allProjects, setAllProjects] = useState<any[]>([]);
   const [sequencedModules, setSequencedModules] = useState<Module[]>([]);
   const [modules, setModules] = useState<Module[]>([]);
@@ -84,10 +89,10 @@ const TimeBuilder = () => {
   const [_selectedExistingProject, setSelectedExistigProject] = useState<any>(null);
   const [editingKey, setEditingKey] = useState(null);
   const [editedImpact, setEditedImpact] = useState<any>({});
-  const [_deletedModules, setDeletedModules] = useState<any>([]);
-  const [isDeletionInProgress, setIsDeletionInProgress] = useState(false);
-  const [_deletedActivities, setDeletedActivities] = useState<any[]>([]);
-  const [deletingActivity, setDeletingActivity] = useState<string | null>(null);
+  // const [_deletedModules, setDeletedModules] = useState<any>([]);
+  // const [isDeletionInProgress, setIsDeletionInProgress] = useState(false);
+  // const [_deletedActivities, setDeletedActivities] = useState<any[]>([]);
+  // const [deletingActivity, setDeletingActivity] = useState<string | null>(null);
   const [selectedTimelineId, setSelectedTimelineId] = useState<any>("");
   const [isReplanMode, setIsReplanMode] = useState(false);
   const finalColumns: ColumnsType = [
@@ -120,7 +125,9 @@ const TimeBuilder = () => {
     projectId: null,
   });
   const [currentUser, setCurrentUser] = useState<any>(null);
-
+  const [isAddActivityModalOpen, setIsAddActivityModalOpen] = useState(false);
+  const [activeModuleId, setActiveModuleId] = useState<string | null>(null);
+  const [addActivityForm] = Form.useForm();
   const [_rows, setRows] = useState([
     {
       from: null, to: null, holiday: "", module: [], impact: {}, editing: true
@@ -152,8 +159,6 @@ const TimeBuilder = () => {
     if (!currentUser) return;
 
     const state = location.state;
-    console.log(state);
-
     if (!state?.selectedProject || !state?.selectedTimeline) return;
     const fetchData = async () => {
       setIsReplanMode(state.rePlanTimeline || false);
@@ -169,6 +174,8 @@ const TimeBuilder = () => {
       setSelectedProjectId(id || "");
       setSelectedProject(selectedProject || {});
       setFinalHolidays(holidays || []);
+      console.log(initialStatus);
+
       setSelectedLibraryId(initialStatus?.id);
       setLibraryName(initialStatus?.library || []);
       setSelectedItems(initialStatus?.items || []);
@@ -179,11 +186,10 @@ const TimeBuilder = () => {
         setIsSundayWorking(projectTimeline[0]?.sundayWorking || false);
         setSelectedProjectMineType(projectParameters?.typeOfMine || "");
         setIsMenualTimeline(true);
-        handleLibraryChange(initialStatus.items);
-
       } else {
         setLibraryName([]);
       }
+
 
       setIsMenualTimeline(true);
     };
@@ -352,26 +358,26 @@ const TimeBuilder = () => {
     fetchHolidays();
   }, [currentStep == 1]);
 
-  const getProjectTimeline = async (timelineId: any) => {
-    if (timelineId) {
-      try {
-        const timeline = await db.getProjectTimelineById(timelineId);
-        if (timeline?.orgId !== currentUser.orgId) return;
-        const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
-        if (Array.isArray(finTimeline)) {
-          handleLibraryChange(finTimeline);
-        } else {
-          handleLibraryChange([]);
-        }
+  // const getProjectTimeline = async (timelineId: any) => {
+  //   if (timelineId) {
+  //     try {
+  //       const timeline = await db.getProjectTimelineById(timelineId);
+  //       if (timeline?.orgId !== currentUser.orgId) return;
+  //       const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
+  //       if (Array.isArray(finTimeline)) {
+  //         handleLibraryChange(finTimeline);
+  //       } else {
+  //         handleLibraryChange([]);
+  //       }
 
-        return finTimeline;
-      } catch (err) {
-        console.error("Error fetching timeline:", err);
-        return [];
-      }
-    }
-    return [];
-  };
+  //       return finTimeline;
+  //     } catch (err) {
+  //       console.error("Error fetching timeline:", err);
+  //       return [];
+  //     }
+  //   }
+  //   return [];
+  // };
 
   const defaultSetup = async (allFoundlibrary: any = []) => {
     if (!isUpdateMode) {
@@ -469,22 +475,6 @@ const TimeBuilder = () => {
     });
   };
 
-  // const handleNext = () => {
-  //   if (currentStep < 7) {
-  //     setCurrentStep(currentStep + 1);
-  //   } else {
-  //     if (isUpdateMode) {
-  //       handleSaveProjectTimeline(sequencedModules);
-  //       setTimeout(() => {
-  //         navigate("/create/status-update");
-  //       }, 1000);
-  //     }
-  //     else {
-  //       handleSaveProjectTimeline(sequencedModules);
-  //     }
-  //   }
-  // };
-
   const handleNext = () => {
     if (currentStep === 0) {
       syncSequencedFromSelectedItems(selectedItems);
@@ -559,7 +549,7 @@ const TimeBuilder = () => {
 
     return `${y}-${String(m).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
   };
-  
+
   const addBusinessDays = (startDateAny: any, days: number) => {
     let date = ensureDate(startDateAny);
     date = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
@@ -786,202 +776,202 @@ const TimeBuilder = () => {
     return endDate;
   };
 
-  const handleActivitySelection = (activityCode: string, isChecked: boolean) => {
-    if (isDeletionInProgress) return;
-    const module = sequencedModules.find(m => m.parentModuleCode == "moduleCode");
-    const hasCompletedActivities = module?.activities.some(activity =>
-      activity.activityStatus == "completed" || activity.fin_status == "completed"
-    );
+  // const handleActivitySelection = (activityCode: string, isChecked: boolean) => {
+  //   if (isDeletionInProgress) return;
+  //   const module = sequencedModules.find(m => m.parentModuleCode == "moduleCode");
+  //   const hasCompletedActivities = module?.activities.some(activity =>
+  //     activity.activityStatus == "completed" || activity.fin_status == "completed"
+  //   );
 
-    if (hasCompletedActivities) {
-      notify.warning("Cannot delete module with completed activities");
-      return;
-    }
+  //   if (hasCompletedActivities) {
+  //     notify.warning("Cannot delete module with completed activities");
+  //     return;
+  //   }
 
-    setSelectedActivities((prevSelectedActivities) => {
-      if (!isChecked) {
-        let removedActivityIndex: number | null = null;
-        let removedActivity: any = null;
-        let parentModuleCode: string | null = null;
+  //   setSelectedActivities((prevSelectedActivities) => {
+  //     if (!isChecked) {
+  //       let removedActivityIndex: number | null = null;
+  //       let removedActivity: any = null;
+  //       let parentModuleCode: string | null = null;
 
-        setSequencedModules((prevFinalData) =>
-          prevFinalData.map((module) => {
-            const index = module.activities.findIndex(
-              (activity) => activity.code == activityCode
-            );
+  //       setSequencedModules((prevFinalData) =>
+  //         prevFinalData.map((module) => {
+  //           const index = module.activities.findIndex(
+  //             (activity) => activity.code == activityCode
+  //           );
 
-            if (index !== -1) {
-              removedActivityIndex = index;
-              removedActivity = { ...module.activities[index] };
-              parentModuleCode = module.parentModuleCode;
-            }
+  //           if (index !== -1) {
+  //             removedActivityIndex = index;
+  //             removedActivity = { ...module.activities[index] };
+  //             parentModuleCode = module.parentModuleCode;
+  //           }
 
-            return {
-              ...module,
-              activities: module.activities.filter(
-                (activity) => activity.code !== activityCode
-              ),
-            };
-          })
-        );
+  //           return {
+  //             ...module,
+  //             activities: module.activities.filter(
+  //               (activity) => activity.code !== activityCode
+  //             ),
+  //           };
+  //         })
+  //       );
 
-        if (removedActivity && parentModuleCode) {
-          setDeletedActivities((prevDeleted: any) => [
-            ...prevDeleted,
-            { ...removedActivity, index: removedActivityIndex, parentModuleCode },
-          ]);
-        }
+  //       if (removedActivity && parentModuleCode) {
+  //         setDeletedActivities((prevDeleted: any) => [
+  //           ...prevDeleted,
+  //           { ...removedActivity, index: removedActivityIndex, parentModuleCode },
+  //         ]);
+  //       }
 
-        setIsDeletionInProgress(true);
-        setDeletingActivity(activityCode);
+  //       setIsDeletionInProgress(true);
+  //       setDeletingActivity(activityCode);
 
-        const key = `delete-activity-${activityCode}`;
-        let progress = 100;
-        let isUndoClicked = false;
+  //       const key = `delete-activity-${activityCode}`;
+  //       let progress = 100;
+  //       let isUndoClicked = false;
 
-        const updateProgress = () => {
-          if (isUndoClicked) {
-            setIsDeletionInProgress(false);
-            setDeletingActivity(null);
-            return;
-          }
-          progress -= 2;
-          if (progress <= 0) {
-            notification.destroy(key);
-            setIsDeletionInProgress(false);
-            setDeletingActivity(null);
-            return;
-          }
+  //       const updateProgress = () => {
+  //         if (isUndoClicked) {
+  //           setIsDeletionInProgress(false);
+  //           setDeletingActivity(null);
+  //           return;
+  //         }
+  //         progress -= 2;
+  //         if (progress <= 0) {
+  //           notification.destroy(key);
+  //           setIsDeletionInProgress(false);
+  //           setDeletingActivity(null);
+  //           return;
+  //         }
 
-          notification.open({
-            key,
-            message: null,
-            duration: 0,
-            closeIcon: null,
-            style: {
-              borderRadius: "12px",
-              padding: "12px 16px",
-              boxShadow: "0px 6px 18px rgba(0, 0, 0, 0.15)",
-              background: "#FFF8F0",
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-            },
-            btn: (
-              <>
-                <div
-                  style={{
-                    width: "100%",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                  }}
-                >
-                  <p
-                    style={{
-                      margin: "0px 8px 0 4px",
-                      fontSize: "13px",
-                      color: "#444",
-                      fontWeight: "500",
-                      width: "200px",
-                    }}
-                  >
-                    {removedActivity?.name} has been deleted.
-                  </p>
+  //         notification.open({
+  //           key,
+  //           message: null,
+  //           duration: 0,
+  //           closeIcon: null,
+  //           style: {
+  //             borderRadius: "12px",
+  //             padding: "12px 16px",
+  //             boxShadow: "0px 6px 18px rgba(0, 0, 0, 0.15)",
+  //             background: "#FFF8F0",
+  //             width: "100%",
+  //             display: "flex",
+  //             alignItems: "center",
+  //           },
+  //           btn: (
+  //             <>
+  //               <div
+  //                 style={{
+  //                   width: "100%",
+  //                   display: "flex",
+  //                   justifyContent: "space-between",
+  //                   alignItems: "center",
+  //                 }}
+  //               >
+  //                 <p
+  //                   style={{
+  //                     margin: "0px 8px 0 4px",
+  //                     fontSize: "13px",
+  //                     color: "#444",
+  //                     fontWeight: "500",
+  //                     width: "200px",
+  //                   }}
+  //                 >
+  //                   {removedActivity?.name} has been deleted.
+  //                 </p>
 
-                  <div>
-                    <Button
-                      type="primary"
-                      size="small"
-                      style={{
-                        background: "#258790",
-                        border: "none",
-                        fontWeight: "bold",
-                        color: "#fff",
-                        padding: "6px 14px",
-                        borderRadius: "6px",
-                        minWidth: "60px",
-                      }}
-                      onClick={() => {
-                        isUndoClicked = true;
-                        restoreDeletedActivity(activityCode);
-                        notification.destroy(key);
-                        setIsDeletionInProgress(false);
-                        setDeletingActivity(null);
-                        notification.success({
-                          message: "✅ Rollback Successful",
-                          description: `${removedActivity?.activityName} has been restored successfully.`,
-                          placement: "topRight",
-                          duration: 0.1,
-                          style: {
-                            borderRadius: "10px",
-                            background: "#E6FFFB",
-                            color: "#006D75",
-                          },
-                        });
-                      }}
-                    >
-                      Undo
-                    </Button>
-                  </div>
-                </div>
-                <div className="progress-bar-item">
-                  <Progress
-                    percent={progress}
-                    showInfo={false}
-                    status="active"
-                    strokeColor={{ from: "#FF4D4F", to: "#FF9C6E" }}
-                    strokeWidth={6}
-                    style={{ flex: 1, borderRadius: "6px", margin: 0 }}
-                  />
-                </div>
-              </>
-            ),
-          });
+  //                 <div>
+  //                   <Button
+  //                     type="primary"
+  //                     size="small"
+  //                     style={{
+  //                       background: "#258790",
+  //                       border: "none",
+  //                       fontWeight: "bold",
+  //                       color: "#fff",
+  //                       padding: "6px 14px",
+  //                       borderRadius: "6px",
+  //                       minWidth: "60px",
+  //                     }}
+  //                     onClick={() => {
+  //                       isUndoClicked = true;
+  //                       restoreDeletedActivity(activityCode);
+  //                       notification.destroy(key);
+  //                       setIsDeletionInProgress(false);
+  //                       setDeletingActivity(null);
+  //                       notification.success({
+  //                         message: "✅ Rollback Successful",
+  //                         description: `${removedActivity?.activityName} has been restored successfully.`,
+  //                         placement: "topRight",
+  //                         duration: 0.1,
+  //                         style: {
+  //                           borderRadius: "10px",
+  //                           background: "#E6FFFB",
+  //                           color: "#006D75",
+  //                         },
+  //                       });
+  //                     }}
+  //                   >
+  //                     Undo
+  //                   </Button>
+  //                 </div>
+  //               </div>
+  //               <div className="progress-bar-item">
+  //                 <Progress
+  //                   percent={progress}
+  //                   showInfo={false}
+  //                   status="active"
+  //                   strokeColor={{ from: "#FF4D4F", to: "#FF9C6E" }}
+  //                   strokeWidth={6}
+  //                   style={{ flex: 1, borderRadius: "6px", margin: 0 }}
+  //                 />
+  //               </div>
+  //             </>
+  //           ),
+  //         });
 
-          setTimeout(updateProgress, 100);
-        };
+  //         setTimeout(updateProgress, 100);
+  //       };
 
-        setTimeout(updateProgress, 100);
+  //       setTimeout(updateProgress, 100);
 
-        return prevSelectedActivities.filter((code) => code !== activityCode);
-      } else {
-        return [...prevSelectedActivities, activityCode];
-      }
-    });
-  };
+  //       return prevSelectedActivities.filter((code) => code !== activityCode);
+  //     } else {
+  //       return [...prevSelectedActivities, activityCode];
+  //     }
+  //   });
+  // };
 
-  const restoreDeletedActivity = (activityCode: string) => {
-    setDeletedActivities((prevDeleted: any) => {
-      const restoredActivity = prevDeleted.find(
-        (activity: any) => activity.code == activityCode
-      );
-      if (restoredActivity) {
-        setSequencedModules((prevModules) =>
-          prevModules.map((module) =>
-            module.parentModuleCode == restoredActivity.parentModuleCode
-              ? {
-                ...module,
-                activities: [
-                  ...module.activities.slice(0, restoredActivity.index),
-                  { ...restoredActivity },
-                  ...module.activities.slice(restoredActivity.index),
-                ],
-              }
-              : module
-          )
-        );
+  // const restoreDeletedActivity = (activityCode: string) => {
+  //   setDeletedActivities((prevDeleted: any) => {
+  //     const restoredActivity = prevDeleted.find(
+  //       (activity: any) => activity.code == activityCode
+  //     );
+  //     if (restoredActivity) {
+  //       setSequencedModules((prevModules) =>
+  //         prevModules.map((module) =>
+  //           module.parentModuleCode == restoredActivity.parentModuleCode
+  //             ? {
+  //               ...module,
+  //               activities: [
+  //                 ...module.activities.slice(0, restoredActivity.index),
+  //                 { ...restoredActivity },
+  //                 ...module.activities.slice(restoredActivity.index),
+  //               ],
+  //             }
+  //             : module
+  //         )
+  //       );
 
-        return prevDeleted.filter(
-          (activity: any) => activity.code !== activityCode
-        );
-      }
+  //       return prevDeleted.filter(
+  //         (activity: any) => activity.code !== activityCode
+  //       );
+  //     }
 
-      return prevDeleted;
-    });
+  //     return prevDeleted;
+  //   });
 
-    setSelectedActivities((prevSelected) => [...prevSelected, activityCode]);
-  }
+  //   setSelectedActivities((prevSelected) => [...prevSelected, activityCode]);
+  // }
 
   const handleProjectChange = (projectId: any) => {
     setCurrentStep(0);
@@ -1408,26 +1398,32 @@ const TimeBuilder = () => {
     }
 
     if (step == 2) {
-      baseColumns.push(
-        {
-          key: "finalize",
-          align: "right",
-          className: step == 2 ? "active-column" : "",
-          onCell: () => ({ className: step == 2 ? "first-column-red" : "" }),
-          render: (_: any, record: any) => (
-            <div style={{ marginRight: '20px' }}>
-              <Checkbox
-                checked={selectedActivities.includes(record.code)}
-                onChange={(e) => handleActivitySelection(record.code, e.target.checked)}
-                disabled={
-                  isDeletionInProgress &&
-                  deletingActivity !== record.code ||
-                  record.activityStatus == "completed" || record.activityStatus == "inProgress"
-                }
-              />
+      baseColumns.push({
+        key: "delete-activity",
+        align: "right",
+        className: step == 2 ? "active-column" : "",
+        onCell: () => ({ className: step == 2 ? "first-column-red" : "" }),
+        render: (_: any, record: any) => {
+          const disabled =
+            !isUpdateMode && !isReplanMode ||
+            record.activityStatus === "completed" ||
+            record.activityStatus === "inprogress";
+
+          return (
+            <div style={{ marginRight: "20px" }}>
+              <Tooltip title={disabled ? "" : "Delete this activity"}>
+                <Button
+                  type="link"
+                  icon={<DeleteOutlined />}
+                  danger
+                  disabled={disabled}
+                  onClick={() => confirmDeleteActivity(record.code)}
+                />
+              </Tooltip>
             </div>
-          ),
-        });
+          );
+        },
+      });
     }
 
     if (step >= 3) {
@@ -1712,31 +1708,36 @@ const TimeBuilder = () => {
         dataIndex: "actions",
         key: "actions",
         align: "center",
-        render: (_text: any, record: any) => (
-          <div style={{ display: "flex", justifyContent: "flex-end", width: "100%" }}>
-            <Button
-              type="primary"
-              danger
-              onClick={() => handleModuleSelection(record.parentModuleCode, false)}
-              icon={<DeleteOutlined />}
-              size="small"
-              style={{
-                padding: "6px 10px",
-                borderRadius: "4px",
-              }}
-              disabled={
-                isDeletionInProgress ||
-                record.activities.some((activity: any) =>
-                  ["completed", "inProgress"].includes(activity.activityStatus)
-                )
-              }
-            >
-              Delete
-            </Button>
-          </div>
-        ),
+        render: (_text: any, record: any) => {
+          const disabled =
+            !isUpdateMode && !isReplanMode ||
+            record.activities?.some((activity: any) =>
+              ["completed", "inprogress"].includes(
+                (activity.activityStatus || "").toLowerCase()
+              )
+            );
+
+          return (
+            <div style={{ display: "flex", justifyContent: "flex-end", width: "100%" }}>
+              <Tooltip title={disabled ? "Cannot delete this module" : "Delete entire module"}>
+                <Button
+                  type="primary"
+                  danger
+                  icon={<DeleteOutlined />}
+                  size="small"
+                  style={{ padding: "6px 10px", borderRadius: "4px" }}
+                  disabled={disabled}
+                  onClick={() => confirmDeleteModule(record.parentModuleCode)}
+                >
+                  Delete Entire Module
+                </Button>
+              </Tooltip>
+            </div>
+          );
+        },
       });
     }
+
 
     return columns;
   };
@@ -1814,136 +1815,136 @@ const TimeBuilder = () => {
     return true;
   };
 
-  const handleModuleSelection = (moduleCode: any, isChecked: any) => {
-    setSequencedModules((prevModules) => {
-      if (!isChecked) {
-        const index = prevModules.findIndex(
-          (module) => module.parentModuleCode == moduleCode
-        );
+  // const handleModuleSelection = (moduleCode: any, isChecked: any) => {
+  //   setSequencedModules((prevModules) => {
+  //     if (!isChecked) {
+  //       const index = prevModules.findIndex(
+  //         (module) => module.parentModuleCode == moduleCode
+  //       );
 
-        if (index == -1) return prevModules;
+  //       if (index == -1) return prevModules;
 
-        const removedModule = prevModules[index];
-        setDeletedModules((prevDeleted: any) => [
-          ...prevDeleted,
-          { ...removedModule, originalIndex: index },
-        ]);
+  //       const removedModule = prevModules[index];
+  //       setDeletedModules((prevDeleted: any) => [
+  //         ...prevDeleted,
+  //         { ...removedModule, originalIndex: index },
+  //       ]);
 
-        setIsDeletionInProgress(true);
+  //       setIsDeletionInProgress(true);
 
-        const key = `delete-${moduleCode}`;
-        let progress = 100;
-        let isUndoClicked = false;
+  //       const key = `delete-${moduleCode}`;
+  //       let progress = 100;
+  //       let isUndoClicked = false;
 
-        const updateProgress = () => {
-          if (isUndoClicked) {
-            setIsDeletionInProgress(false);
-            return;
-          }
-          progress -= 2;
-          if (progress <= 0) {
-            notification.destroy(key);
-            setIsDeletionInProgress(false);
-            return;
-          }
+  //       const updateProgress = () => {
+  //         if (isUndoClicked) {
+  //           setIsDeletionInProgress(false);
+  //           return;
+  //         }
+  //         progress -= 2;
+  //         if (progress <= 0) {
+  //           notification.destroy(key);
+  //           setIsDeletionInProgress(false);
+  //           return;
+  //         }
 
-          notification.open({
-            key,
-            message: null,
-            duration: 0,
-            closeIcon: null,
-            style: {
-              borderRadius: "12px",
-              padding: "12px 16px",
-              boxShadow: "0px 6px 18px rgba(0, 0, 0, 0.15)",
-              background: "#FFF8F0",
-              width: "100%",
-              display: "flex",
-              alignItems: "center",
-            },
-            btn: (
-              <>
-                <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <p style={{ margin: " 0px 8px 0 4px", fontSize: "13px", color: "#444", fontWeight: "500", width: "200px" }}>
-                    {removedModule.moduleName} has been deleted.
-                  </p>
+  //         notification.open({
+  //           key,
+  //           message: null,
+  //           duration: 0,
+  //           closeIcon: null,
+  //           style: {
+  //             borderRadius: "12px",
+  //             padding: "12px 16px",
+  //             boxShadow: "0px 6px 18px rgba(0, 0, 0, 0.15)",
+  //             background: "#FFF8F0",
+  //             width: "100%",
+  //             display: "flex",
+  //             alignItems: "center",
+  //           },
+  //           btn: (
+  //             <>
+  //               <div style={{ width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+  //                 <p style={{ margin: " 0px 8px 0 4px", fontSize: "13px", color: "#444", fontWeight: "500", width: "200px" }}>
+  //                   {removedModule.moduleName} has been deleted.
+  //                 </p>
 
-                  <div>
-                    <Button
-                      type="primary"
-                      size="small"
-                      style={{
-                        background: "#258790",
-                        border: "none",
-                        fontWeight: "bold",
-                        color: "#fff",
-                        padding: "6px 14px",
-                        borderRadius: "6px",
-                        minWidth: "60px",
-                      }}
-                      onClick={() => {
-                        isUndoClicked = true;
-                        restoreDeletedModule(moduleCode);
-                        notification.destroy(key);
-                        setIsDeletionInProgress(false);
-                        notification.success({
-                          message: "✅ Roleback Successful",
-                          description: `${removedModule.moduleName} has been restored successfully.`,
-                          placement: "topRight",
-                          duration: 0.1,
-                          style: { borderRadius: "10px", background: "#E6FFFB", color: "#006D75" },
-                        });
-                      }}
-                    >
-                      Undo
-                    </Button>
-                  </div>
-                </div>
-                <div className="progress-bar-item">
-                  <Progress
-                    percent={progress}
-                    showInfo={false}
-                    status="active"
-                    strokeColor={{ from: "#FF4D4F", to: "#FF9C6E" }}
-                    strokeWidth={6}
-                    style={{ flex: 1, borderRadius: "6px", margin: 0 }}
-                  />
-                </div>
-              </>
-            ),
-          });
+  //                 <div>
+  //                   <Button
+  //                     type="primary"
+  //                     size="small"
+  //                     style={{
+  //                       background: "#258790",
+  //                       border: "none",
+  //                       fontWeight: "bold",
+  //                       color: "#fff",
+  //                       padding: "6px 14px",
+  //                       borderRadius: "6px",
+  //                       minWidth: "60px",
+  //                     }}
+  //                     onClick={() => {
+  //                       isUndoClicked = true;
+  //                       restoreDeletedModule(moduleCode);
+  //                       notification.destroy(key);
+  //                       setIsDeletionInProgress(false);
+  //                       notification.success({
+  //                         message: "✅ Roleback Successful",
+  //                         description: `${removedModule.moduleName} has been restored successfully.`,
+  //                         placement: "topRight",
+  //                         duration: 0.1,
+  //                         style: { borderRadius: "10px", background: "#E6FFFB", color: "#006D75" },
+  //                       });
+  //                     }}
+  //                   >
+  //                     Undo
+  //                   </Button>
+  //                 </div>
+  //               </div>
+  //               <div className="progress-bar-item">
+  //                 <Progress
+  //                   percent={progress}
+  //                   showInfo={false}
+  //                   status="active"
+  //                   strokeColor={{ from: "#FF4D4F", to: "#FF9C6E" }}
+  //                   strokeWidth={6}
+  //                   style={{ flex: 1, borderRadius: "6px", margin: 0 }}
+  //                 />
+  //               </div>
+  //             </>
+  //           ),
+  //         });
 
-          setTimeout(updateProgress, 100);
-        };
+  //         setTimeout(updateProgress, 100);
+  //       };
 
-        setTimeout(updateProgress, 100);
+  //       setTimeout(updateProgress, 100);
 
-        return prevModules.filter((module) => module.parentModuleCode !== moduleCode);
-      }
-      return prevModules;
-    });
-  };
+  //       return prevModules.filter((module) => module.parentModuleCode !== moduleCode);
+  //     }
+  //     return prevModules;
+  //   });
+  // };
 
-  const restoreDeletedModule = (moduleCode: string) => {
-    setDeletedModules((prevDeleted: any) => {
-      const restoredModuleIndex = prevDeleted.findIndex(
-        (module: any) => module.parentModuleCode == moduleCode
-      );
+  // const restoreDeletedModule = (moduleCode: string) => {
+  //   setDeletedModules((prevDeleted: any) => {
+  //     const restoredModuleIndex = prevDeleted.findIndex(
+  //       (module: any) => module.parentModuleCode == moduleCode
+  //     );
 
-      if (restoredModuleIndex == -1) return prevDeleted;
+  //     if (restoredModuleIndex == -1) return prevDeleted;
 
-      const restoredModule = prevDeleted[restoredModuleIndex];
-      const { originalIndex } = restoredModule;
+  //     const restoredModule = prevDeleted[restoredModuleIndex];
+  //     const { originalIndex } = restoredModule;
 
-      setSequencedModules((prevModules) => {
-        const newModules = [...prevModules];
-        newModules.splice(originalIndex, 0, restoredModule);
-        return newModules;
-      });
+  //     setSequencedModules((prevModules) => {
+  //       const newModules = [...prevModules];
+  //       newModules.splice(originalIndex, 0, restoredModule);
+  //       return newModules;
+  //     });
 
-      return prevDeleted.filter((module: any) => module.parentModuleCode !== moduleCode);
-    });
-  };
+  //     return prevDeleted.filter((module: any) => module.parentModuleCode !== moduleCode);
+  //   });
+  // };
 
   const handleModalChange = (field: string, value: any) => {
     const updatedHoliday = { ...newHoliday, [field]: value };
@@ -2120,16 +2121,6 @@ const TimeBuilder = () => {
     },
   ];
 
-  // const handleStatusChange = (index: number, value: string) => {
-  //   setSelectedItems((prevItems: any) =>
-  //     prevItems.map((item: any, i: any) => {
-  //       if (i < index) return item;
-  //       if (i == index) return { ...item, status: value == "Yes" ? "Completed" : "Pending" };
-  //       return { ...item, status: "Pending" };
-  //     })
-  //   );
-  // };
-
   const handleStatusChange = (index: number, value: string) => {
     setSelectedItems((prevItems: any) => {
       const next = prevItems.map((item: any, i: any) => {
@@ -2149,7 +2140,6 @@ const TimeBuilder = () => {
     setActivitiesData(filtered.flatMap((m: any) => m.activities));
     setSelectedActivities(filtered.flatMap((m: any) => m.activities.map((a: any) => a.code)));
   };
-
 
   const handleGroupNameChange = async (newGroupName: string | undefined) => {
     try {
@@ -2227,6 +2217,308 @@ const TimeBuilder = () => {
     }
   };
 
+  const [deleteModuleModal, setDeleteModuleModal] = useState<{
+    visible: boolean;
+    module: any | null;
+  }>({ visible: false, module: null });
+
+  const [deleteActivityModal, setDeleteActivityModal] = useState<{
+    visible: boolean;
+    module: any | null;
+    activity: any | null;
+  }>({ visible: false, module: null, activity: null });
+
+  const confirmDeleteModule = (moduleCode: string) => {
+    const module = sequencedModules.find(
+      (m: any) => m.parentModuleCode === moduleCode
+    );
+    if (!module) return;
+
+    const hasCompletedActivities = module.activities?.some(
+      (a: any) =>
+        a.activityStatus === "completed" ||
+        a.activityStatus === "inprogress" ||
+        a.fin_status === "completed"
+    );
+
+    if (hasCompletedActivities) {
+      notify.warning(
+        "Cannot delete module with completed or in-progress activities."
+      );
+      return;
+    }
+
+    setDeleteModuleModal({ visible: true, module });
+  };
+
+  const confirmDeleteActivity = (activityCode: string) => {
+    const module = sequencedModules.find((m: any) =>
+      (m.activities || []).some((a: any) => a.code === activityCode)
+    );
+    const activity = module?.activities?.find(
+      (a: any) => a.code === activityCode
+    );
+
+    if (!module || !activity) return;
+
+    const isCompleted =
+      activity.activityStatus === "completed" ||
+      activity.activityStatus === "inprogress" ||
+      activity.fin_status === "completed";
+
+    if (isCompleted) {
+      notify.warning("Completed or in-progress activities cannot be deleted.");
+      return;
+    }
+
+    setDeleteActivityModal({
+      visible: true,
+      module,
+      activity,
+    });
+  };
+
+  const handleDeleteModuleOk = () => {
+    const module = deleteModuleModal.module;
+    if (!module) return;
+
+    const moduleCode = module.parentModuleCode;
+
+    setSequencedModules(prev =>
+      prev.filter((m: any) => m.parentModuleCode !== moduleCode)
+    );
+
+    setFinalData(prev =>
+      prev.filter((m: any) => m.parentModuleCode !== moduleCode)
+    );
+
+    setSelectedActivities(prev =>
+      prev.filter(
+        code => !module.activities?.some((a: any) => a.code === code)
+      )
+    );
+
+    notify.success("Module deleted successfully.");
+    setDeleteModuleModal({ visible: false, module: null });
+  };
+
+  const handleDeleteModuleCancel = () => {
+    setDeleteModuleModal({ visible: false, module: null });
+  };
+
+  const handleDeleteActivityOk = () => {
+    const { module, activity } = deleteActivityModal;
+    if (!module || !activity) return;
+
+    const activityCode = activity.code;
+    const parentModuleCode = module.parentModuleCode;
+
+    setSequencedModules(prev =>
+      prev
+        .map((m: any) =>
+          m.parentModuleCode === parentModuleCode
+            ? {
+              ...m,
+              activities: (m.activities || []).filter(
+                (a: any) => a.code !== activityCode
+              ),
+            }
+            : m
+        )
+        .filter((m: any) => (m.activities || []).length > 0)
+    );
+
+    setFinalData(prev =>
+      prev
+        .map((m: any) =>
+          m.parentModuleCode === parentModuleCode
+            ? {
+              ...m,
+              activities: (m.activities || []).filter(
+                (a: any) => a.code !== activityCode
+              ),
+            }
+            : m
+        )
+        .filter((m: any) => (m.activities || []).length > 0)
+    );
+
+    setSelectedActivities(prev =>
+      prev.filter(code => code !== activityCode)
+    );
+
+    notify.success("Activity deleted successfully.");
+    setDeleteActivityModal({ visible: false, module: null, activity: null });
+  };
+
+  const handleDeleteActivityCancel = () => {
+    setDeleteActivityModal({ visible: false, module: null, activity: null });
+  };
+
+  const openAddActivityModal = (moduleCode: string) => {
+    setActiveModuleId(moduleCode);
+
+    const module: any = sequencedModules.find(
+      (m: any) => m.parentModuleCode === moduleCode
+    );
+    const activities = module?.activities || [];
+
+    const lastActivity = activities[activities.length - 1];
+
+    addActivityForm.setFieldsValue({
+      activity_name: "",
+      prerequisite: lastActivity ? lastActivity.code : undefined,
+    });
+
+    setIsAddActivityModalOpen(true);
+  };
+
+  const getProjectTimeline = async (timelineId: any) => {
+    if (!timelineId) return [];
+
+    try {
+      const raw = await db.getProjectTimelineById(timelineId);
+
+      if (!raw) return [];
+
+      let timeline = Array.isArray(raw) ? raw : Array.isArray(raw.data) ? raw.data : [];
+
+      if (!Array.isArray(timeline)) {
+        handleLibraryChange([]);
+        return [];
+      }
+
+      handleLibraryChange(timeline);
+      return timeline;
+    } catch (err) {
+      console.error("Error fetching timeline:", err);
+      return [];
+    }
+  };
+
+  const handleSaveActivity = async () => {
+    try {
+      const values = await addActivityForm.validateFields();
+      const { activity_name, prerequisite } = values;
+
+      if (!activeModuleId || !selectedProjectId || !selectedProject) return;
+
+      const module = sequencedModules.find(
+        (m: any) => m.parentModuleCode === activeModuleId
+      );
+
+      if (!module) {
+        notify.error("Selected module not found.");
+        return;
+      }
+
+      const activities = module.activities || [];
+
+      let newCode: string;
+
+      if (activities.length === 0) {
+        newCode = `${activeModuleId}/10`;
+      } else {
+        const lastActivity = activities[activities.length - 1];
+        const lastCode = lastActivity.code || "";
+
+        const parts = lastCode.split("/");
+        const prefix = parts.slice(0, -1).join("/") || activeModuleId;
+        const lastNumRaw = parts[parts.length - 1];
+        const lastNum = parseInt(lastNumRaw, 10);
+
+        if (!isNaN(lastNum)) {
+          const nextNum = lastNum + 10;
+          newCode = `${prefix}/${nextNum}`;
+        } else {
+          newCode = `${activeModuleId}/10`;
+        }
+      }
+
+      const newActivity: Activity = {
+        code: newCode,
+        activityName: activity_name,
+        prerequisite: prerequisite || "",
+        slack: "0",
+        level: "",
+        duration: "1",
+        start: null,
+        end: null,
+        activityStatus: "",
+        guicode: uuidv4(),
+        holidays: [],
+      };
+
+      const updatedSequenced = sequencedModules.map((m: any) =>
+        m.parentModuleCode === activeModuleId
+          ? { ...m, activities: [...(m.activities || []), newActivity] }
+          : m
+      );
+
+      setSequencedModules(updatedSequenced);
+      setFinalData(updatedSequenced);
+      setModules(updatedSequenced);
+
+      setActivitiesData(
+        updatedSequenced.flatMap((m: any) => m.activities || [])
+      );
+
+      setSelectedActivities(
+        updatedSequenced.flatMap((m: any) =>
+          (m.activities || []).map((a: any) => a.code)
+        )
+      );
+
+      let updatedInitialStatus = selectedProject.initialStatus;
+
+      if (selectedProject.initialStatus?.items) {
+        const updatedItems = selectedProject.initialStatus.items.map((m: any) =>
+          m.parentModuleCode === activeModuleId
+            ? {
+              ...m,
+              activities: [...(m.activities || []), newActivity],
+            }
+            : m
+        );
+
+        updatedInitialStatus = {
+          ...selectedProject.initialStatus,
+          items: updatedItems,
+        };
+      }
+
+      const updatedProject = {
+        ...selectedProject,
+        initialStatus: updatedInitialStatus,
+        processedTimelineData: updatedSequenced,
+      };
+
+      setSelectedProject(updatedProject);
+
+      if (isUpdateMode && selectedTimelineId) {
+        await db.updateProjectTimeline(selectedTimelineId, updatedSequenced);
+      }
+
+      await db.updateProject(selectedProjectId, updatedProject);
+
+      navigate(".", {
+        replace: true,
+        state: {
+          ...(location.state || {}),
+          selectedProject: updatedProject,
+        },
+      });
+
+      notify.success("Activity added successfully");
+      setIsAddActivityModalOpen(false);
+      addActivityForm.resetFields();
+      setActiveModuleId(null);
+    } catch (err) {
+      console.error(err);
+      notify.error("Failed to add activity. Please try again.");
+    }
+  };
+
   return (
     <>
       <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -2234,7 +2526,7 @@ const TimeBuilder = () => {
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <div className="title-and-filter">
               <div className="heading">
-                <span>{isReplanMode?'Replan Timeline':isUpdateMode?'Edit Timeline':'Timeline Builder'}</span>
+                <span>{isReplanMode ? 'Replan Timeline' : isUpdateMode ? 'Edit Timeline' : 'Timeline Builder'}</span>
               </div>
               {(allProjects.length > 0 || selectedProject) && (
                 <div>
@@ -2490,19 +2782,35 @@ const TimeBuilder = () => {
                         );
                       }}
                       expandable={{
-                        expandedRowRender: (module) => (
-                          <Table
-                            columns={getColumnsForStep(currentStep)}
-                            dataSource={module.activities}
-                            pagination={false}
-                            showHeader={false}
-                            bordered
-                            sticky
-                            style={{ overflowX: "hidden" }}
-                          />
+                        expandedRowRender: (module: any) => (
+                          <div>
+                            {(isUpdateMode || isReplanMode) && (
+                              <div style={{ textAlign: "right", marginBottom: 8 }}>
+                                <Button
+                                  type="dashed"
+                                  size="small"
+                                  icon={<PlusOutlined />}
+                                  onClick={() => openAddActivityModal(module.parentModuleCode)}
+                                >
+                                  Add Activity
+                                </Button>
+                              </div>
+                            )}
+
+                            <Table
+                              columns={getColumnsForStep(currentStep)}
+                              dataSource={module.activities}
+                              pagination={false}
+                              showHeader={false}
+                              bordered
+                              sticky
+                              style={{ overflowX: "hidden" }}
+                            />
+                          </div>
                         ),
                         rowExpandable: (module) => module.activities.length > 0,
                       }}
+
                       scroll={{ y: `${window.innerHeight - 300}px`, x: "hidden" }}
                       style={{ overflowX: "hidden" }}
                       rowKey="parentModuleCode"
@@ -2761,6 +3069,88 @@ const TimeBuilder = () => {
           </Select>
         </div>
 
+      </Modal>
+
+      <Modal
+        title="Delete Entire Module"
+        visible={deleteModuleModal.visible}
+        onOk={handleDeleteModuleOk}
+        onCancel={handleDeleteModuleCancel}
+        okText="Delete"
+        cancelText="Cancel"
+        okButtonProps={{ danger: true }}
+        className="modal-container"
+        style={{ borderRadius: 8, padding: 20 }}
+        centered
+      >
+        <p style={{ padding: "10px" }}>
+          Are you sure you want to delete the entire module{" "}
+          <strong>{deleteModuleModal.module?.moduleName}</strong> and all its
+          activities?
+        </p>
+      </Modal>
+
+      <Modal
+        title="Delete Activity"
+        visible={deleteActivityModal.visible}
+        onOk={handleDeleteActivityOk}
+        onCancel={handleDeleteActivityCancel}
+        okText="Delete"
+        cancelText="Cancel"
+        okButtonProps={{ danger: true }}
+        className="modal-container"
+        centered
+      >
+        <p style={{ padding: "10px" }}>
+          Are you sure you want to delete activity "
+          {deleteActivityModal.activity?.activityName ||
+            deleteActivityModal.activity?.code}
+          " from module "
+          {deleteActivityModal.module?.moduleName}"?
+        </p>
+      </Modal>
+
+      <Modal
+        title="Add Activity"
+        open={isAddActivityModalOpen}
+        onOk={handleSaveActivity}
+        onCancel={() => {
+          setIsAddActivityModalOpen(false);
+          addActivityForm.resetFields();
+          setActiveModuleId(null);
+        }}
+        okText="Save"
+        cancelText="Cancel"
+        destroyOnClose
+      >
+        <Form form={addActivityForm} layout="vertical">
+          <Form.Item
+            label="Activity Name"
+            name="activity_name"
+            rules={[{ required: true, message: "Please enter activity name" }]}
+          >
+            <Input placeholder="Enter activity name" />
+          </Form.Item>
+
+          <Form.Item label="Prerequisite" name="prerequisite">
+            <Select
+              placeholder="Select prerequisite activity"
+              allowClear
+            >
+              {(() => {
+                const module = sequencedModules.find(
+                  (m: any) => m.parentModuleCode === activeModuleId
+                );
+                const activities = module?.activities || [];
+                return activities.map((act: any) => (
+                  <Select.Option key={act.code} value={act.code}>
+                    {act.code}
+                  </Select.Option>
+                ));
+              })()}
+            </Select>
+          </Form.Item>
+        </Form>
       </Modal>
 
       <ToastContainer />
