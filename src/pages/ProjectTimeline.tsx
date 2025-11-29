@@ -68,7 +68,7 @@ const ProjectTimeline = (project: any) => {
     const [allVersions, setAllVersions] = useState<any>();
     const [statusFilter, _setStatusFilter] = useState(null);
     const [plannedDate, _setPlannedDate] = useState(null);
-    const [assignedUsers, setAssignedUsers] = useState([]);
+    const [searchTerm, setSearchTerm] = useState("");
     const [selectedActivityKey, setSelectedActivityKey] = useState<string | null>(null);
     const [noteModalVisible, setNoteModalVisible] = useState(false);
     const [_noteInput, setNoteInput] = useState('');
@@ -81,7 +81,7 @@ const ProjectTimeline = (project: any) => {
     const [detailsActiveTab, setDetailsActiveTab] = useState<string>('notes');
     const [activityCost, setActivityCost] = useState<ActivityCost | null>(null);
     const [costLoading, setCostLoading] = useState(false);
-
+    const [assignedUsers, setAssignedUsers] = useState<string[]>([]);
 
     const showModal = () => {
         setIsModalOpen(true);
@@ -609,51 +609,119 @@ const ProjectTimeline = (project: any) => {
         onClick: () => setActiveTab(index),
     }));
 
-    const filterActivitiesWithinModules = (modules: any, activeTab: any) => {
-        const today = dayjs();
+    const filterActivitiesWithinModules = (
+        modules: any[],
+        activeTab: number,
+        statusFilter: string | null,
+        plannedDate: any,
+        assignedUsers: string[],
+        searchTerm: string
+    ) => {
+        const today = dayjs().startOf('day');
         const oneMonthLater = today.add(1, 'month');
         const oneWeekLater = today.add(7, 'day');
 
-        return modules.map((module: any) => {
-            const filteredChildren = (module.children || []).filter((a: any) => {
-                switch (activeTab) {
-                    case 0:
-                        return true;
+        const matchesSearch = (activity: any): boolean => {
+            if (!searchTerm.trim()) return true;
 
-                    case 1:
-                        return a.activityStatus === 'inProgress';
+            const s = searchTerm.toLowerCase();
 
-                    case 2:
-                        if (!a.plannedStart) return false;
-                        const plannedStart = dayjs(a.plannedStart, "DD-MM-YYYY");
-                        return plannedStart.isAfter(today) && plannedStart.isBefore(oneMonthLater);
+            return (
+                activity.keyActivity?.toLowerCase().includes(s) ||
+                activity.Code?.toLowerCase().includes(s) ||
+                activity.preRequisite?.toLowerCase().includes(s) ||
+                activity.SrNo?.toLowerCase().includes(s)
+            );
+        };
 
-                    case 3:
-                        if (!a.actualFinish) return false;
-                        const actualFinish = dayjs(a.actualFinish);
-                        return actualFinish.isAfter(today.subtract(30, 'days')) && actualFinish.isBefore(today);
+        const matchesAssignedUsers = (activity: any): boolean => {
+            if (!assignedUsers || assignedUsers.length === 0) return true;
+            const raci = activity.raci || {};
 
-                    case 4:
-                        return a.activityStatus === 'yetToStart';
+            const ids: string[] = [];
+            if (raci.responsible) ids.push(raci.responsible);
+            if (raci.accountable) ids.push(raci.accountable);
+            if (Array.isArray(raci.consulted)) ids.push(...raci.consulted);
+            if (Array.isArray(raci.informed)) ids.push(...raci.informed);
 
-                    case 5:
-                        if (!a.plannedStart) return false;
-                        const ps = dayjs(a.plannedStart, "DD-MM-YYYY");
-                        return ps.isAfter(today) && ps.isBefore(oneWeekLater);
+            return ids.some((id) => assignedUsers.includes(id));
+        };
 
-                    default:
-                        return true;
-                }
-            });
+        return modules
+            .map((module: any) => {
+                const filteredChildren = (module.children || []).filter((a: any) => {
+                    const status = a.activityStatus;
 
-            return {
-                ...module,
-                children: filteredChildren,
-            };
-        });
+                    let matchesTab = true;
+
+                    switch (activeTab) {
+                        case 0: matchesTab = true; break;
+                        case 1: matchesTab = status === 'inProgress'; break;
+                        case 2: matchesTab = status === 'completed'; break;
+                        case 3: {
+                            if (!a.plannedStart) return false;
+                            const ps = dayjs(a.plannedStart, "DD-MM-YYYY");
+                            matchesTab =
+                                ps.isAfter(today) &&
+                                ps.isBefore(oneMonthLater);
+                            break;
+                        }
+                        case 4: {
+                            if (!a.actualFinish || status !== 'completed') return false;
+                            const af = dayjs(a.actualFinish, "DD-MM-YYYY");
+                            matchesTab =
+                                af.isAfter(today.subtract(30, 'days')) &&
+                                af.isBefore(today.add(1, 'day'));
+                            break;
+                        }
+                        case 5: matchesTab = status === 'yetToStart'; break;
+                        case 6: {
+                            if (!a.plannedStart || status !== 'yetToStart') return false;
+                            const ps = dayjs(a.plannedStart, "DD-MM-YYYY");
+                            matchesTab =
+                                ps.isAfter(today.subtract(1, 'day')) &&
+                                ps.isBefore(oneWeekLater);
+                            break;
+                        }
+                    }
+
+                    const matchesStatus = !statusFilter || status === statusFilter;
+                    const matchesPlanned =
+                        !plannedDate ||
+                        (a.plannedStart &&
+                            dayjs(a.plannedStart, "DD-MM-YYYY").isSame(plannedDate, "day"));
+
+                    const matchesUser = matchesAssignedUsers(a);
+                    const matchesSearchText = matchesSearch(a);
+
+                    return (
+                        matchesTab &&
+                        matchesStatus &&
+                        matchesPlanned &&
+                        matchesUser &&
+                        matchesSearchText
+                    );
+                });
+
+                return {
+                    ...module,
+                    children: filteredChildren,
+                };
+            })
+            .filter((m) => m.children && m.children.length > 0);
     };
 
-    const filteredDataSource = filterActivitiesWithinModules(dataSource, activeTab);
+
+    const filteredDataSource = filterActivitiesWithinModules(
+        dataSource,
+        activeTab,
+        statusFilter,
+        plannedDate,
+        assignedUsers,
+        searchTerm
+    );
+
+
     const { Option } = Select;
 
     const [userOptions, setUserOptions] = useState([
@@ -692,7 +760,14 @@ const ProjectTimeline = (project: any) => {
 
     const dropdownContent = (
         <div className="custom-dropdown">
-            <Input.Search placeholder="Search activity..." className="dropdown-search" />
+            <Input.Search
+                placeholder="Search activity..."
+                className="dropdown-search"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                allowClear
+            />
+
             <p>Quick Filters</p>
             <div className="main-filter-containers">
                 <Dropdown menu={{ items }} trigger={['click']}>
@@ -728,15 +803,21 @@ const ProjectTimeline = (project: any) => {
             <div className="dropdown-section">
                 <p className="dropdown-title">Assigned Users</p>
                 <Select
+                    mode="multiple"
                     showSearch
                     placeholder="Search and select users"
                     value={assignedUsers}
-                    onSearch={fetchUserList}
-                    onChange={setAssignedUsers}
-                    filterOption={false}
+                    onChange={(values) => setAssignedUsers(values as string[])}
                     style={{ width: '100%' }}
-                    notFoundContent={fetchingUsers ? <Spin size="small" /> : null}
-                    options={userOptions}
+                    filterOption={(input, option) =>
+                        (option?.label as string)
+                            .toLowerCase()
+                            .includes(input.toLowerCase())
+                    }
+                    options={usersOptions.map((u) => ({
+                        label: u.name,
+                        value: u.id,
+                    }))}
                 />
             </div>
 

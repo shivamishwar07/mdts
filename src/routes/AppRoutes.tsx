@@ -35,6 +35,7 @@ import ProjectList from "../pages/ProjectList";
 import KnowledgeCenter from "../Components/KnowledgeCenter";
 import ActivityBudget from "../pages/ActivityBudget";
 import ActivityCost from "../pages/ActivityCost";
+import CommercialActivityPlanner from "../pages/ComercialActivityPlanner";
 
 const AppRoutes = () => {
     const isAuthenticated = !!localStorage.getItem("user");
@@ -288,6 +289,15 @@ const AppRoutes = () => {
                         element={
                             <ProtectedRoute action="ADD_COST_IN_ACTIVITY">
                                 <ActivityCost />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/create/commercialActivityplanner"
+                        element={
+                            <ProtectedRoute action="ADD_COST_IN_ACTIVITY">
+                                <CommercialActivityPlanner />
                             </ProtectedRoute>
                         }
                     />
