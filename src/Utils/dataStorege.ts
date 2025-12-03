@@ -89,6 +89,19 @@ export interface CommercialActivity {
   updatedAt?: string;
 }
 
+export interface ActivityBudgetDocument {
+  id?: number;
+  projectId: string;
+  activityCode: string;
+  activityName?: string;
+  moduleName?: string;
+  name: string;
+  filePath: string;
+  uploadedAt: string;
+  uploadedBy?: string;
+}
+
+
 export class DataStorage extends Dexie {
   mineTypes!: Table<MineType, number>;
   modules!: Table<any, number>;
@@ -104,6 +117,7 @@ export class DataStorage extends Dexie {
   activityBudgets!: Table<ActivityBudget, number>;
   activityCosts!: Table<ActivityCost, number>;
   commercialActivities!: Table<CommercialActivity, number>;
+  activityBudgetDocs!: Table<ActivityBudgetDocument, number>;
   constructor() {
     super("MTDS");
     this.version(1).stores({
@@ -145,6 +159,10 @@ export class DataStorage extends Dexie {
       commercialActivities: "++id, projectId, activityCode",
     });
 
+    this.version(6).stores({
+      activityBudgetDocs: "++id, projectId, activityCode",
+    });
+
     this.mineTypes = this.table("mineTypes");
     this.modules = this.table("modules");
     this.moduleLibrary = this.table("moduleLibrary");
@@ -159,6 +177,7 @@ export class DataStorage extends Dexie {
     this.activityBudgets = this.table("activityBudgets");
     this.activityCosts = this.table("activityCosts");
     this.commercialActivities = this.table("commercialActivities");
+    this.activityBudgetDocs = this.table("activityBudgetDocs");
   }
 
   async addModule(module: any): Promise<number> {
@@ -672,6 +691,38 @@ export class DataStorage extends Dexie {
       await this.commercialActivities.delete(existing.id);
     }
   }
+
+  async addActivityBudgetDoc(
+    data: Omit<ActivityBudgetDocument, "id">
+  ): Promise<number> {
+    const payload: ActivityBudgetDocument = {
+      ...data,
+      projectId: String(data.projectId),
+      activityCode: String(data.activityCode),
+    };
+    return this.activityBudgetDocs.add(payload);
+  }
+
+  async getActivityBudgetDocs(
+    projectId: string,
+    activityCode: string
+  ): Promise<ActivityBudgetDocument[]> {
+    return this.activityBudgetDocs
+      .where({
+        projectId: String(projectId),
+        activityCode: String(activityCode),
+      })
+      .toArray();
+  }
+
+  async deleteActivityBudgetDoc(id: number): Promise<void> {
+    await this.activityBudgetDocs.delete(id);
+  }
+
+  async deleteDiskEntry(path: string): Promise<void> {
+    await this.diskStorage.where("path").equals(path).delete();
+  }
+
 
 }
 

@@ -1,19 +1,25 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
     Table,
     Select,
     Typography,
     Space,
     InputNumber,
-    message,
+    Button,
 } from "antd";
 import dayjs from "dayjs";
 import { db } from "../Utils/dataStorege";
 import "../styles/activitybudget.css";
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify";
 
 const { Text } = Typography;
 const { Option } = Select;
-
+interface TimelineInfo {
+    status: string;
+    version: string;
+    updatedAt: string;
+}
 interface CommercialActivityRow {
     key: string;
     projectId: string;
@@ -33,6 +39,9 @@ interface CommercialActivityRow {
     commercialUndertaken: boolean;
     leadTimeDays: number | null;
     orderProcessingStatus: string;
+
+    isModule?: boolean;
+    children?: CommercialActivityRow[];
 }
 
 const ORDER_STATUS_OPTIONS = [
@@ -48,6 +57,8 @@ const CommercialActivityPlanner: React.FC = () => {
     const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
     const [rows, setRows] = useState<CommercialActivityRow[]>([]);
     const [loading, setLoading] = useState(false);
+    const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
+    const [timelineInfo, setTimelineInfo] = useState<TimelineInfo | null>(null);
 
     useEffect(() => {
         (async () => {
@@ -78,6 +89,14 @@ const CommercialActivityPlanner: React.FC = () => {
         if (Array.isArray(proj.projectTimeline) && proj.projectTimeline.length > 0) {
             const latest = proj.projectTimeline[proj.projectTimeline.length - 1];
             timelineId = latest.timelineId || latest.versionId || latest.id;
+
+            setTimelineInfo({
+                status: latest.status ?? "",
+                version: latest.version ?? "",
+                updatedAt: latest.updatedAt ?? latest.createdAt ?? "",
+            });
+        } else {
+            setTimelineInfo(null);
         }
 
         if (!timelineId) {
@@ -185,7 +204,6 @@ const CommercialActivityPlanner: React.FC = () => {
             leadTimeDays: row.leadTimeDays,
             orderProcessingStatus: row.orderProcessingStatus,
         });
-        message.success("Commercial activity details saved");
     };
 
     const handleCommercialUndertakenChange = (
@@ -226,137 +244,269 @@ const CommercialActivityPlanner: React.FC = () => {
         void persistRow(updated);
     };
 
+    const numericParser = (value: string | undefined): number => {
+        const cleaned = (value || "").replace(/[^\d]/g, "");
+        return cleaned ? Number(cleaned) : NaN;
+    };
+
+    const tableData: CommercialActivityRow[] = useMemo(() => {
+        const groups = new Map<
+            string,
+            { moduleName: string | undefined; moduleCode: string | undefined; rows: CommercialActivityRow[] }
+        >();
+
+        rows.forEach((r) => {
+            const key = `${r.moduleCode || ""}::${r.moduleName || ""}`;
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    moduleName: r.moduleName,
+                    moduleCode: r.moduleCode,
+                    rows: [],
+                });
+            }
+            groups.get(key)!.rows.push(r);
+        });
+
+        const parents: CommercialActivityRow[] = [];
+        let idx = 0;
+        groups.forEach((group, key) => {
+            parents.push({
+                key: `module-${idx}-${key}`,
+                projectId: selectedProjectId || "",
+                moduleCode: group.moduleCode,
+                moduleName: group.moduleName,
+                activityCode: "",
+                activityName: "",
+                plannedStart: null,
+                plannedFinish: null,
+                actualStart: null,
+                actualFinish: null,
+                commercialUndertaken: false,
+                leadTimeDays: null,
+                orderProcessingStatus: "",
+                isModule: true,
+                children: group.rows,
+            });
+            idx++;
+        });
+
+        return parents;
+    }, [rows, selectedProjectId]);
+
+    useEffect(() => {
+        setExpandedKeys(tableData.map((p) => p.key));
+    }, [tableData]);
+
+    const handleSaveAll = async () => {
+        for (const row of rows) {
+            await persistRow(row);
+        }
+        notify.success("Commercial activity details saved");
+    };
+
     const columns = [
         {
             title: "Module",
             dataIndex: "moduleName",
             key: "moduleName",
             width: "15%",
+            render: (_: any, row: CommercialActivityRow) =>
+                row.isModule ? <b>{row.moduleName}</b> : row.moduleName,
         },
         {
             title: "Activity",
             dataIndex: "activityName",
             key: "activityName",
             width: "20%",
+            render: (val: string, row: CommercialActivityRow) =>
+                row.isModule ? "" : val,
         },
         {
             title: "Planned Start",
             dataIndex: "plannedStart",
             key: "plannedStart",
             width: "10%",
-            render: (val: string | null | undefined) =>
-                val ? dayjs(val).format("DD-MM-YYYY") : "-",
+            render: (val: string | null | undefined, row: CommercialActivityRow) =>
+                row.isModule ? "" : val ? dayjs(val).format("DD-MM-YYYY") : "-",
         },
         {
             title: "Planned Finish",
             dataIndex: "plannedFinish",
             key: "plannedFinish",
             width: "10%",
-            render: (val: string | null | undefined) =>
-                val ? dayjs(val).format("DD-MM-YYYY") : "-",
+            render: (val: string | null | undefined, row: CommercialActivityRow) =>
+                row.isModule ? "" : val ? dayjs(val).format("DD-MM-YYYY") : "-",
         },
         {
             title: "Actual Start",
             dataIndex: "actualStart",
             key: "actualStart",
             width: "10%",
-            render: (val: string | null | undefined) =>
-                val ? dayjs(val).format("DD-MM-YYYY") : "-",
+            render: (val: string | null | undefined, row: CommercialActivityRow) =>
+                row.isModule ? "" : val ? dayjs(val).format("DD-MM-YYYY") : "-",
         },
         {
             title: "Actual Finish",
             dataIndex: "actualFinish",
             key: "actualFinish",
             width: "10%",
-            render: (val: string | null | undefined) =>
-                val ? dayjs(val).format("DD-MM-YYYY") : "-",
+            render: (val: string | null | undefined, row: CommercialActivityRow) =>
+                row.isModule ? "" : val ? dayjs(val).format("DD-MM-YYYY") : "-",
         },
         {
             title: "Commercial Activity Undertaken",
             key: "commercialUndertaken",
             width: "12%",
-            render: (_: any, row: CommercialActivityRow) => (
-                <Select
-                    value={row.commercialUndertaken ? "Yes" : "No"}
-                    style={{ width: "100%" }}
-                    onChange={(val: "Yes" | "No") =>
-                        handleCommercialUndertakenChange(row, val)
-                    }
-                >
-                    <Option value="Yes">Yes</Option>
-                    <Option value="No">No</Option>
-                </Select>
-            ),
+            render: (_: any, row: CommercialActivityRow) =>
+                row.isModule ? null : (
+                    <Select
+                        value={row.commercialUndertaken ? "Yes" : "No"}
+                        style={{ width: "100%" }}
+                        onChange={(val: "Yes" | "No") =>
+                            handleCommercialUndertakenChange(row, val)
+                        }
+                    >
+                        <Option value="Yes">Yes</Option>
+                        <Option value="No">No</Option>
+                    </Select>
+                ),
         },
         {
             title: "Lead Time (Days)",
             key: "leadTime",
             width: "10%",
-            render: (_: any, row: CommercialActivityRow) => (
-                <InputNumber
-                    style={{ width: "100%" }}
-                    min={0}
-                    precision={0}
-                    disabled={!row.commercialUndertaken}
-                    value={row.leadTimeDays ?? undefined}
-                    onChange={(val) => handleLeadTimeChange(row, val as number | null)}
-                />
-            ),
+            render: (_: any, row: CommercialActivityRow) =>
+                row.isModule ? null : (
+                    <InputNumber
+                        style={{ width: "100%" }}
+                        min={0}
+                        precision={0}
+                        parser={numericParser}
+                        disabled={!row.commercialUndertaken}
+                        value={row.leadTimeDays ?? undefined}
+                        onChange={(val) =>
+                            handleLeadTimeChange(row, val as number | null)
+                        }
+                    />
+                ),
         },
         {
             title: "Order Processing Status",
             key: "orderProcessingStatus",
             width: "15%",
-            render: (_: any, row: CommercialActivityRow) => (
-                <Select
-                    style={{ width: "100%" }}
-                    disabled={!row.commercialUndertaken}
-                    value={row.orderProcessingStatus || "Yet to Start"}
-                    onChange={(val: string) => handleOrderStatusChange(row, val)}
-                >
-                    {ORDER_STATUS_OPTIONS.map((s) => (
-                        <Option key={s} value={s}>
-                            {s}
-                        </Option>
-                    ))}
-                </Select>
-            ),
+            render: (_: any, row: CommercialActivityRow) =>
+                row.isModule ? null : (
+                    <Select
+                        style={{ width: "100%" }}
+                        disabled={!row.commercialUndertaken}
+                        value={row.orderProcessingStatus || "Yet to Start"}
+                        onChange={(val: string) => handleOrderStatusChange(row, val)}
+                    >
+                        {ORDER_STATUS_OPTIONS.map((s) => (
+                            <Option key={s} value={s}>
+                                {s}
+                            </Option>
+                        ))}
+                    </Select>
+                ),
         },
     ];
 
     return (
         <div className="budget-main-container">
-            <div className="budget-heading ">
+            <div className="budget-heading">
                 <Text className="budget-title">Commercial Activity Planner</Text>
-                <Space>
-                    <Text>Select Project:</Text>
-                    <Select
-                        style={{ minWidth: 260 }}
-                        value={selectedProjectId ?? undefined}
-                        onChange={handleProjectChange}
-                        showSearch
-                        optionFilterProp="children"
-                    >
-                        {projects.map((p) => (
-                            <Option key={p.id} value={String(p.id)}>
-                                {p.projectParameters?.projectName ||
-                                    p.name ||
-                                    `Project ${p.id}`}
-                            </Option>
-                        ))}
-                    </Select>
-                </Space>
+
+                <div className="budget-meta-row">
+                    <Space size={20} align="center">
+                        <Space>
+                            <Text className="meta-label">Project:</Text>
+                            <Select
+                                style={{ minWidth: 260 }}
+                                value={selectedProjectId ?? undefined}
+                                onChange={handleProjectChange}
+                                showSearch
+                                optionFilterProp="children"
+                            >
+                                {projects.map((p) => (
+                                    <Option key={p.id} value={String(p.id)}>
+                                        {p.projectParameters?.projectName ||
+                                            p.name ||
+                                            `Project ${p.id}`}
+                                    </Option>
+                                ))}
+                            </Select>
+                        </Space>
+
+                        {timelineInfo && (
+                            <Space>
+                                <Text className="meta-label">Version:</Text>
+                                <Text className="meta-value">{timelineInfo.version}</Text>
+                            </Space>
+                        )}
+
+                        {timelineInfo && (
+                            <Space>
+                                <Text className="meta-label">Status:</Text>
+                                <Text className="meta-value">{timelineInfo.status}</Text>
+                            </Space>
+                        )}
+
+                        {timelineInfo && (
+                            <Space>
+                                <Text className="meta-label">Updated:</Text>
+                                <Text className="meta-value">
+                                    {timelineInfo.updatedAt
+                                        ? dayjs(timelineInfo.updatedAt).format("DD-MM-YYYY HH:mm")
+                                        : "-"}
+                                </Text>
+                            </Space>
+                        )}
+                    </Space>
+                </div>
             </div>
 
             <Table
                 columns={columns}
-                dataSource={rows}
+                dataSource={tableData}
                 rowKey="key"
                 pagination={false}
                 bordered
                 loading={loading}
                 size="small"
+                expandable={{
+                    expandedRowKeys: expandedKeys,
+                    onExpand: (expanded, record: any) => {
+                        if (expanded) {
+                            setExpandedKeys((prev) => [...prev, record.key]);
+                        } else {
+                            setExpandedKeys((prev) =>
+                                prev.filter((k) => k !== record.key)
+                            );
+                        }
+                    },
+                    rowExpandable: (record: any) =>
+                        Array.isArray(record.children) && record.children.length > 0,
+                    expandIconColumnIndex: 0,
+                }}
+                rowClassName={(record: any) =>
+                    record.isModule ? "module-header-row" : "activity-row"
+                }
+                scroll={{ x: true, y: "calc(100vh - 260px)" }}
             />
+
+            <div
+                style={{
+                    position: "absolute",
+                    bottom: "25px",
+                    right: "10px"
+                }}
+            >
+                <Button type="primary" className="save-button" onClick={handleSaveAll}>
+                    Save
+                </Button>
+            </div>
+            <ToastContainer />
         </div>
     );
 };

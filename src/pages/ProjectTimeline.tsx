@@ -12,7 +12,6 @@ import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
 import { Spin } from 'antd';
-import debounce from 'lodash/debounce';
 import { Tabs } from 'antd';
 const { TabPane } = Tabs;
 import type { ActivityBudget, ActivityCost } from "../Utils/dataStorege";
@@ -82,6 +81,8 @@ const ProjectTimeline = (project: any) => {
     const [activityCost, setActivityCost] = useState<ActivityCost | null>(null);
     const [costLoading, setCostLoading] = useState(false);
     const [assignedUsers, setAssignedUsers] = useState<string[]>([]);
+    const [usersOptions, setUsersOptions] = useState<any[]>([]);
+
 
     const showModal = () => {
         setIsModalOpen(true);
@@ -104,6 +105,23 @@ const ProjectTimeline = (project: any) => {
         if (currentUser && currentUser.orgId) {
             defaultSetup();
         }
+    }, [currentUser]);
+
+    useEffect(() => {
+        if (!currentUser?.orgId) return;
+
+        (async () => {
+            try {
+                const allUsers = await db.getUsers();
+                const orgUsers = (allUsers || []).filter(
+                    (usr: any) => usr.orgId === currentUser.orgId
+                );
+                setUsersOptions(orgUsers);
+            } catch (err) {
+                console.error("Error fetching users:", err);
+                setUsersOptions([]);
+            }
+        })();
     }, [currentUser]);
 
     const getProjectTimeline = async (project: any) => {
@@ -711,7 +729,6 @@ const ProjectTimeline = (project: any) => {
             .filter((m) => m.children && m.children.length > 0);
     };
 
-
     const filteredDataSource = filterActivitiesWithinModules(
         dataSource,
         activeTab,
@@ -721,42 +738,7 @@ const ProjectTimeline = (project: any) => {
         searchTerm
     );
 
-
     const { Option } = Select;
-
-    const [userOptions, setUserOptions] = useState([
-        { label: 'John Doe', value: 'user1' },
-        { label: 'Jane Smith', value: 'user2' },
-        { label: 'Alice Johnson', value: 'user3' },
-        { label: 'Bob Williams', value: 'user4' },
-        { label: 'Eve Adams', value: 'user5' },
-    ]);
-
-    const usersOptions = [
-        { id: '6fa84f42-81e4-49fd-b9fc-1cbced2f1d90', name: 'Amit Sharma' },
-        { id: '2de753d4-1be2-4230-a1ee-ec828ef10f6a', name: 'Priya Verma' },
-        { id: '12fcb989-f9ae-4904-bdcf-9c9d8b63e8cd', name: 'Rahul Mehta' },
-        { id: '9d8f16ee-e21c-4c58-9000-dc3d51f25f2e', name: 'Sneha Reddy' },
-        { id: 'c5c07f70-dbb6-4b02-9cf2-8f9e2d6b3c5f', name: 'Vikram Iyer' },
-        { id: 'a95f34d0-3cf9-4c58-9a70-dcc68a0c32a4', name: 'Neha Kapoor' },
-        { id: 'b4ac3f1b-0591-4435-aabb-b7a7fc5c3456', name: 'Ankit Jaiswal' },
-        { id: 'e7a54111-0a0c-4f91-849c-6816f74e7b12', name: 'Divya Narayan' },
-        { id: '15b7ecdc-65a6-4652-9441-6ce4eacc6dfc', name: 'Rohit Das' },
-        { id: 'f8db6b6b-2db1-4a9e-bdc0-bf2c4015f6a7', name: 'Meera Joshi' }
-    ];
-    const [fetchingUsers, setFetchingUsers] = useState(false);
-
-    const fetchUserList = debounce((search: string) => {
-        setFetchingUsers(true);
-        setTimeout(() => {
-            const newUsers = [
-                { label: `User ${search} A`, value: `${search}-a` },
-                { label: `User ${search} B`, value: `${search}-b` },
-            ];
-            setUserOptions(prev => [...prev, ...newUsers]);
-            setFetchingUsers(false);
-        }, 1000);
-    }, 800);
 
     const dropdownContent = (
         <div className="custom-dropdown">
@@ -851,37 +833,6 @@ const ProjectTimeline = (project: any) => {
         return Object.fromEntries(usersOptions.map((user: any) => [user.id, user.name]));
     }, [usersOptions]);
 
-    // const openActivityModal = async (record: any, e?: any) => {
-    //     if (e) {
-    //         e.stopPropagation();
-    //     }
-
-    //     setDetailsActiveTab('notes');
-    //     setSelectedActivityKey(record.key);
-    //     setSelectedActivity(record);
-    //     setNoteModalVisible(true);
-    //     setNoteInput('');
-    //     setEditNoteId(null);
-    //     setActivityBudget(null);
-
-    //     if (!selectedProjectId || !record.Code) {
-    //         return;
-    //     }
-
-    //     try {
-    //         setBudgetLoading(true);
-    //         const budget = await db.getActivityBudget(
-    //             String(selectedProjectId),
-    //             String(record.Code)
-    //         );
-    //         setActivityBudget(budget);
-    //     } catch (err) {
-    //         console.error("Failed to load activity budget", err);
-    //         setActivityBudget(null);
-    //     } finally {
-    //         setBudgetLoading(false);
-    //     }
-    // };
 
     const openActivityModal = async (record: any, e?: any) => {
         if (e) {
@@ -1190,7 +1141,7 @@ const ProjectTimeline = (project: any) => {
                                         : "—"}
                                 </div>
                                 {activityCost.updatedAt && (
-                                    <div style={{ marginTop: 8, fontSize: 12, color: "#888" }}>
+                                    <div style={{ marginTop: 8, fontSize: 12, color: "#888", float:"right" }}>
                                         Last updated: {dayjs(activityCost.updatedAt).format("DD MMM YYYY HH:mm")}
                                     </div>
                                 )}

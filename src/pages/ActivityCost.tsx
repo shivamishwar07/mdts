@@ -1,11 +1,20 @@
-import React, { useEffect, useState } from "react";
-import { Collapse, Table, Select, InputNumber, Typography, Space, message } from "antd";
+import React, { useEffect, useMemo, useState } from "react";
+import {
+  Table,
+  Select,
+  InputNumber,
+  Typography,
+  Space,
+  Spin,
+  Button,
+} from "antd";
 import dayjs from "dayjs";
 import { db } from "../Utils/dataStorege";
 import type { ActivityCost } from "../Utils/dataStorege";
 import "../styles/activitycost.css";
+import { ToastContainer } from "react-toastify";
+import { notify } from "../Utils/ToastNotify";
 
-const { Panel } = Collapse;
 const { Option } = Select;
 const { Text } = Typography;
 
@@ -21,6 +30,11 @@ interface ActivityRow {
 
   projectCost?: number | null;
   opportunityCost?: number | null;
+
+  // layout flags
+  moduleName?: string;
+  isModule?: boolean;
+  children?: ActivityRow[];
 }
 
 interface ModulePanel {
@@ -31,10 +45,13 @@ interface ModulePanel {
 
 const ActivityCost: React.FC = () => {
   const [projects, setProjects] = useState<any[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+    null
+  );
   const [modulesPanels, setModulesPanels] = useState<ModulePanel[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeKeys, setActiveKeys] = useState<string[]>([]);
+  const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
+  const [savingAll, setSavingAll] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -48,8 +65,9 @@ const ActivityCost: React.FC = () => {
     })();
   }, []);
 
+  // keep all modules expanded (like ProjectTimeline)
   useEffect(() => {
-    setActiveKeys(modulesPanels.map((p) => p.moduleKey));
+    setExpandedKeys(modulesPanels.map((p) => p.moduleKey));
   }, [modulesPanels]);
 
   const loadModulesForProject = async (projectId: string) => {
@@ -73,7 +91,10 @@ const ActivityCost: React.FC = () => {
     setLoading(false);
   };
 
-  const buildPanelsFromModules = async (projectId: string, modules: any[]) => {
+  const buildPanelsFromModules = async (
+    projectId: string,
+    modules: any[]
+  ) => {
     const costs = await db.getActivityCostsForProject(projectId);
     const map = new Map<string, ActivityCost>();
     costs.forEach((c) => map.set(String(c.activityCode), c));
@@ -81,27 +102,37 @@ const ActivityCost: React.FC = () => {
     const panels: ModulePanel[] = [];
 
     modules.forEach((module: any, moduleIndex: number) => {
-      const moduleName = module.moduleName || module.keyActivity || `Module ${moduleIndex + 1}`;
+      const moduleName =
+        module.moduleName || module.keyActivity || `Module ${moduleIndex + 1}`;
       const parentCode = module.parentModuleCode || module.Code || "";
 
-      const rows: ActivityRow[] = (module.activities || []).map((activity: any, actIndex: number) => {
-        const code = activity.code || activity.guicode || `act-${moduleIndex}-${actIndex}`;
-        const actName = activity.activityName || activity.keyActivity || "";
-        const c = map.get(String(code));
+      const rows: ActivityRow[] = (module.activities || []).map(
+        (activity: any, actIndex: number) => {
+          const code =
+            activity.code || activity.guicode || `act-${moduleIndex}-${actIndex}`;
+          const actName = activity.activityName || activity.keyActivity || "";
+          const c = map.get(String(code));
 
-        return {
-          key: `activity-${moduleIndex}-${actIndex}`,
-          SrNo: parentCode || "",
-          Code: activity.code || "",
-          keyActivity: actName,
-          plannedStart: activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
-          plannedFinish: activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
-          activityCode: code,
-          activityName: actName,
-          projectCost: c?.projectCost ?? null,
-          opportunityCost: c?.opportunityCost ?? null,
-        };
-      });
+          return {
+            key: `activity-${moduleIndex}-${actIndex}`,
+            SrNo: parentCode || "",
+            Code: activity.code || "",
+            keyActivity: actName,
+            plannedStart: activity.start
+              ? dayjs(activity.start).format("DD-MM-YYYY")
+              : "-",
+            plannedFinish: activity.end
+              ? dayjs(activity.end).format("DD-MM-YYYY")
+              : "-",
+            activityCode: code,
+            activityName: actName,
+            projectCost: c?.projectCost ?? null,
+            opportunityCost: c?.opportunityCost ?? null,
+            moduleName,
+            isModule: false,
+          };
+        }
+      );
 
       panels.push({
         moduleKey: `module-${moduleIndex}`,
@@ -122,7 +153,9 @@ const ActivityCost: React.FC = () => {
     setModulesPanels((prev) =>
       prev.map((p) => ({
         ...p,
-        rows: p.rows.map((r) => (r.key === rowKey ? { ...r, projectCost: val } : r)),
+        rows: p.rows.map((r) =>
+          r.key === rowKey ? { ...r, projectCost: val } : r
+        ),
       }))
     );
   };
@@ -131,11 +164,14 @@ const ActivityCost: React.FC = () => {
     setModulesPanels((prev) =>
       prev.map((p) => ({
         ...p,
-        rows: p.rows.map((r) => (r.key === rowKey ? { ...r, opportunityCost: val } : r)),
+        rows: p.rows.map((r) =>
+          r.key === rowKey ? { ...r, opportunityCost: val } : r
+        ),
       }))
     );
   };
 
+  // keep save on focusout, but NO toaster here
   const handleProjectCostBlur = async (row: ActivityRow, moduleName: string) => {
     if (!selectedProjectId) return;
 
@@ -148,7 +184,6 @@ const ActivityCost: React.FC = () => {
       if (row.opportunityCost == null || Number.isNaN(row.opportunityCost)) {
         await db.deleteActivityCost(String(selectedProjectId), row.activityCode);
         await loadModulesForProject(String(selectedProjectId));
-        message.success("Cost cleared");
       }
       return;
     }
@@ -164,11 +199,12 @@ const ActivityCost: React.FC = () => {
           ? Number(row.opportunityCost)
           : undefined,
     });
-
-    message.success("Project cost saved");
   };
 
-  const handleOpportunityCostBlur = async (row: ActivityRow, moduleName: string) => {
+  const handleOpportunityCostBlur = async (
+    row: ActivityRow,
+    moduleName: string
+  ) => {
     if (!selectedProjectId) return;
 
     if (
@@ -179,7 +215,6 @@ const ActivityCost: React.FC = () => {
       if (row.projectCost == null || Number.isNaN(row.projectCost)) {
         await db.deleteActivityCost(String(selectedProjectId), row.activityCode);
         await loadModulesForProject(String(selectedProjectId));
-        message.success("Cost cleared");
       }
       return;
     }
@@ -195,114 +230,172 @@ const ActivityCost: React.FC = () => {
           : undefined,
       opportunityCost: Number(row.opportunityCost),
     });
-
-    message.success("Opportunity cost saved");
   };
-
-//   const handleClearCost = async (row: ActivityRow) => {
-//     if (!selectedProjectId) return;
-//     await db.deleteActivityCost(String(selectedProjectId), row.activityCode);
-//     await loadModulesForProject(String(selectedProjectId));
-//     message.success("Cost cleared");
-//   };
 
   const numericParser = (value: string | undefined): number => {
     const cleaned = (value || "").replace(/[^\d]/g, "");
     return cleaned ? Number(cleaned) : NaN;
   };
 
-  const renderColumns = (moduleName: string) => [
+  // Build table data: parent (module) + children (activities)
+  const tableData: any[] = useMemo(
+    () =>
+      modulesPanels.map((panel) => ({
+        key: panel.moduleKey,
+        SrNo: panel.rows[0]?.SrNo || "",
+        Code: panel.rows[0]?.SrNo || "",
+        keyActivity: panel.moduleName,
+        plannedStart: "",
+        plannedFinish: "",
+        activityCode: "",
+        activityName: "",
+        projectCost: null,
+        opportunityCost: null,
+        moduleName: panel.moduleName,
+        isModule: true,
+        children: panel.rows,
+      })),
+    [modulesPanels]
+  );
+
+  const columns = [
     {
       title: "Sr No / Module Code",
       dataIndex: "SrNo",
       key: "SrNo",
       width: "10%",
+      render: (text: any, record: ActivityRow) =>
+        record.isModule ? <b>{text}</b> : text,
     },
     {
       title: "Activity Code",
       dataIndex: "Code",
       key: "Code",
       width: "10%",
+      render: (text: any, record: ActivityRow) =>
+        record.isModule ? "" : text,
     },
     {
-      title: "Activity",
+      title: "Activity / Module",
       dataIndex: "keyActivity",
       key: "keyActivity",
       width: "20%",
+      render: (text: any, record: ActivityRow) =>
+        record.isModule ? (
+          <span className="module-title-cell">{text}</span>
+        ) : (
+          text
+        ),
     },
     {
       title: "Planned Start",
       dataIndex: "plannedStart",
       key: "plannedStart",
       width: "10%",
+      render: (text: any, record: ActivityRow) =>
+        record.isModule ? "" : text,
     },
     {
       title: "Planned Finish",
       dataIndex: "plannedFinish",
       key: "plannedFinish",
       width: "10%",
+      render: (text: any, record: ActivityRow) =>
+        record.isModule ? "" : text,
     },
     {
       title: "Project Cost (₹)",
       key: "projectCost",
       width: "15%",
-      render: (_: any, row: ActivityRow) => (
-        <InputNumber<number>
-          style={{ width: "100%" }}
-          min={0}
-          precision={0}
-          parser={numericParser}
-          value={row.projectCost ?? undefined}
-          onChange={(v) => handleProjectCostChange(row.key, v ?? null)}
-          onBlur={() => handleProjectCostBlur(row, moduleName)}
-        />
-      ),
+      render: (_: any, row: ActivityRow) =>
+        row.isModule ? null : (
+          <InputNumber<number>
+            style={{ width: "100%" }}
+            min={0}
+            precision={0}
+            parser={numericParser}
+            value={row.projectCost ?? undefined}
+            onChange={(v) => handleProjectCostChange(row.key, v ?? null)}
+            onBlur={() => handleProjectCostBlur(row, row.moduleName || "")}
+          />
+        ),
     },
     {
       title: "Opportunity Cost (₹)",
       key: "opportunityCost",
       width: "15%",
-      render: (_: any, row: ActivityRow) => (
-        <InputNumber<number>
-          style={{ width: "100%" }}
-          min={0}
-          precision={0}
-          parser={numericParser}
-          value={row.opportunityCost ?? undefined}
-          onChange={(v) => handleOpportunityCostChange(row.key, v ?? null)}
-          onBlur={() => handleOpportunityCostBlur(row, moduleName)}
-        />
-      ),
+      render: (_: any, row: ActivityRow) =>
+        row.isModule ? null : (
+          <InputNumber<number>
+            style={{ width: "100%" }}
+            min={0}
+            precision={0}
+            parser={numericParser}
+            value={row.opportunityCost ?? undefined}
+            onChange={(v) => handleOpportunityCostChange(row.key, v ?? null)}
+            onBlur={() => handleOpportunityCostBlur(row, row.moduleName || "")}
+          />
+        ),
     },
-    // {
-    //   title: "Action",
-    //   key: "actions",
-    //   width: "10%",
-    //   render: (_: any, row: ActivityRow) => {
-    //     const disabled =
-    //       (row.projectCost == null || Number.isNaN(row.projectCost)) &&
-    //       (row.opportunityCost == null || Number.isNaN(row.opportunityCost));
-    //     return (
-    //       <Popconfirm
-    //         title="Clear cost?"
-    //         description="For this activity project & opportunity cost will be deleted. Are you sure?"
-    //         onConfirm={() => handleClearCost(row)}
-    //         okText="Yes"
-    //         cancelText="No"
-    //         disabled={disabled}
-    //       >
-    //         <Button type="link" danger disabled={disabled}>
-    //           Clear
-    //         </Button>
-    //       </Popconfirm>
-    //     );
-    //   },
-    // },
   ];
+
+  // Bottom-right Save button: explicitly save everything & show toaster
+  const handleSaveAll = async () => {
+    if (!selectedProjectId) return;
+    setSavingAll(true);
+
+    try {
+      const ops: Promise<any>[] = [];
+
+      modulesPanels.forEach((panel) => {
+        panel.rows.forEach((row) => {
+          const bothEmpty =
+            (row.projectCost == null || Number.isNaN(row.projectCost)) &&
+            (row.opportunityCost == null ||
+              Number.isNaN(row.opportunityCost));
+
+          if (bothEmpty) {
+            // delete
+            ops.push(
+              db.deleteActivityCost(String(selectedProjectId), row.activityCode)
+            );
+          } else {
+            // upsert
+            ops.push(
+              db.upsertActivityCost({
+                projectId: String(selectedProjectId),
+                activityCode: row.activityCode,
+                activityName: row.activityName,
+                moduleName: row.moduleName || "",
+                projectCost:
+                  row.projectCost != null && !Number.isNaN(row.projectCost)
+                    ? Number(row.projectCost)
+                    : undefined,
+                opportunityCost:
+                  row.opportunityCost != null &&
+                    !Number.isNaN(row.opportunityCost)
+                    ? Number(row.opportunityCost)
+                    : undefined,
+              })
+            );
+          }
+        });
+      });
+
+      await Promise.all(ops);
+      notify.success("Activity cost saved");
+      await loadModulesForProject(String(selectedProjectId));
+    } catch (err) {
+      console.error(err);
+      notify.error("Failed to save activity cost");
+    } finally {
+      setSavingAll(false);
+    }
+  };
 
   return (
     <div className="activity-main-container">
-      <div className="activity-heading ">
+      <div className="activity-heading">
         <Text className="activity-title">Activity Cost</Text>
         <Space>
           <Text>Select Project:</Text>
@@ -315,33 +408,70 @@ const ActivityCost: React.FC = () => {
           >
             {projects.map((p) => (
               <Option key={p.id} value={String(p.id)}>
-                {p.projectParameters?.projectName || p.name || `Project ${p.id}`}
+                {p.projectParameters?.projectName ||
+                  p.name ||
+                  `Project ${p.id}`}
               </Option>
             ))}
           </Select>
         </Space>
       </div>
 
-      <Collapse
-        activeKey={activeKeys}
-        onChange={(keys) =>
-          setActiveKeys(Array.isArray(keys) ? (keys as string[]) : [keys as string])
-        }
-      >
-        {modulesPanels.map((panel) => (
-          <Panel header={panel.moduleName} key={panel.moduleKey}>
+      {loading && modulesPanels.length === 0 ? (
+        <div style={{ textAlign: "center", marginTop: 40 }}>
+          <Spin />
+        </div>
+      ) : (
+        <>
+          <div className="activity-table-wrapper">
             <Table
-              columns={renderColumns(panel.moduleName)}
-              dataSource={panel.rows}
+              columns={columns}
+              dataSource={tableData}
               rowKey="key"
               pagination={false}
               bordered
               loading={loading}
               size="small"
+              expandable={{
+                expandedRowKeys: expandedKeys,
+                onExpand: (expanded, record: any) => {
+                  if (expanded) {
+                    setExpandedKeys((prev) => [...prev, record.key]);
+                  } else {
+                    setExpandedKeys((prev) =>
+                      prev.filter((k) => k !== record.key)
+                    );
+                  }
+                },
+                rowExpandable: (record: any) =>
+                  Array.isArray(record.children) &&
+                  record.children.length > 0,
+                expandIconColumnIndex: 0,
+              }}
+              rowClassName={(record: any) =>
+                record.isModule ? "module-header-row" : "activity-row"
+              }
+              scroll={{ x: true, y: "calc(100vh - 260px)" }}
             />
-          </Panel>
-        ))}
-      </Collapse>
+          </div>
+
+          <div
+            style={{
+              position: "absolute",
+              bottom: "25px",
+              right: "10px"
+            }}
+          >
+            <Button type="primary" className="save-button"
+              onClick={handleSaveAll}
+              loading={savingAll}
+            >
+              Save
+            </Button>
+          </div>
+        </>
+      )}
+       <ToastContainer />
     </div>
   );
 };

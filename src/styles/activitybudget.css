@@ -5,13 +5,32 @@
     height: calc(100vh - 95px);
     overflow-y: auto;
 }
-.budget-title{
+
+.budget-title {
     font-size: 18px;
     font-weight: bold;
     color: grey;
 }
+
 .budget-heading {
     display: flex;
     justify-content: space-between;
     padding: 10px;
+}
+
+.budget-meta-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+}
+
+.meta-label {
+    font-weight: 600;
+    color: #444;
+    font-size: 14px;
+}
+
+.meta-value {
+    font-size: 14px;
+    color: #111;
 }
