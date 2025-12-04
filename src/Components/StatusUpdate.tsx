@@ -6,8 +6,8 @@ import { FolderOpenOutlined, SaveOutlined } from "@mui/icons-material";
 import { useLocation, useNavigate } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
-import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, Tag, Space, Tooltip } from "antd";
-import { ClockCircleOutlined, CloseCircleOutlined, DeleteOutlined, DollarOutlined, DownloadOutlined, EditOutlined, EyeOutlined, FileSyncOutlined, FileTextOutlined, FormOutlined, LikeOutlined, PlusOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined, UploadOutlined } from "@ant-design/icons";
+import { Button, Select, Modal, Input, Table, DatePicker, List, Typography, Form, Row, Col, Tag, Space, Tooltip, Tabs, Spin } from "antd";
+import { ClockCircleOutlined, CloseCircleOutlined, DeleteOutlined, DollarOutlined, DownloadOutlined, EditOutlined, EyeOutlined, FileSyncOutlined, FileTextOutlined, FormOutlined, InfoCircleOutlined, LikeOutlined, PlusOutlined, ReloadOutlined, ShareAltOutlined, SyncOutlined, UploadOutlined } from "@ant-design/icons";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege.ts";
 import { getCurrentUser } from '../Utils/moduleStorage';
@@ -16,6 +16,8 @@ import { ToastContainer } from 'react-toastify';
 import { notify } from "../Utils/ToastNotify.tsx";
 import { UserOutlined } from '@ant-design/icons';
 import customParseFormat from "dayjs/plugin/customParseFormat";
+import type { ActivityBudget, ActivityCost } from "../Utils/dataStorege";
+
 dayjs.extend(customParseFormat);
 interface Activity {
   code: string;
@@ -39,6 +41,8 @@ interface Module {
 }
 
 const { Option } = Select;
+const { TabPane } = Tabs;
+
 
 export const StatusUpdate = () => {
   const navigate = useNavigate();
@@ -94,9 +98,21 @@ export const StatusUpdate = () => {
   const [docForm] = Form.useForm();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [costInfoOpen, setCostInfoOpen] = useState(false);
-  const [costInfoData, setCostInfoData] = useState<any | null>(null);
-  const getCode = (x: any) => String(x?.Code ?? x?.code ?? "");
-  const asNumber = (v: any) => (v === null || v === undefined || v === "" ? 0 : Number(v));
+  const [costInfoData, _setCostInfoData] = useState<any | null>(null);
+  // const getCode = (x: any) => String(x?.Code ?? x?.code ?? "");
+  // const asNumber = (v: any) => (v === null || v === undefined || v === "" ? 0 : Number(v));
+  const [detailsActiveTab, setDetailsActiveTab] = useState<string>('notes');
+  const [activityBudget, setActivityBudget] = useState<ActivityBudget | null>(null);
+  const [budgetLoading, setBudgetLoading] = useState(false);
+  const [activityCost, setActivityCost] = useState<ActivityCost | null>(null);
+  const [costLoading, setCostLoading] = useState(false);
+  const [selectedActivity, setSelectedActivity] = useState<any>(null);
+  const [activityDetailsVisible, setActivityDetailsVisible] = useState(false);
+  const userMap = useMemo(
+    () => Object.fromEntries(userOptions.map((u: any) => [u.id, u.name])),
+    [userOptions]
+  );
+
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -193,49 +209,49 @@ export const StatusUpdate = () => {
     setIsModalOpen(true);
   };
 
-  const getDelayDays = (act: any) => {
-    const plannedEnd = act?.end ? dayjs(act.end) : null;
-    if (!plannedEnd || !plannedEnd.isValid()) return 0;
+  // const getDelayDays = (act: any) => {
+  //   const plannedEnd = act?.end ? dayjs(act.end) : null;
+  //   if (!plannedEnd || !plannedEnd.isValid()) return 0;
 
-    if (act?.actualFinish) {
-      const af = dayjs(act.actualFinish, ["DD-MM-YYYY", "YYYY-MM-DD"], true);
-      if (af.isValid() && af.isAfter(plannedEnd)) {
-        return af.diff(plannedEnd, "day");
-      }
-      return 0;
-    }
+  //   if (act?.actualFinish) {
+  //     const af = dayjs(act.actualFinish, ["DD-MM-YYYY", "YYYY-MM-DD"], true);
+  //     if (af.isValid() && af.isAfter(plannedEnd)) {
+  //       return af.diff(plannedEnd, "day");
+  //     }
+  //     return 0;
+  //   }
 
-    const today = dayjs();
-    return today.isAfter(plannedEnd) ? today.diff(plannedEnd, "day") : 0;
-  };
+  //   const today = dayjs();
+  //   return today.isAfter(plannedEnd) ? today.diff(plannedEnd, "day") : 0;
+  // };
 
-  const getDelayPerDay = (act: any) => {
-    const c = act?.cost ?? {};
-    if (c.delayPerDay != null && c.delayPerDay !== "") return asNumber(c.delayPerDay);
-    const proj = asNumber(c.projectCost);
-    const op = asNumber(c.opCost);
-    const denom = asNumber(act?.expectedDuration ?? act?.duration);
-    return denom > 0 ? (proj + op) / denom : 0;
-  };
+  // const getDelayPerDay = (act: any) => {
+  //   const c = act?.cost ?? {};
+  //   if (c.delayPerDay != null && c.delayPerDay !== "") return asNumber(c.delayPerDay);
+  //   const proj = asNumber(c.projectCost);
+  //   const op = asNumber(c.opCost);
+  //   const denom = asNumber(act?.expectedDuration ?? act?.duration);
+  //   return denom > 0 ? (proj + op) / denom : 0;
+  // };
 
-  const openCostInfoForActivity = (activityKey: string) => {
-    const activity = findActivityByKey(dataSource, activityKey);
-    if (!activity) return;
+  // const openCostInfoForActivity = (activityKey: string) => {
+  //   const activity = findActivityByKey(dataSource, activityKey);
+  //   if (!activity) return;
 
-    const delayDays = getDelayDays(activity);
-    const perDay = getDelayPerDay(activity);
-    const incurred = delayDays * perDay;
+  //   const delayDays = getDelayDays(activity);
+  //   const perDay = getDelayPerDay(activity);
+  //   const incurred = delayDays * perDay;
 
-    setCostInfoData({
-      name: activity?.keyActivity || activity?.activityName || getCode(activity),
-      projectCost: asNumber(activity?.cost?.projectCost),
-      opCost: asNumber(activity?.cost?.opCost),
-      delayPerDay: perDay,
-      delayDays,
-      incurred,
-    });
-    setCostInfoOpen(true);
-  };
+  //   setCostInfoData({
+  //     name: activity?.keyActivity || activity?.activityName || getCode(activity),
+  //     projectCost: asNumber(activity?.cost?.projectCost),
+  //     opCost: asNumber(activity?.cost?.opCost),
+  //     delayPerDay: perDay,
+  //     delayDays,
+  //     incurred,
+  //   });
+  //   setCostInfoOpen(true);
+  // };
 
   const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
 
@@ -760,6 +776,164 @@ export const StatusUpdate = () => {
 
   const baseColumns: ColumnsType = [
     { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
+    // {
+    //   title: "Key Activity",
+    //   dataIndex: "keyActivity",
+    //   key: "keyActivity",
+    //   width: 250,
+    //   align: "left",
+    //   render: (_: any, record: any) => {
+    //     const {
+    //       activityStatus,
+    //       keyActivity,
+    //       duration,
+    //       actualStart,
+    //       actualFinish,
+    //       plannedStart,
+    //       plannedFinish,
+    //     } = record;
+
+    //     const plannedStartDate = plannedStart ? dayjs(plannedStart, "DD-MM-YYYY") : null;
+    //     const actualStartDate = actualStart ? dayjs(actualStart, "DD-MM-YYYY") : null;
+    //     const plannedFinishDate = plannedFinish ? dayjs(plannedFinish, "DD-MM-YYYY") : null;
+    //     const actualFinishDate = actualFinish ? dayjs(actualFinish, "DD-MM-YYYY") : null;
+
+    //     let iconSrc = "";
+    //     const isStartSame =
+    //       plannedStartDate && actualStartDate && plannedStartDate.isSame(actualStartDate, "day");
+    //     const isFinishSame =
+    //       plannedFinishDate && actualFinishDate && plannedFinishDate.isSame(actualFinishDate, "day");
+    //     const isWithinPlannedDuration =
+    //       plannedStartDate &&
+    //       plannedFinishDate &&
+    //       actualStartDate &&
+    //       getBusinessDays(actualStartDate, dayjs()) <= getBusinessDays(plannedStartDate, plannedFinishDate);
+
+    //     if (activityStatus === "completed") {
+    //       const isCompletedOnTime = isStartSame && isFinishSame;
+    //       iconSrc = isCompletedOnTime ? "/images/icons/completed.png" : "/images/icons/overdue.png";
+    //     } else if (activityStatus === "inProgress") {
+    //       iconSrc = isWithinPlannedDuration ? "/images/icons/inprogress.png" : "/images/icons/overdue.png";
+    //     } else {
+    //       iconSrc = "/images/icons/yettostart.png";
+    //     }
+
+    //     // const hasCost =
+    //     //   !!record?.cost &&
+    //     //   (record.cost.delayPerDay != null ||
+    //     //     record.cost.projectCost != null ||
+    //     //     record.cost.opCost != null);
+
+    //     // return (
+    //     //   <span
+    //     //     style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}
+    //     //     onClick={() => {
+    //     //       if (record.duration !== undefined)
+    //     //         setSelectedActivityKey((prevKey: any) => (prevKey === record.key ? null : record.key));
+    //     //     }}
+    //     //   >
+    //     //     {Array.isArray(record.notes) && record.notes.length > 0 && (
+    //     //       <span
+    //     //         onClick={(e) => {
+    //     //           e.stopPropagation();
+    //     //           setSelectedActivityKey(record.key);
+    //     //           setNoteModalVisible(true);
+    //     //           setNoteInput("");
+    //     //           setEditNoteId(null);
+    //     //         }}
+    //     //       >
+    //     //         <FileTextOutlined style={{ fontSize: 22, color: "#1890ff" }} />
+    //     //       </span>
+    //     //     )}
+
+    //     //     <span
+    //     //       onClick={(e) => {
+    //     //         e.stopPropagation();
+    //     //         if (hasCost) {
+    //     //           openCostInfoForActivity(record.key);
+    //     //           setSelectedActivityKey(record.key);
+    //     //         }
+    //     //       }}
+    //     //       title={hasCost ? "Show Delay Cost" : "No cost defined"}
+    //     //       style={{
+    //     //         display: "inline-flex",
+    //     //         alignItems: "center",
+    //     //         justifyContent: "center",
+    //     //         width: 24,
+    //     //         height: 24,
+    //     //         cursor: hasCost ? "pointer" : "not-allowed",
+    //     //         opacity: hasCost ? 1 : 0.5,
+    //     //       }}
+    //     //     >
+    //     //       <DollarOutlined style={{ fontSize: 20, color: hasCost ? "#e67e22" : "#bfbfbf" }} />
+    //     //     </span>
+
+    //     //     {duration ? (
+    //     //       <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
+    //     //     ) : (
+    //     //       <span style={{ width: 34, height: 34 }} />
+    //     //     )}
+
+    //     //     {keyActivity}
+    //     //   </span>
+    //     // );
+    //     // const hasCost =
+    //     //   !!record?.cost &&
+    //     //   (record.cost.delayPerDay != null ||
+    //     //     record.cost.projectCost != null ||
+    //     //     record.cost.opCost != null);
+
+    //     return (
+    //       <span
+    //         style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}
+    //         onClick={() => {
+    //           if (record.duration !== undefined)
+    //             setSelectedActivityKey((prevKey: any) => (prevKey === record.key ? null : record.key));
+    //         }}
+    //       >
+    //         {/* {Array.isArray(record.notes) && record.notes.length > 0 && (
+    //           <span
+    //             onClick={(e) => {
+    //               e.stopPropagation();
+    //               setSelectedActivityKey(record.key);
+    //               setNoteModalVisible(true);
+    //               setNoteInput("");
+    //               setEditNoteId(null);
+    //             }}
+    //           >
+    //             <FileTextOutlined style={{ fontSize: 22, color: "#1890ff" }} />
+    //           </span>
+    //         )} */}
+
+    //         {/* NEW: Info icon to open Activity Details modal (Notes/Cost/RACI/Budget) */}
+    //         <span
+    //           onClick={(e) => openActivityDetails(record, e)}
+    //           title="View Activity Details"
+    //           style={{
+    //             display: "inline-flex",
+    //             alignItems: "center",
+    //             justifyContent: "center",
+    //             width: 24,
+    //             height: 24,
+    //             cursor: "pointer",
+    //           }}
+    //         >
+    //           <InfoCircleOutlined style={{ fontSize: 20, color: "#1890ff" }} />
+    //         </span>
+
+    //         {duration ? (
+    //           <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
+    //         ) : (
+    //           <span style={{ width: 34, height: 34 }} />
+    //         )}
+
+    //         {keyActivity}
+    //       </span>
+    //     );
+
+
+    //   },
+    // },
     {
       title: "Key Activity",
       dataIndex: "keyActivity",
@@ -775,85 +949,107 @@ export const StatusUpdate = () => {
           actualFinish,
           plannedStart,
           plannedFinish,
+          isModule,
         } = record;
 
-        const plannedStartDate = plannedStart ? dayjs(plannedStart, "DD-MM-YYYY") : null;
-        const actualStartDate = actualStart ? dayjs(actualStart, "DD-MM-YYYY") : null;
-        const plannedFinishDate = plannedFinish ? dayjs(plannedFinish, "DD-MM-YYYY") : null;
-        const actualFinishDate = actualFinish ? dayjs(actualFinish, "DD-MM-YYYY") : null;
+        // ⬇️ If it's a module row, just show text (no icons)
+        if (isModule) {
+          return (
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                fontWeight: 600,
+              }}
+            >
+              {keyActivity}
+            </span>
+          );
+        }
+
+        const plannedStartDate = plannedStart
+          ? dayjs(plannedStart, "DD-MM-YYYY")
+          : null;
+        const actualStartDate = actualStart
+          ? dayjs(actualStart, "DD-MM-YYYY")
+          : null;
+        const plannedFinishDate = plannedFinish
+          ? dayjs(plannedFinish, "DD-MM-YYYY")
+          : null;
+        const actualFinishDate = actualFinish
+          ? dayjs(actualFinish, "DD-MM-YYYY")
+          : null;
 
         let iconSrc = "";
         const isStartSame =
-          plannedStartDate && actualStartDate && plannedStartDate.isSame(actualStartDate, "day");
+          plannedStartDate &&
+          actualStartDate &&
+          plannedStartDate.isSame(actualStartDate, "day");
         const isFinishSame =
-          plannedFinishDate && actualFinishDate && plannedFinishDate.isSame(actualFinishDate, "day");
+          plannedFinishDate &&
+          actualFinishDate &&
+          plannedFinishDate.isSame(actualFinishDate, "day");
         const isWithinPlannedDuration =
           plannedStartDate &&
           plannedFinishDate &&
           actualStartDate &&
-          getBusinessDays(actualStartDate, dayjs()) <= getBusinessDays(plannedStartDate, plannedFinishDate);
+          getBusinessDays(actualStartDate, dayjs()) <=
+          getBusinessDays(plannedStartDate, plannedFinishDate);
 
         if (activityStatus === "completed") {
           const isCompletedOnTime = isStartSame && isFinishSame;
-          iconSrc = isCompletedOnTime ? "/images/icons/completed.png" : "/images/icons/overdue.png";
+          iconSrc = isCompletedOnTime
+            ? "/images/icons/completed.png"
+            : "/images/icons/overdue.png";
         } else if (activityStatus === "inProgress") {
-          iconSrc = isWithinPlannedDuration ? "/images/icons/inprogress.png" : "/images/icons/overdue.png";
+          iconSrc = isWithinPlannedDuration
+            ? "/images/icons/inprogress.png"
+            : "/images/icons/overdue.png";
         } else {
           iconSrc = "/images/icons/yettostart.png";
         }
 
-        const hasCost =
-          !!record?.cost &&
-          (record.cost.delayPerDay != null ||
-            record.cost.projectCost != null ||
-            record.cost.opCost != null);
-
         return (
           <span
-            style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "10px",
+              cursor: "pointer",
+            }}
             onClick={() => {
-              if (record.duration !== undefined)
-                setSelectedActivityKey((prevKey: any) => (prevKey === record.key ? null : record.key));
+              // only for activity rows
+              if (record.duration !== undefined) {
+                setSelectedActivityKey((prevKey: any) =>
+                  prevKey === record.key ? null : record.key
+                );
+              }
             }}
           >
-            {Array.isArray(record.notes) && record.notes.length > 0 && (
-              <span
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedActivityKey(record.key);
-                  setNoteModalVisible(true);
-                  setNoteInput("");
-                  setEditNoteId(null);
-                }}
-              >
-                <FileTextOutlined style={{ fontSize: 22, color: "#1890ff" }} />
-              </span>
-            )}
 
             <span
-              onClick={(e) => {
-                e.stopPropagation();
-                if (hasCost) {
-                  openCostInfoForActivity(record.key);
-                  setSelectedActivityKey(record.key);
-                }
-              }}
-              title={hasCost ? "Show Delay Cost" : "No cost defined"}
+              onClick={(e) => openActivityDetails(record, e)}
+              title="View Activity Details"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
                 width: 24,
                 height: 24,
-                cursor: hasCost ? "pointer" : "not-allowed",
-                opacity: hasCost ? 1 : 0.5,
+                cursor: "pointer",
               }}
             >
-              <DollarOutlined style={{ fontSize: 20, color: hasCost ? "#e67e22" : "#bfbfbf" }} />
+              <InfoCircleOutlined style={{ fontSize: 20, color: "#1890ff" }} />
             </span>
 
+            {/* Status icon */}
             {duration ? (
-              <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
+              <img
+                src={iconSrc}
+                alt={activityStatus}
+                style={{ width: 34, height: 34 }}
+              />
             ) : (
               <span style={{ width: 34, height: 34 }} />
             )}
@@ -2201,7 +2397,7 @@ export const StatusUpdate = () => {
       !docActivity ||
       !selectedActivityKey ||
       !selectedProjectId ||
-      !description 
+      !description
     ) {
       notify.error("All fields and file upload are required.");
       return;
@@ -2223,8 +2419,8 @@ export const StatusUpdate = () => {
       activityName: docActivity,
       linkedActivity: activity.keyActivity,
       documentName: docName,
-      documentType: docType, 
-      description: description,   
+      documentType: docType,
+      description: description,
       fileName: docFile.name,
       filePath,
       uploadedAt: new Date().toISOString(),
@@ -2558,6 +2754,44 @@ export const StatusUpdate = () => {
     } catch (e: any) {
       console.error("Failed to add doc type", e);
       notify.error(e?.message || "Failed to add type");
+    }
+  };
+
+  const openActivityDetails = async (record: any, e?: any) => {
+    if (e) e.stopPropagation();
+
+    setSelectedActivityKey(record.key);
+    setSelectedActivity(record);
+    setActivityDetailsVisible(true);
+    setNoteInput('');
+    setEditNoteId(null);
+
+    // reset previous data
+    setActivityBudget(null);
+    setActivityCost(null);
+
+    if (!selectedProjectId || !record.Code) {
+      return;
+    }
+
+    try {
+      setBudgetLoading(true);
+      setCostLoading(true);
+
+      const [budget, cost] = await Promise.all([
+        db.getActivityBudget(String(selectedProjectId), String(record.Code)),
+        db.getActivityCost(String(selectedProjectId), String(record.Code)),
+      ]);
+
+      setActivityBudget(budget);
+      setActivityCost(cost);
+    } catch (err) {
+      console.error("Failed to load activity details", err);
+      setActivityBudget(null);
+      setActivityCost(null);
+    } finally {
+      setBudgetLoading(false);
+      setCostLoading(false);
     }
   };
 
@@ -3525,6 +3759,176 @@ export const StatusUpdate = () => {
           <iframe src={previewContent ?? undefined} title="preview" width="100%" height="600px" />
         )}
       </Modal>
+
+      <Modal
+        title="Activity Details"
+        open={activityDetailsVisible}
+        onCancel={() => {
+          setActivityDetailsVisible(false);
+          setNoteInput('');
+          setEditNoteId(null);
+          setActivityBudget(null);
+          setActivityCost(null);
+        }}
+        width={'60%'}
+        footer={null}
+        className="modal-container"
+        maskClosable={false}
+        keyboard={false}
+      >
+        <Tabs
+          activeKey={detailsActiveTab}
+          onChange={setDetailsActiveTab}
+          style={{ padding: '0 24px 24px 10px' }}
+        >
+          {/* NOTES TAB */}
+          <TabPane tab="Notes" key="notes">
+            <List
+              dataSource={selectedNotes}
+              locale={{ emptyText: "No notes available" }}
+              itemLayout="horizontal"
+              style={{ marginBottom: 20 }}
+              renderItem={(item: any) => (
+                <List.Item style={{ padding: "8px 0" }}>
+                  <List.Item.Meta
+                    title={
+                      <div className="note-meta">
+                        {item.createdBy && (
+                          <span className="note-author">
+                            <UserOutlined />
+                            {item.createdBy}
+                          </span>
+                        )}
+                        {(item.createdAt || item.updatedAt) && (
+                          <span className="note-timestamp">
+                            <ClockCircleOutlined />
+                            {dayjs(item.createdAt).format('DD MMM YYYY HH:mm')}
+                          </span>
+                        )}
+                      </div>
+                    }
+                    description={item.text}
+                  />
+                </List.Item>
+              )}
+            />
+          </TabPane>
+
+          {/* COST TAB */}
+          <TabPane tab="Cost" key="cost">
+            {costLoading ? (
+              <Spin />
+            ) : activityCost ? (
+              <div style={{ lineHeight: 2 }}>
+                <div>
+                  <strong>Project Cost:</strong>{" "}
+                  {activityCost.projectCost != null
+                    ? `₹${activityCost.projectCost.toLocaleString("en-IN")}`
+                    : "—"}
+                </div>
+                <div>
+                  <strong>Opportunity Cost:</strong>{" "}
+                  {activityCost.opportunityCost != null
+                    ? `₹${activityCost.opportunityCost.toLocaleString("en-IN")}`
+                    : "—"}
+                </div>
+                {activityCost.updatedAt && (
+                  <div style={{ marginTop: 8, fontSize: 12, color: "#888", float: "right" }}>
+                    Last updated: {dayjs(activityCost.updatedAt).format("DD MMM YYYY HH:mm")}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>No cost information available for this activity.</div>
+            )}
+          </TabPane>
+
+          {/* RACI TAB */}
+          <TabPane tab="RACI" key="raci">
+            {selectedActivity?.raci ? (
+              <div className="raci-grid">
+                <div className="raci-row">
+                  <span className="raci-label">Responsible:</span>
+                  <span className="raci-value">
+                    {userMap[selectedActivity.raci.responsible] || 'N/A'}
+                  </span>
+                </div>
+                <div className="raci-row">
+                  <span className="raci-label">Accountable:</span>
+                  <span className="raci-value">
+                    {userMap[selectedActivity.raci.accountable] || 'N/A'}
+                  </span>
+                </div>
+                <div className="raci-row">
+                  <span className="raci-label">Consulted:</span>
+                  <span className="raci-value">
+                    {selectedActivity.raci.consulted?.map((id: any) => (
+                      <span key={id} className="raci-tag">
+                        {userMap[id] || id}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+                <div className="raci-row">
+                  <span className="raci-label">Informed:</span>
+                  <span className="raci-value">
+                    {selectedActivity.raci.informed?.map((id: any) => (
+                      <span key={id} className="raci-tag">
+                        {userMap[id] || id}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div>No RACI information available</div>
+            )}
+          </TabPane>
+
+          {/* BUDGET TAB */}
+          <TabPane tab="Budget" key="budget">
+            {budgetLoading ? (
+              <Spin />
+            ) : activityBudget ? (
+              <div style={{ lineHeight: 2 }}>
+                <div>
+                  <strong>Budget:</strong>{" "}
+                  {activityBudget.originalBudget != null
+                    ? `₹${activityBudget.originalBudget.toLocaleString("en-IN")}`
+                    : "—"}
+                </div>
+                <div>
+                  <strong>Budgeted On:</strong>{" "}
+                  {activityBudget.originalBudgetDate
+                    ? dayjs(activityBudget.originalBudgetDate).format("DD MMM YYYY")
+                    : "—"}
+                </div>
+                <div>
+                  <strong>Revised Budget:</strong>{" "}
+                  {activityBudget.revisedBudget != null
+                    ? `₹${activityBudget.revisedBudget.toLocaleString("en-IN")}`
+                    : "—"}
+                </div>
+                <div>
+                  <strong>Revised On:</strong>{" "}
+                  {activityBudget.revisionHistory && activityBudget.revisionHistory.length > 0
+                    ? dayjs(
+                      activityBudget.revisionHistory[
+                        activityBudget.revisionHistory.length - 1
+                      ].date
+                    ).format("DD MMM YYYY")
+                    : activityBudget.revisedBudgetDate
+                      ? dayjs(activityBudget.revisedBudgetDate).format("DD MMM YYYY")
+                      : "—"}
+                </div>
+              </div>
+            ) : (
+              <div>No budget information available for this activity.</div>
+            )}
+          </TabPane>
+        </Tabs>
+      </Modal>
+
       <ToastContainer />
 
     </>

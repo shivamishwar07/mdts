@@ -34,3 +34,7 @@
     font-size: 14px;
     color: #111;
 }
+
+.budget-input input {
+  text-align: right !important;
+}

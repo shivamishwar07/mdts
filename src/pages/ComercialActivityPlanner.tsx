@@ -15,42 +15,44 @@ import { notify } from "../Utils/ToastNotify";
 
 const { Text } = Typography;
 const { Option } = Select;
+
 interface TimelineInfo {
     status: string;
     version: string;
     updatedAt: string;
 }
+
 interface CommercialActivityRow {
     key: string;
     projectId: string;
-
     moduleCode?: string;
     moduleName?: string;
-
     activityCode: string;
     activityName: string;
-
     plannedStart?: string | null;
     plannedFinish?: string | null;
-
     actualStart?: string | null;
     actualFinish?: string | null;
-
     commercialUndertaken: boolean;
     leadTimeDays: number | null;
     orderProcessingStatus: string;
-
+    budgetAmount?: number | null;
     isModule?: boolean;
     children?: CommercialActivityRow[];
 }
 
-const ORDER_STATUS_OPTIONS = [
-    "Yet to Start",
-    "RFP Processed",
-    "Bidding/Reverse Auction Conducted",
-    "PO Processed",
-    "Quote Comparison Done",
-];
+// const ORDER_STATUS_OPTIONS = [
+//     "Yet to Start",
+//     "RFP Processed",
+//     "Bidding/Reverse Auction Conducted",
+//     "PO Processed",
+//     "Quote Comparison Done",
+// ];
+
+interface RevisionEntry {
+    amount: number;
+    date: string;
+}
 
 const CommercialActivityPlanner: React.FC = () => {
     const [projects, setProjects] = useState<any[]>([]);
@@ -119,11 +121,27 @@ const CommercialActivityPlanner: React.FC = () => {
 
         const budgets = await db.getActivityBudgetsForProject(String(projectId));
         const budgetMap = new Map<string, any>();
+
         budgets.forEach((b: any) => {
-            if (b.originalBudget != null) {
-                budgetMap.set(String(b.activityCode), b);
+            const history: RevisionEntry[] = Array.isArray(b.revisionHistory)
+                ? b.revisionHistory
+                : [];
+
+            const last = history.length > 0 ? history[history.length - 1] : null;
+            const currentBudget =
+                (last?.amount ?? null) ??
+                (typeof b.originalBudget === "number" ? b.originalBudget : null) ??
+                (typeof b.totalBudget === "number" ? b.totalBudget : null) ??
+                (typeof b.budgetAmount === "number" ? b.budgetAmount : null);
+
+            if (currentBudget != null) {
+                budgetMap.set(String(b.activityCode), {
+                    ...b,
+                    currentBudget,
+                });
             }
         });
+
 
         const existingCommercial = await db.getCommercialActivitiesForProject(
             String(projectId)
@@ -152,26 +170,33 @@ const CommercialActivityPlanner: React.FC = () => {
                 const plannedFinishIso: string | null =
                     activity.end || activity.plannedFinish || null;
 
+                const budgetAmount: number | null =
+                    typeof budget.currentBudget === "number"
+                        ? budget.currentBudget
+                        : (
+                            budget.originalBudget ??
+                            budget.totalBudget ??
+                            budget.budgetAmount ??
+                            null
+                        );
+
+
                 flatRows.push({
                     key: `${projectId}-${code}`,
                     projectId: String(projectId),
-
                     moduleCode: moduleCode || undefined,
                     moduleName,
-
                     activityCode: String(code),
                     activityName: activity.activityName || activity.keyActivity || "",
-
                     plannedStart: existing?.plannedStart ?? plannedStartIso,
                     plannedFinish: existing?.plannedFinish ?? plannedFinishIso,
-
                     actualStart: existing?.actualStart ?? activity.actualStart ?? null,
                     actualFinish: existing?.actualFinish ?? activity.actualFinish ?? null,
-
                     commercialUndertaken: existing?.commercialUndertaken ?? false,
                     leadTimeDays:
                         existing?.leadTimeDays !== undefined ? existing.leadTimeDays : null,
                     orderProcessingStatus: existing?.orderProcessingStatus || "Yet to Start",
+                    budgetAmount,
                 });
             });
         });
@@ -235,14 +260,14 @@ const CommercialActivityPlanner: React.FC = () => {
         void persistRow(updated);
     };
 
-    const handleOrderStatusChange = (row: CommercialActivityRow, value: string) => {
-        const updated: CommercialActivityRow = {
-            ...row,
-            orderProcessingStatus: value,
-        };
-        updateRow(row.key, updated);
-        void persistRow(updated);
-    };
+    // const handleOrderStatusChange = (row: CommercialActivityRow, value: string) => {
+    //     const updated: CommercialActivityRow = {
+    //         ...row,
+    //         orderProcessingStatus: value,
+    //     };
+    //     updateRow(row.key, updated);
+    //     void persistRow(updated);
+    // };
 
     const numericParser = (value: string | undefined): number => {
         const cleaned = (value || "").replace(/[^\d]/g, "");
@@ -286,6 +311,7 @@ const CommercialActivityPlanner: React.FC = () => {
                 orderProcessingStatus: "",
                 isModule: true,
                 children: group.rows,
+                budgetAmount: null,
             });
             idx++;
         });
@@ -309,7 +335,7 @@ const CommercialActivityPlanner: React.FC = () => {
             title: "Module",
             dataIndex: "moduleName",
             key: "moduleName",
-            width: "15%",
+            width: "8%",
             render: (_: any, row: CommercialActivityRow) =>
                 row.isModule ? <b>{row.moduleName}</b> : row.moduleName,
         },
@@ -320,6 +346,21 @@ const CommercialActivityPlanner: React.FC = () => {
             width: "20%",
             render: (val: string, row: CommercialActivityRow) =>
                 row.isModule ? "" : val,
+        },
+        {
+            title: "Budget (₹)",
+            dataIndex: "budgetAmount",
+            key: "budgetAmount",
+            width: "8%",
+            align: "right" as const,
+            render: (val: number | null | undefined, row: CommercialActivityRow) =>
+                row.isModule
+                    ? ""
+                    : val != null
+                        ? val.toLocaleString("en-IN", {
+                            maximumFractionDigits: 2,
+                        })
+                        : "-",
         },
         {
             title: "Planned Start",
@@ -356,7 +397,7 @@ const CommercialActivityPlanner: React.FC = () => {
         {
             title: "Commercial Activity Undertaken",
             key: "commercialUndertaken",
-            width: "12%",
+            width: "18%",
             render: (_: any, row: CommercialActivityRow) =>
                 row.isModule ? null : (
                     <Select
@@ -372,9 +413,9 @@ const CommercialActivityPlanner: React.FC = () => {
                 ),
         },
         {
-            title: "Lead Time (Days)",
+            title: "Lead Time",
             key: "leadTime",
-            width: "10%",
+            width: "8%",
             render: (_: any, row: CommercialActivityRow) =>
                 row.isModule ? null : (
                     <InputNumber
@@ -390,26 +431,26 @@ const CommercialActivityPlanner: React.FC = () => {
                     />
                 ),
         },
-        {
-            title: "Order Processing Status",
-            key: "orderProcessingStatus",
-            width: "15%",
-            render: (_: any, row: CommercialActivityRow) =>
-                row.isModule ? null : (
-                    <Select
-                        style={{ width: "100%" }}
-                        disabled={!row.commercialUndertaken}
-                        value={row.orderProcessingStatus || "Yet to Start"}
-                        onChange={(val: string) => handleOrderStatusChange(row, val)}
-                    >
-                        {ORDER_STATUS_OPTIONS.map((s) => (
-                            <Option key={s} value={s}>
-                                {s}
-                            </Option>
-                        ))}
-                    </Select>
-                ),
-        },
+        // {
+        //     title: "Order Processing Status",
+        //     key: "orderProcessingStatus",
+        //     width: "15%",
+        //     render: (_: any, row: CommercialActivityRow) =>
+        //         row.isModule ? null : (
+        //             <Select
+        //                 style={{ width: "100%" }}
+        //                 disabled={!row.commercialUndertaken}
+        //                 value={row.orderProcessingStatus || "Yet to Start"}
+        //                 onChange={(val: string) => handleOrderStatusChange(row, val)}
+        //             >
+        //                 {ORDER_STATUS_OPTIONS.map((s) => (
+        //                     <Option key={s} value={s}>
+        //                         {s}
+        //                     </Option>
+        //                 ))}
+        //             </Select>
+        //         ),
+        // },
     ];
 
     return (

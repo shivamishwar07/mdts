@@ -10,7 +10,14 @@ import {
   Modal,
   Input,
 } from "antd";
-import { FileTextOutlined, UploadOutlined, EyeOutlined, DownloadOutlined, DeleteOutlined } from "@ant-design/icons";
+import {
+  FileTextOutlined,
+  UploadOutlined,
+  EyeOutlined,
+  DownloadOutlined,
+  DeleteOutlined,
+  HistoryOutlined,
+} from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
 import { db, ActivityBudgetDocument } from "../Utils/dataStorege";
@@ -43,11 +50,10 @@ interface ActivityRow {
   activityName: string;
   originalBudget?: number | null;
   originalBudgetDate?: string | null;
-  revisedBudget?: number | null;
-  revisedBudgetDate?: string | null;
+  currentBudget?: number | null;
+  currentBudgetDate?: string | null;
   revisionHistory?: RevisionEntry[];
 }
-
 interface ModulePanel {
   moduleKey: string;
   moduleName: string;
@@ -78,7 +84,8 @@ const ActivityBudget: React.FC = () => {
   const [docFile, setDocFile] = useState<File | null>(null);
   const [docPreviewVisible, setDocPreviewVisible] = useState(false);
   const [docPreviewContent, setDocPreviewContent] = useState<string | null>(null);
-
+  const [historyModalVisible, setHistoryModalVisible] = useState(false);
+  const [historyModalRow, setHistoryModalRow] = useState<TableRow | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -98,6 +105,7 @@ const ActivityBudget: React.FC = () => {
     const proj = all.find((p: any) => String(p.id) === String(projectId));
     console.log(proj);
     let latestTimeline: any | null = null;
+
     if (proj?.projectTimeline?.length) {
       latestTimeline = proj.projectTimeline[proj.projectTimeline.length - 1];
 
@@ -109,6 +117,7 @@ const ActivityBudget: React.FC = () => {
     } else {
       setTimelineInfo(null);
     }
+
     let modules: any[] = [];
 
     if (proj?.processedTimelineData?.length) {
@@ -134,7 +143,6 @@ const ActivityBudget: React.FC = () => {
     const panels: ModulePanel[] = [];
     console.log(modules);
 
-
     modules.forEach((module: any, moduleIndex: number) => {
       const moduleName =
         module.moduleName || module.keyActivity || `Module ${moduleIndex + 1}`;
@@ -146,7 +154,6 @@ const ActivityBudget: React.FC = () => {
             activity.code || activity.guicode || `act-${moduleIndex}-${actIndex}`;
           const actName = activity.activityName || activity.keyActivity || "";
           const b = map.get(String(code));
-
           const history: RevisionEntry[] =
             b?.revisionHistory && Array.isArray(b.revisionHistory)
               ? b.revisionHistory
@@ -158,6 +165,16 @@ const ActivityBudget: React.FC = () => {
                   },
                 ]
                 : [];
+
+          const originalBudget: number | null =
+            typeof b?.originalBudget === "number" ? b.originalBudget : null;
+          const originalBudgetDate: string | null = b?.originalBudgetDate ?? null;
+
+          const lastHistory = history.length > 0 ? history[history.length - 1] : null;
+          const currentBudget =
+            lastHistory?.amount ?? originalBudget ?? null;
+          const currentBudgetDate =
+            lastHistory?.date ?? originalBudgetDate ?? null;
 
           return {
             key: `activity-${moduleIndex}-${actIndex}`,
@@ -172,10 +189,11 @@ const ActivityBudget: React.FC = () => {
               : "-",
             activityCode: code,
             activityName: actName,
-            originalBudget: b?.originalBudget ?? null,
-            originalBudgetDate: b?.originalBudgetDate ?? null,
-            revisedBudget: b?.revisedBudget ?? null,
-            revisedBudgetDate: b?.revisedBudgetDate ?? null,
+
+            originalBudget,
+            originalBudgetDate,
+            currentBudget,
+            currentBudgetDate,
             revisionHistory: history,
           };
         }
@@ -197,28 +215,31 @@ const ActivityBudget: React.FC = () => {
     await loadModulesForProject(projectId);
   };
 
-  const handleOriginalBudgetChange = (rowKey: string, val: number | null) => {
+  const handleBudgetChange = (rowKey: string, val: number | null) => {
     setModulesPanels((prev) =>
       prev.map((p) => ({
         ...p,
         rows: p.rows.map((r) =>
-          r.key === rowKey ? { ...r, originalBudget: val } : r
+          r.key === rowKey ? { ...r, currentBudget: val } : r
         ),
       }))
     );
   };
 
-  const handleOriginalBudgetBlur = async (row: ActivityRow, moduleName: string) => {
+  const handleBudgetBlur = async (row: TableRow, moduleName: string) => {
     if (!selectedProjectId) return;
 
-    const hasExisting = !!row.originalBudgetDate;
+    const value = row.currentBudget;
+    const hasExistingBaseOrHistory =
+      (typeof row.originalBudget === "number" && row.originalBudgetDate) ||
+      (row.revisionHistory && row.revisionHistory.length > 0);
 
     if (
-      row.originalBudget === null ||
-      row.originalBudget === undefined ||
-      Number.isNaN(row.originalBudget)
+      value === null ||
+      value === undefined ||
+      Number.isNaN(value)
     ) {
-      if (hasExisting) {
+      if (hasExistingBaseOrHistory) {
         notify.warning("Budget ko delete karne ke liye Clear action use karein.");
         await loadModulesForProject(String(selectedProjectId));
       }
@@ -226,70 +247,77 @@ const ActivityBudget: React.FC = () => {
     }
 
     const now = new Date().toISOString();
-
-    await db.upsertActivityBudget({
-      projectId: String(selectedProjectId),
-      activityCode: row.activityCode,
-      activityName: row.activityName,
-      moduleName,
-      originalBudget: Number(row.originalBudget),
-      originalBudgetDate: hasExisting ? row.originalBudgetDate || now : now,
-      revisedBudget: row.revisedBudget ?? undefined,
-      revisedBudgetDate: row.revisedBudgetDate ?? undefined,
-      revisionHistory: row.revisionHistory ?? [],
-    });
-
-    // update originalBudgetDate in state, but NO toast here
-    setModulesPanels((prev) =>
-      prev.map((p) => ({
-        ...p,
-        rows: p.rows.map((r) =>
-          r.key === row.key
-            ? {
-              ...r,
-              originalBudgetDate: hasExisting ? r.originalBudgetDate || now : now,
-            }
-            : r
-        ),
-      }))
+    const existing = await db.getActivityBudget(
+      String(selectedProjectId),
+      row.activityCode
     );
-  };
 
-  const handleRevisedBudgetChange = (rowKey: string, val: number | null) => {
-    setModulesPanels((prev) =>
-      prev.map((p) => ({
-        ...p,
-        rows: p.rows.map((r) =>
-          r.key === rowKey ? { ...r, revisedBudget: val } : r
-        ),
-      }))
-    );
-  };
+    if (!existing) {
+      await db.upsertActivityBudget({
+        projectId: String(selectedProjectId),
+        activityCode: row.activityCode,
+        activityName: row.activityName,
+        moduleName,
+        originalBudget: Number(value),
+        originalBudgetDate: now,
+        revisionHistory: [],
+      });
 
-  const handleRevisedBudgetBlur = async (row: ActivityRow, moduleName: string) => {
-    if (!selectedProjectId) return;
+      setModulesPanels((prev) =>
+        prev.map((p) => ({
+          ...p,
+          rows: p.rows.map((r) =>
+            r.key === row.key
+              ? {
+                ...r,
+                originalBudget: Number(value),
+                originalBudgetDate: now,
+                currentBudget: Number(value),
+                currentBudgetDate: now,
+                revisionHistory: [],
+              }
+              : r
+          ),
+        }))
+      );
+      return;
+    }
 
-    const now = new Date().toISOString();
-    const hasExisting = !!row.revisedBudgetDate;
+    const existingHistory: RevisionEntry[] = existing.revisionHistory || [];
+    const lastHistory = existingHistory[existingHistory.length - 1] || null;
 
-    if (
-      row.revisedBudget === null ||
-      row.revisedBudget === undefined ||
-      Number.isNaN(row.revisedBudget)
-    ) {
-      if (hasExisting) {
-        notify.warning(
-          "Revised budget ko delete karne ke liye Clear action use karein."
-        );
-        await loadModulesForProject(String(selectedProjectId));
-      }
+    const lastAmount =
+      lastHistory?.amount ??
+      (typeof existing.originalBudget === "number"
+        ? existing.originalBudget
+        : null);
+
+    if (lastAmount !== null && lastAmount === Number(value)) {
+      setModulesPanels((prev) =>
+        prev.map((p) => ({
+          ...p,
+          rows: p.rows.map((r) =>
+            r.key === row.key
+              ? {
+                ...r,
+                originalBudget: existing.originalBudget ?? r.originalBudget,
+                originalBudgetDate:
+                  existing.originalBudgetDate ?? r.originalBudgetDate,
+                currentBudget: Number(value),
+                currentBudgetDate: lastHistory?.date ?? existing.originalBudgetDate,
+                revisionHistory: existingHistory,
+              }
+              : r
+          ),
+        }))
+      );
       return;
     }
 
     const newHistory: RevisionEntry[] = [
-      ...(row.revisionHistory || []),
+      ...existingHistory,
       {
-        amount: Number(row.revisedBudget),
+        amount: Number(value),
         date: now,
       },
     ];
@@ -299,14 +327,11 @@ const ActivityBudget: React.FC = () => {
       activityCode: row.activityCode,
       activityName: row.activityName,
       moduleName,
-      originalBudget: row.originalBudget ?? undefined,
-      originalBudgetDate: row.originalBudgetDate ?? undefined,
-      revisedBudget: Number(row.revisedBudget),
-      revisedBudgetDate: now,
+      originalBudget: existing.originalBudget,
+      originalBudgetDate: existing.originalBudgetDate,
       revisionHistory: newHistory,
     });
 
-    // update state, but NO toast here
     setModulesPanels((prev) =>
       prev.map((p) => ({
         ...p,
@@ -314,7 +339,11 @@ const ActivityBudget: React.FC = () => {
           r.key === row.key
             ? {
               ...r,
-              revisedBudgetDate: now,
+              originalBudget: existing.originalBudget ?? r.originalBudget,
+              originalBudgetDate:
+                existing.originalBudgetDate ?? r.originalBudgetDate,
+              currentBudget: Number(value),
+              currentBudgetDate: now,
               revisionHistory: newHistory,
             }
             : r
@@ -347,9 +376,9 @@ const ActivityBudget: React.FC = () => {
         activityCode: "",
         activityName: "",
         originalBudget: null,
-        revisedBudget: null,
         originalBudgetDate: null,
-        revisedBudgetDate: null,
+        currentBudget: null,
+        currentBudgetDate: null,
         revisionHistory: [],
         isModule: true,
         moduleName: panel.moduleName,
@@ -362,12 +391,18 @@ const ActivityBudget: React.FC = () => {
     [modulesPanels]
   );
 
+  const openHistoryModal = (row: TableRow) => {
+    if (row.isModule) return;
+    setHistoryModalRow(row);
+    setHistoryModalVisible(true);
+  };
+
   const renderColumns = (): ColumnsType<TableRow> => [
     {
-      title: "odule Code",
+      title: "Module Code",
       dataIndex: "SrNo",
       key: "SrNo",
-      width: 120,
+      width: 100,
     },
     {
       title: "Activity Code",
@@ -400,92 +435,56 @@ const ActivityBudget: React.FC = () => {
     },
     {
       title: "Budget (₹)",
-      key: "originalBudget",
+      key: "currentBudget",
       width: 140,
       render: (_: any, row: TableRow) =>
         row.isModule ? null : (
           <InputNumber<number>
+            className="budget-input"
             style={{ width: "100%" }}
             min={0}
             precision={0}
             parser={numericParser}
-            value={row.originalBudget ?? undefined}
-            disabled={!!row.originalBudgetDate}
-            onChange={(v) => handleOriginalBudgetChange(row.key, v ?? null)}
-            onBlur={() =>
-              handleOriginalBudgetBlur(row, row.moduleName || "")
-            }
-          />
-        ),
-    },
-    {
-      title: "Revised Budget (₹)",
-      key: "revisedBudget",
-      width: 160,
-      render: (_: any, row: TableRow) =>
-        row.isModule ? null : (
-          <InputNumber<number>
-            style={{ width: "100%" }}
-            min={0}
-            precision={0}
-            parser={numericParser}
-            disabled={!row.originalBudgetDate}
-            value={row.revisedBudget ?? undefined}
-            onChange={(v) => handleRevisedBudgetChange(row.key, v ?? null)}
-            onBlur={() =>
-              handleRevisedBudgetBlur(row, row.moduleName || "")
-            }
+            value={row.currentBudget ?? undefined}
+            onChange={(v) => handleBudgetChange(row.key, v ?? null)}
+            onBlur={() => handleBudgetBlur(row, row.moduleName || "")}
           />
         ),
     },
     {
       title: "Budgeted On",
       key: "budgetedOn",
-      width: 120,
-      render: (_: any, row: TableRow) =>
-        row.isModule
-          ? ""
-          : row.originalBudgetDate
-            ? dayjs(row.originalBudgetDate).format("DD-MM-YYYY")
-            : "-",
-    },
-    {
-      title: "Revised On",
-      key: "revisedOn",
-      width: 120,
+      width: 140,
       render: (_: any, row: TableRow) => {
         if (row.isModule) return "";
-        const history = row.revisionHistory || [];
-        if (history.length > 0) {
-          const last = history[history.length - 1];
-          return dayjs(last.date).format("DD-MM-YYYY");
-        }
-        if (row.revisedBudgetDate) {
-          return dayjs(row.revisedBudgetDate).format("DD-MM-YYYY");
-        }
-        return "-";
+        const date =
+          row.currentBudgetDate ||
+          (row.revisionHistory && row.revisionHistory.length
+            ? row.revisionHistory[row.revisionHistory.length - 1].date
+            : row.originalBudgetDate);
+        return date ? dayjs(date).format("DD-MM-YYYY HH:mm") : "-";
       },
     },
     {
-      title: "Action",
-      key: "actions",
-      width: 100,
+      title: "History",
+      key: "history",
+      width: 70,
       render: (_: any, row: TableRow) => {
         if (row.isModule) return null;
-        const disabled = !row.originalBudgetDate && !row.revisedBudgetDate;
+
+        const hasRevisionHistory =
+          row.revisionHistory && row.revisionHistory.length > 0;
+
+        if (!hasRevisionHistory) {
+          return <span>-</span>;
+        }
         return (
-          <Popconfirm
-            title="Clear budget?"
-            description="For this activity all the budget will be delete! Are you sure?."
-            onConfirm={() => handleClearBudget(row)}
-            okText="Yes"
-            cancelText="No"
-            disabled={disabled}
-          >
-            <Button type="link" danger disabled={disabled}>
-              Clear
-            </Button>
-          </Popconfirm>
+          <Button
+            type="link"
+            size="small"
+            icon={<HistoryOutlined />}
+            onClick={() => openHistoryModal(row)}
+          />
         );
       },
     },
@@ -505,41 +504,39 @@ const ActivityBudget: React.FC = () => {
           </Button>
         ),
     },
+    {
+      title: "Action",
+      key: "actions",
+      width: 100,
+      render: (_: any, row: TableRow) => {
+        if (row.isModule) return null;
+        const hasBudget =
+          (typeof row.originalBudget === "number" && row.originalBudgetDate) ||
+          (row.revisionHistory && row.revisionHistory.length > 0);
+        return (
+          <Popconfirm
+            title="Clear budget?"
+            description="For this activity all the budget will be delete! Are you sure?"
+            onConfirm={() => handleClearBudget(row)}
+            okText="Yes"
+            cancelText="No"
+            disabled={!hasBudget}
+          >
+            <Button type="link" danger disabled={!hasBudget}>
+              Clear
+            </Button>
+          </Popconfirm>
+        );
+      },
+    },
   ];
 
   const handleSaveAll = async () => {
     if (!selectedProjectId) return;
     setLoading(true);
     try {
-      for (const panel of modulesPanels) {
-        for (const row of panel.rows) {
-          // Only persist rows that have some budget info
-          if (
-            row.originalBudget != null ||
-            row.revisedBudget != null ||
-            (row.revisionHistory && row.revisionHistory.length > 0)
-          ) {
-            await db.upsertActivityBudget({
-              projectId: String(selectedProjectId),
-              activityCode: row.activityCode,
-              activityName: row.activityName,
-              moduleName: panel.moduleName,
-              originalBudget:
-                row.originalBudget != null
-                  ? Number(row.originalBudget)
-                  : undefined,
-              originalBudgetDate: row.originalBudgetDate || undefined,
-              revisedBudget:
-                row.revisedBudget != null
-                  ? Number(row.revisedBudget)
-                  : undefined,
-              revisedBudgetDate: row.revisedBudgetDate || undefined,
-              revisionHistory: row.revisionHistory || [],
-            });
-          }
-        }
-      }
-      notify.success("Budget saved");
+      await loadModulesForProject(selectedProjectId);
+      notify.success("Budgets refreshed.");
     } finally {
       setLoading(false);
     }
@@ -694,6 +691,34 @@ const ActivityBudget: React.FC = () => {
     }
   };
 
+  const historyModalData = useMemo(() => {
+    if (!historyModalRow) return [];
+    const rows: { key: string; type: string; amount: number | null; date: string | null }[] = [];
+
+    if (
+      typeof historyModalRow.originalBudget === "number" ||
+      historyModalRow.originalBudgetDate
+    ) {
+      rows.push({
+        key: "original",
+        type: "Original",
+        amount: historyModalRow.originalBudget ?? null,
+        date: historyModalRow.originalBudgetDate ?? null,
+      });
+    }
+
+    (historyModalRow.revisionHistory || []).forEach((h, idx) => {
+      rows.push({
+        key: `rev-${idx}`,
+        type: `Revision #${idx + 1}`,
+        amount: h.amount,
+        date: h.date,
+      });
+    });
+
+    return rows;
+  }, [historyModalRow]);
+
   return (
     <div className="budget-main-container">
       <div className="budget-heading">
@@ -736,7 +761,6 @@ const ActivityBudget: React.FC = () => {
                 <Text className="meta-value">
                   {dayjs(timelineInfo.updatedAt).format("DD-MM-YYYY HH:mm")}
                 </Text>
-
               </Space>
             )}
           </Space>
@@ -771,20 +795,24 @@ const ActivityBudget: React.FC = () => {
         />
       </div>
 
-      <div className="budget-footer" style={{
-        position: "absolute",
-        bottom: "25px",
-        right: "10px"
-      }}
+      <div
+        className="budget-footer"
+        style={{
+          position: "absolute",
+          bottom: "25px",
+          right: "10px",
+        }}
       >
-        <Button type="primary" className="save-button"
+        <Button
+          type="primary"
+          className="save-button"
           onClick={handleSaveAll}
           disabled={!selectedProjectId}
         >
           Save
         </Button>
       </div>
-      
+
       <Modal
         open={docModalVisible}
         title={
@@ -797,7 +825,7 @@ const ActivityBudget: React.FC = () => {
         width="50%"
         className="modal-container"
       >
-        <div className="" style={{ padding: "10px" }}>
+        <div style={{ padding: "10px" }}>
           <Table<ActivityBudgetDocument>
             dataSource={docModalDocs}
             rowKey="id"
@@ -915,7 +943,6 @@ const ActivityBudget: React.FC = () => {
               onChange={handleDocFileChange}
             />
           </div>
-
         </div>
       </Modal>
 
@@ -953,9 +980,56 @@ const ActivityBudget: React.FC = () => {
         </div>
       </Modal>
 
+      <Modal
+        open={historyModalVisible}
+        onCancel={() => setHistoryModalVisible(false)}
+        footer={null}
+        width="40%"
+        title={
+          historyModalRow
+            ? `Budget History – ${historyModalRow.activityName} (${historyModalRow.activityCode})`
+            : "Budget History"
+        }
+      >
+        {historyModalData.length ? (
+          <Table
+            size="small"
+            bordered
+            pagination={false}
+            rowKey="key"
+            dataSource={historyModalData}
+            columns={[
+              {
+                title: "Type",
+                dataIndex: "type",
+                key: "type",
+                width: 120,
+              },
+              {
+                title: "Amount (₹)",
+                dataIndex: "amount",
+                key: "amount",
+                width: 120,
+                render: (val: number | null) =>
+                  typeof val === "number" ? val.toLocaleString("en-IN") : "-",
+              },
+              {
+                title: "Date",
+                dataIndex: "date",
+                key: "date",
+                render: (val: string | null) =>
+                  val ? dayjs(val).format("DD-MM-YYYY HH:mm") : "-",
+              },
+            ]}
+          />
+        ) : (
+          <p>No history available.</p>
+        )}
+      </Modal>
+
+      <ToastContainer />
     </div>
   );
-  <ToastContainer />
 };
 
 export default ActivityBudget;
