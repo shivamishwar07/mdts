@@ -9,10 +9,12 @@
 }
 
 .ant-card-head {
-    background-color: #01a3a4 !important;
-    color: #fff !important;
+    /* background-color: #01a3a4 !important;
+    color: #fff !important; */
+    padding: 0 !important;
     font-size: 18px !important;
     margin-bottom: 10px !important;
+    min-height: 30px !important;
 }
 
 .ant-card-body {

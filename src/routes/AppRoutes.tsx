@@ -36,6 +36,7 @@ import KnowledgeCenter from "../Components/KnowledgeCenter";
 import ActivityBudget from "../pages/ActivityBudget";
 import ActivityCost from "../pages/ActivityCost";
 import CommercialActivityPlanner from "../pages/ComercialActivityPlanner";
+import ManageRaci from "../pages/ManageRaci";
 
 const AppRoutes = () => {
     const isAuthenticated = !!localStorage.getItem("user");
@@ -280,6 +281,15 @@ const AppRoutes = () => {
                         element={
                             <ProtectedRoute action="ADD_COST_IN_ACTIVITY">
                                 <DPRCostBuilder />
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/racisearch"
+                        element={
+                            <ProtectedRoute action="ADD_COST_IN_ACTIVITY">
+                                <ManageRaci />
                             </ProtectedRoute>
                         }
                     />

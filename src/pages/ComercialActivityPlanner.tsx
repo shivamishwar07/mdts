@@ -6,10 +6,12 @@ import {
     Space,
     InputNumber,
     Button,
+    Tooltip,
 } from "antd";
+import { HistoryOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 import { db } from "../Utils/dataStorege";
-import "../styles/activitybudget.css";
+import "../styles/commercialactivityplanner.css";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify";
 
@@ -20,6 +22,11 @@ interface TimelineInfo {
     status: string;
     version: string;
     updatedAt: string;
+}
+
+interface RevisionEntry {
+    amount: number;
+    date: string;
 }
 
 interface CommercialActivityRow {
@@ -39,24 +46,24 @@ interface CommercialActivityRow {
     budgetAmount?: number | null;
     isModule?: boolean;
     children?: CommercialActivityRow[];
+
+    // NEW: is budget ever revised?
+    hasRevisedBudget?: boolean;
 }
 
 // const ORDER_STATUS_OPTIONS = [
-//     "Yet to Start",
-//     "RFP Processed",
-//     "Bidding/Reverse Auction Conducted",
-//     "PO Processed",
-//     "Quote Comparison Done",
+//   "Yet to Start",
+//   "RFP Processed",
+//   "Bidding/Reverse Auction Conducted",
+//   "PO Processed",
+//   "Quote Comparison Done",
 // ];
-
-interface RevisionEntry {
-    amount: number;
-    date: string;
-}
 
 const CommercialActivityPlanner: React.FC = () => {
     const [projects, setProjects] = useState<any[]>([]);
-    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+    const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
+        null
+    );
     const [rows, setRows] = useState<CommercialActivityRow[]>([]);
     const [loading, setLoading] = useState(false);
     const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
@@ -119,6 +126,7 @@ const CommercialActivityPlanner: React.FC = () => {
             modules = [timelineData];
         }
 
+        // ---------- Budget + Revision Info ----------
         const budgets = await db.getActivityBudgetsForProject(String(projectId));
         const budgetMap = new Map<string, any>();
 
@@ -128,21 +136,25 @@ const CommercialActivityPlanner: React.FC = () => {
                 : [];
 
             const last = history.length > 0 ? history[history.length - 1] : null;
+
             const currentBudget =
                 (last?.amount ?? null) ??
                 (typeof b.originalBudget === "number" ? b.originalBudget : null) ??
                 (typeof b.totalBudget === "number" ? b.totalBudget : null) ??
                 (typeof b.budgetAmount === "number" ? b.budgetAmount : null);
 
+            const hasRevisedBudget = history.length > 0;
+
             if (currentBudget != null) {
                 budgetMap.set(String(b.activityCode), {
                     ...b,
                     currentBudget,
+                    hasRevisedBudget,
                 });
             }
         });
 
-
+        // ---------- Commercial Activities ----------
         const existingCommercial = await db.getCommercialActivitiesForProject(
             String(projectId)
         );
@@ -173,13 +185,12 @@ const CommercialActivityPlanner: React.FC = () => {
                 const budgetAmount: number | null =
                     typeof budget.currentBudget === "number"
                         ? budget.currentBudget
-                        : (
-                            budget.originalBudget ??
-                            budget.totalBudget ??
-                            budget.budgetAmount ??
-                            null
-                        );
+                        : budget.originalBudget ??
+                        budget.totalBudget ??
+                        budget.budgetAmount ??
+                        null;
 
+                const hasRevisedBudget: boolean = !!budget.hasRevisedBudget;
 
                 flatRows.push({
                     key: `${projectId}-${code}`,
@@ -197,6 +208,7 @@ const CommercialActivityPlanner: React.FC = () => {
                         existing?.leadTimeDays !== undefined ? existing.leadTimeDays : null,
                     orderProcessingStatus: existing?.orderProcessingStatus || "Yet to Start",
                     budgetAmount,
+                    hasRevisedBudget,
                 });
             });
         });
@@ -261,12 +273,12 @@ const CommercialActivityPlanner: React.FC = () => {
     };
 
     // const handleOrderStatusChange = (row: CommercialActivityRow, value: string) => {
-    //     const updated: CommercialActivityRow = {
-    //         ...row,
-    //         orderProcessingStatus: value,
-    //     };
-    //     updateRow(row.key, updated);
-    //     void persistRow(updated);
+    //   const updated: CommercialActivityRow = {
+    //     ...row,
+    //     orderProcessingStatus: value,
+    //   };
+    //   updateRow(row.key, updated);
+    //   void persistRow(updated);
     // };
 
     const numericParser = (value: string | undefined): number => {
@@ -277,7 +289,11 @@ const CommercialActivityPlanner: React.FC = () => {
     const tableData: CommercialActivityRow[] = useMemo(() => {
         const groups = new Map<
             string,
-            { moduleName: string | undefined; moduleCode: string | undefined; rows: CommercialActivityRow[] }
+            {
+                moduleName: string | undefined;
+                moduleCode: string | undefined;
+                rows: CommercialActivityRow[];
+            }
         >();
 
         rows.forEach((r) => {
@@ -351,53 +367,76 @@ const CommercialActivityPlanner: React.FC = () => {
             title: "Budget (₹)",
             dataIndex: "budgetAmount",
             key: "budgetAmount",
-            width: "8%",
+            width: "6%",
             align: "right" as const,
-            render: (val: number | null | undefined, row: CommercialActivityRow) =>
-                row.isModule
-                    ? ""
-                    : val != null
-                        ? val.toLocaleString("en-IN", {
-                            maximumFractionDigits: 2,
-                        })
-                        : "-",
+            render: (val: any, row: any) => {
+                if (row.isModule) return "";
+
+                const display =
+                    val != null
+                        ? val.toLocaleString("en-IN", { maximumFractionDigits: 2 })
+                        : "-";
+
+                return (
+                    <span className="cap-budget-cell">
+                        <span>{display}</span>
+
+                        {row.hasRevisedBudget ? (
+                            <Tooltip title="Budget revised">
+                                <HistoryOutlined className="revised-icon" />
+                            </Tooltip>
+                        ) : (
+                            <span className="dash-placeholder">-</span>
+                        )}
+                    </span>
+                );
+            },
+
         },
         {
             title: "Planned Start",
             dataIndex: "plannedStart",
             key: "plannedStart",
             width: "10%",
-            render: (val: string | null | undefined, row: CommercialActivityRow) =>
-                row.isModule ? "" : val ? dayjs(val).format("DD-MM-YYYY") : "-",
+            render: (
+                val: string | null | undefined,
+                row: CommercialActivityRow
+            ) => (row.isModule ? "" : val ? dayjs(val).format("DD-MM-YYYY") : "-"),
         },
         {
             title: "Planned Finish",
             dataIndex: "plannedFinish",
             key: "plannedFinish",
             width: "10%",
-            render: (val: string | null | undefined, row: CommercialActivityRow) =>
-                row.isModule ? "" : val ? dayjs(val).format("DD-MM-YYYY") : "-",
+            render: (
+                val: string | null | undefined,
+                row: CommercialActivityRow
+            ) => (row.isModule ? "" : val ? dayjs(val).format("DD-MM-YYYY") : "-"),
         },
         {
             title: "Actual Start",
             dataIndex: "actualStart",
             key: "actualStart",
             width: "10%",
-            render: (val: string | null | undefined, row: CommercialActivityRow) =>
-                row.isModule ? "" : val ? dayjs(val).format("DD-MM-YYYY") : "-",
+            render: (
+                val: string | null | undefined,
+                row: CommercialActivityRow
+            ) => (row.isModule ? "" : val ? dayjs(val).format("DD-MM-YYYY") : "-"),
         },
         {
             title: "Actual Finish",
             dataIndex: "actualFinish",
             key: "actualFinish",
             width: "10%",
-            render: (val: string | null | undefined, row: CommercialActivityRow) =>
-                row.isModule ? "" : val ? dayjs(val).format("DD-MM-YYYY") : "-",
+            render: (
+                val: string | null | undefined,
+                row: CommercialActivityRow
+            ) => (row.isModule ? "" : val ? dayjs(val).format("DD-MM-YYYY") : "-"),
         },
         {
             title: "Commercial Activity Undertaken",
             key: "commercialUndertaken",
-            width: "18%",
+            width: "16%",
             render: (_: any, row: CommercialActivityRow) =>
                 row.isModule ? null : (
                     <Select
@@ -413,9 +452,9 @@ const CommercialActivityPlanner: React.FC = () => {
                 ),
         },
         {
-            title: "Lead Time",
+            title: "Lead Time (Days)",
             key: "leadTime",
-            width: "8%",
+            width: "12%",
             render: (_: any, row: CommercialActivityRow) =>
                 row.isModule ? null : (
                     <InputNumber
@@ -432,24 +471,24 @@ const CommercialActivityPlanner: React.FC = () => {
                 ),
         },
         // {
-        //     title: "Order Processing Status",
-        //     key: "orderProcessingStatus",
-        //     width: "15%",
-        //     render: (_: any, row: CommercialActivityRow) =>
-        //         row.isModule ? null : (
-        //             <Select
-        //                 style={{ width: "100%" }}
-        //                 disabled={!row.commercialUndertaken}
-        //                 value={row.orderProcessingStatus || "Yet to Start"}
-        //                 onChange={(val: string) => handleOrderStatusChange(row, val)}
-        //             >
-        //                 {ORDER_STATUS_OPTIONS.map((s) => (
-        //                     <Option key={s} value={s}>
-        //                         {s}
-        //                     </Option>
-        //                 ))}
-        //             </Select>
-        //         ),
+        //   title: "Order Processing Status",
+        //   key: "orderProcessingStatus",
+        //   width: "15%",
+        //   render: (_: any, row: CommercialActivityRow) =>
+        //     row.isModule ? null : (
+        //       <Select
+        //         style={{ width: "100%" }}
+        //         disabled={!row.commercialUndertaken}
+        //         value={row.orderProcessingStatus || "Yet to Start"}
+        //         onChange={(val: string) => handleOrderStatusChange(row, val)}
+        //       >
+        //         {ORDER_STATUS_OPTIONS.map((s) => (
+        //           <Option key={s} value={s}>
+        //             {s}
+        //           </Option>
+        //         ))}
+        //       </Select>
+        //     ),
         // },
     ];
 
@@ -498,7 +537,9 @@ const CommercialActivityPlanner: React.FC = () => {
                                 <Text className="meta-label">Updated:</Text>
                                 <Text className="meta-value">
                                     {timelineInfo.updatedAt
-                                        ? dayjs(timelineInfo.updatedAt).format("DD-MM-YYYY HH:mm")
+                                        ? dayjs(timelineInfo.updatedAt).format(
+                                            "DD-MM-YYYY HH:mm"
+                                        )
                                         : "-"}
                                 </Text>
                             </Space>
@@ -540,13 +581,18 @@ const CommercialActivityPlanner: React.FC = () => {
                 style={{
                     position: "absolute",
                     bottom: "25px",
-                    right: "10px"
+                    right: "10px",
                 }}
             >
-                <Button type="primary" className="save-button" onClick={handleSaveAll}>
+                <Button
+                    type="primary"
+                    className="save-button"
+                    onClick={handleSaveAll}
+                >
                     Save
                 </Button>
             </div>
+
             <ToastContainer />
         </div>
     );

@@ -17,32 +17,6 @@ interface NavItem {
     requiredPermission: any
 }
 
-// const initialNavLinks: any = [
-//     // { label: "About", action: "/about" },
-//     { label: "Dashboard", action: "/dashboard" },
-//     { label: "Documents", action: "/document" },
-//     { label: "Knowledge Center", action: "/knowledge-center" },
-//     {
-//         label: "Data Master",
-//         subItems: [
-//             { label: "Module Library", action: "/create/module-library" },
-//             { label: "Notification", action: "/create/notification", isNull: true }
-//         ]
-//     },
-//     {
-//         label: "Create",
-//         subItems: [
-//             { label: "Register New Project", action: "/create/register-new-project" },
-//             { label: "Modules", action: "/modules" },
-//             { label: "Timeline Builder", action: "/create/timeline-builder" },
-//             { label: "Status Update", action: "/create/status-update" },
-//             { label: "Non-working Days", action: "/create/non-working-days" },
-//             { label: "DPR Cost Builder", action: "/create/dpr-cost-builder", isNull: true },
-//             { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true },
-//             { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true },
-//         ]
-//     }
-// ];
 const initialNavLinks: any[] = [
     { label: "Dashboard", action: "/dashboard", requiredPermission: "VIEW_NAVBAR_MENUS" },
     { label: "Documents", action: "/document", requiredPermission: "VIEW_NAVBAR_MENUS" },
@@ -53,7 +27,7 @@ const initialNavLinks: any[] = [
         subItems: [
             { label: "Module Library", action: "/create/module-library", requiredPermission: "CREATE_MODULE" },
             // { label: "Notification", action: "/create/notification", isNull: true, requiredPermission: "SET_NOTIFICATIONS" },
-            { label: "Projects", action: "/create/project-list", isNull: true, requiredPermission: "VIEW_PROJECT_LIST" }
+            { label: "Projects", action: "/create/project-list", isNull: true, requiredPermission: "VIEW_PROJECT_LIST" },
         ]
     },
     {
@@ -131,12 +105,18 @@ const Navbar: React.FC = () => {
                 foundTab = link;
             }
         });
-        if (foundTab) {
-            setSelectedDropdownKeys((prev) => ({
-                ...prev,
-                [parentLabel || foundTab.label]: foundTab.label,
-            }));
-        }
+        // if (foundTab) {
+        //     setSelectedDropdownKeys((prev) => ({
+        //         ...prev,
+        //         [parentLabel || foundTab.label]: foundTab.label,
+        //     }));
+        // }
+         if (foundTab) {
+    // ✅ replace, don’t merge
+    setSelectedDropdownKeys({ [parentLabel || foundTab.label]: foundTab.label });
+  } else {
+    setSelectedDropdownKeys({});
+  }
     }, [location.pathname, navLinks]);
 
     const handleLogout = () => {
@@ -150,10 +130,12 @@ const Navbar: React.FC = () => {
     };
 
     const handleDropdownSelect = (menuLabel: string, subItem: any) => {
-        setSelectedDropdownKeys((prev) => ({
-            ...prev,
-            [menuLabel]: subItem.label,
-        }));
+        // setSelectedDropdownKeys((prev) => ({
+        //     ...prev,
+        //     [menuLabel]: subItem.label,
+        // }));
+
+          setSelectedDropdownKeys({ [menuLabel]: subItem.label });
 
         if (subItem.option === "popup") {
             handlePopupOpen(subItem.name || "");

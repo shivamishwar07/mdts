@@ -3,7 +3,7 @@ import "../styles/projects.css";
 import { Input, Button, Modal, Select, Dropdown, Menu, Checkbox } from 'antd';
 import { Link } from "react-router-dom";
 import { SearchOutlined } from "@mui/icons-material";
-import { MoreOutlined, RobotOutlined } from "@ant-design/icons";
+import { MoreOutlined, PlusOutlined, RobotOutlined } from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
 import { PushpinOutlined, StarOutlined, ShareAltOutlined, DeleteOutlined } from "@ant-design/icons";
 import CAPEXPerformance from "./CAPEXPerformance.tsx";
@@ -17,6 +17,10 @@ import ProjectStatistics from "./ProjectStatistics.tsx";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
 import { getCurrentUser } from "../Utils/moduleStorage.ts";
+import { useNavigate } from "react-router-dom";
+import { TeamOutlined } from "@ant-design/icons";
+
+// import ManageRaci from "./ManageRaci.tsx";
 interface LocationDetails {
     state: string;
     district: string;
@@ -83,11 +87,13 @@ const Projects = () => {
     const [projectToDelete, setProjectToDelete] = useState<any>(null);
     const [isProjectFocused, setIsProjectFocused] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const navigate = useNavigate();
 
     const tabs = [
         { key: 'fdpp', label: 'FDPP' },
         { key: 'project-timeline', label: 'Project Timeline' },
         { key: 'projectStatistics', label: 'Project Statistics' },
+        // { key: 'racisearch', label: 'People Search' },
         { key: 'capex', label: 'CAPEX-Performance' },
         { key: 'documents', label: 'Documents' },
         { key: 'csr', label: 'Corporate Social Responsibility' },
@@ -130,7 +136,6 @@ const Projects = () => {
         }
     }, [currentUser]);
 
-
     if (!projectDetails) {
         return <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
             No projects available. Please add a project to get started.
@@ -151,9 +156,9 @@ const Projects = () => {
             setSelectedProjectName(selectedProject.projectParameters.projectName);
             setActiveTab('projectStatistics');
             setIsProjectFocused(true);
+            setActiveTab('fdpp');
         }
     };
-
 
     const handleSearch = (_event: any) => {
         console.log("searching...");
@@ -271,6 +276,8 @@ const Projects = () => {
                 return <CSR />;
             case 'mineInfra':
                 return <MineInfra />;
+            // case 'racisearch':
+            //     return <ManageRaci />;
             default:
                 return <div>Select a tab to see content</div>;
         }
@@ -280,19 +287,39 @@ const Projects = () => {
         <>
             <div className="project-container">
                 <div className="all-project-details">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: 'center' }}>
-                        <span
-                            className={`project-heading ${isProjectFocused ? "focused" : ""}`}
-                            onClick={() => {
-                                if (isProjectFocused) setIsProjectFocused(false);
-                            }}
-                        >
-                            Projects
-                        </span>
-                        <Button size="small" style={{ backgroundColor: '#44bd32', color: '#fff', padding: '1.5px 12px' }} icon={<RobotOutlined />}>
-                            <Link style={{ color: "inherit", textDecoration: "none" }} to={"/create/register-new-project"}>New</Link>
-                        </Button>
+                    <div className="projects-header">
+                        <div className="projects-title">
+                            <span className="project-heading">Projects</span>
+
+                            <Button
+                                type="text"
+                                size="small"
+                                className="header-icon-btn"
+                                title="New Project"
+                                icon={<PlusOutlined />}
+                                onClick={() => (window.location.href = "http://localhost:5000/create/register-new-project")}
+                            />
+                        </div>
+
+                        <div className="projects-header-actions">
+                            <span
+                                className="people-link"
+                                onClick={() => (window.location.href = "http://localhost:5000/racisearch")}
+                            >
+                                People
+                            </span>
+                            <Button
+                                type="text"
+                                size="small"
+                                className="header-icon-btn"
+                                title="People"
+                                icon={<TeamOutlined />}
+                                onClick={() => (window.location.href = "http://localhost:5000/racisearch")}
+                            />
+                        </div>
+
                     </div>
+
                     <div className="search">
                         <Input
                             size="small"
@@ -304,7 +331,7 @@ const Projects = () => {
                     </div>
                     {allProjects.map((project, _index) => {
                         const isSelected = selectedProjectName === project.projectParameters.projectName;
-                        if (isProjectFocused && !isSelected) return null;
+                        // if (isProjectFocused && !isSelected) return null;
 
                         return (
                             <div
@@ -339,7 +366,7 @@ const Projects = () => {
                         );
                     })}
 
-                    {isProjectFocused && projectDetails?.initialStatus?.items && (
+                    {/* {isProjectFocused && projectDetails?.initialStatus?.items && (
                         <div className="modules-list">
                             <p style={{ fontWeight: 600 }}>Modules</p>
                             {projectDetails.initialStatus.items.map((mod: any) => (
@@ -354,8 +381,7 @@ const Projects = () => {
                                 </div>
                             ))}
                         </div>
-                    )}
-
+                    )} */}
 
                 </div>
                 <section className="project-info">

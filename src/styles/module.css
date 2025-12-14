@@ -168,7 +168,7 @@
     position: sticky;
     top: 0;
     z-index: 1000;
-    background-color: #258790 !important;
+    /* background-color: #258790 !important; */
 }
 
 .custom-header th {

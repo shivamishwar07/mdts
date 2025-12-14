@@ -35,6 +35,99 @@
     color: #111;
 }
 
-.budget-input input {
+/* .budget-input input {
   text-align: right !important;
+} */
+
+.budget-input--editing {
+    border-color: #1677ff !important;
+    background-color: #e6f4ff !important;
+}
+
+.revision-cell {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+}
+
+.revision-cell__placeholder {
+    color: #999;
+    font-size: 12px;
+}
+
+.revision-btn {
+    transition: all 0.2s;
+}
+
+.revision-btn--history {
+    color: #1677ff;
+}
+
+.revision-btn--history:hover {
+    color: #0958d9;
+}
+
+.revision-btn--add {
+    color: #52c41a;
+}
+
+.revision-btn--add:hover {
+    color: #389e0d;
+}
+
+.revision-btn--active {
+    font-weight: bold;
+    text-decoration: underline;
+}
+
+.budget-action-btn {
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.budget-action-btn--edit {
+    color: #1677ff;
+}
+
+.budget-action-btn--edit:hover {
+    color: #0958d9;
+}
+
+.budget-action-btn--save {
+    color: #52c41a;
+}
+
+.budget-action-btn--save:hover {
+    color: #389e0d;
+}
+
+.budget-action-btn--cancel {
+    color: #ff4d4f !important;
+}
+
+.budget-action-btn--cancel:hover {
+    color: #cf1322 !important;
+}
+
+.budget-action-btn--active {
+    font-weight: 600;
+}
+
+.rev-budg {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.ant-table-tbody {
+    cursor: pointer;
+}
+
+.ant-table-tbody>tr.activity-row--selected>td {
+    background-color: rgba(24, 144, 255, 0.12) !important;
+}
+
+.ant-table-tbody>tr.activity-row--selected:hover>td {
+    background-color: rgba(24, 144, 255, 0.18) !important;
 }

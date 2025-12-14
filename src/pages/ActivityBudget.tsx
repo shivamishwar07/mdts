@@ -6,9 +6,10 @@ import {
   Typography,
   Space,
   Button,
-  Popconfirm,
   Modal,
   Input,
+  Tooltip,
+  DatePicker
 } from "antd";
 import {
   FileTextOutlined,
@@ -17,6 +18,10 @@ import {
   DownloadOutlined,
   DeleteOutlined,
   HistoryOutlined,
+  EditOutlined,
+  CheckOutlined,
+  CloseOutlined,
+  PlusCircleOutlined,
 } from "@ant-design/icons";
 import type { ColumnsType } from "antd/es/table";
 import dayjs from "dayjs";
@@ -24,7 +29,7 @@ import { db, ActivityBudgetDocument } from "../Utils/dataStorege";
 import "../styles/activitybudget.css";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify";
-
+import type { Dayjs } from "dayjs";
 const { Option } = Select;
 const { Text } = Typography;
 
@@ -54,6 +59,7 @@ interface ActivityRow {
   currentBudgetDate?: string | null;
   revisionHistory?: RevisionEntry[];
 }
+
 interface ModulePanel {
   moduleKey: string;
   moduleName: string;
@@ -86,7 +92,13 @@ const ActivityBudget: React.FC = () => {
   const [docPreviewContent, setDocPreviewContent] = useState<string | null>(null);
   const [historyModalVisible, setHistoryModalVisible] = useState(false);
   const [historyModalRow, setHistoryModalRow] = useState<TableRow | null>(null);
-
+  const [editingRowKey, setEditingRowKey] = useState<React.Key | null>(null);
+  const [editOriginalValue, setEditOriginalValue] = useState<number | null>(null);
+  const [revisionModalVisible, setRevisionModalVisible] = useState(false);
+  const [revisionRow, setRevisionRow] = useState<TableRow | null>(null);
+  const [revisionValue, setRevisionValue] = useState<number | null>(null);
+  const [selectedActivityRow, setSelectedActivityRow] = useState<TableRow | null>(null);
+  const [revisionDate, setRevisionDate] = useState<Dayjs | null>(dayjs());
   useEffect(() => {
     (async () => {
       const all = await db.getProjects();
@@ -99,11 +111,24 @@ const ActivityBudget: React.FC = () => {
     })();
   }, []);
 
+  const resetEditing = () => {
+    setEditingRowKey(null);
+    setEditOriginalValue(null);
+  };
+
+  const resetRevision = () => {
+    setRevisionModalVisible(false);
+    setRevisionRow(null);
+    setRevisionValue(null);
+    setRevisionDate(null);
+  };
+
   const loadModulesForProject = async (projectId: string) => {
     setLoading(true);
+    resetEditing();
+    resetRevision();
     const all = await db.getProjects();
     const proj = all.find((p: any) => String(p.id) === String(projectId));
-    console.log(proj);
     let latestTimeline: any | null = null;
 
     if (proj?.projectTimeline?.length) {
@@ -141,7 +166,6 @@ const ActivityBudget: React.FC = () => {
     budgets.forEach((b: any) => map.set(String(b.activityCode), b));
 
     const panels: ModulePanel[] = [];
-    console.log(modules);
 
     modules.forEach((module: any, moduleIndex: number) => {
       const moduleName =
@@ -189,7 +213,6 @@ const ActivityBudget: React.FC = () => {
               : "-",
             activityCode: code,
             activityName: actName,
-
             originalBudget,
             originalBudgetDate,
             currentBudget,
@@ -208,6 +231,8 @@ const ActivityBudget: React.FC = () => {
 
     setModulesPanels(panels);
     setExpandedKeys(panels.map((p) => p.moduleKey));
+    resetEditing();
+    resetRevision();
   };
 
   const handleProjectChange = async (projectId: string) => {
@@ -226,110 +251,28 @@ const ActivityBudget: React.FC = () => {
     );
   };
 
-  const handleBudgetBlur = async (row: TableRow, moduleName: string) => {
-    if (!selectedProjectId) return;
+  const handleInitialBudgetBlur = async (row: TableRow, moduleName: string) => {
+    if (!selectedProjectId || row.isModule) return;
 
     const value = row.currentBudget;
-    const hasExistingBaseOrHistory =
-      (typeof row.originalBudget === "number" && row.originalBudgetDate) ||
-      (row.revisionHistory && row.revisionHistory.length > 0);
+    if (value === null || value === undefined || Number.isNaN(value)) return;
 
-    if (
-      value === null ||
-      value === undefined ||
-      Number.isNaN(value)
-    ) {
-      if (hasExistingBaseOrHistory) {
-        notify.warning("Budget ko delete karne ke liye Clear action use karein.");
-        await loadModulesForProject(String(selectedProjectId));
-      }
-      return;
-    }
-
-    const now = new Date().toISOString();
     const existing = await db.getActivityBudget(
       String(selectedProjectId),
       row.activityCode
     );
+    if (existing) return;
 
-    if (!existing) {
-      await db.upsertActivityBudget({
-        projectId: String(selectedProjectId),
-        activityCode: row.activityCode,
-        activityName: row.activityName,
-        moduleName,
-        originalBudget: Number(value),
-        originalBudgetDate: now,
-        revisionHistory: [],
-      });
-
-      setModulesPanels((prev) =>
-        prev.map((p) => ({
-          ...p,
-          rows: p.rows.map((r) =>
-            r.key === row.key
-              ? {
-                ...r,
-                originalBudget: Number(value),
-                originalBudgetDate: now,
-                currentBudget: Number(value),
-                currentBudgetDate: now,
-                revisionHistory: [],
-              }
-              : r
-          ),
-        }))
-      );
-      return;
-    }
-
-    const existingHistory: RevisionEntry[] = existing.revisionHistory || [];
-    const lastHistory = existingHistory[existingHistory.length - 1] || null;
-
-    const lastAmount =
-      lastHistory?.amount ??
-      (typeof existing.originalBudget === "number"
-        ? existing.originalBudget
-        : null);
-
-    if (lastAmount !== null && lastAmount === Number(value)) {
-      setModulesPanels((prev) =>
-        prev.map((p) => ({
-          ...p,
-          rows: p.rows.map((r) =>
-            r.key === row.key
-              ? {
-                ...r,
-                originalBudget: existing.originalBudget ?? r.originalBudget,
-                originalBudgetDate:
-                  existing.originalBudgetDate ?? r.originalBudgetDate,
-                currentBudget: Number(value),
-                currentBudgetDate: lastHistory?.date ?? existing.originalBudgetDate,
-                revisionHistory: existingHistory,
-              }
-              : r
-          ),
-        }))
-      );
-      return;
-    }
-
-    const newHistory: RevisionEntry[] = [
-      ...existingHistory,
-      {
-        amount: Number(value),
-        date: now,
-      },
-    ];
+    const now = new Date().toISOString();
 
     await db.upsertActivityBudget({
       projectId: String(selectedProjectId),
       activityCode: row.activityCode,
       activityName: row.activityName,
       moduleName,
-      originalBudget: existing.originalBudget,
-      originalBudgetDate: existing.originalBudgetDate,
-      revisionHistory: newHistory,
+      originalBudget: Number(value),
+      originalBudgetDate: now,
+      revisionHistory: [],
     });
 
     setModulesPanels((prev) =>
@@ -339,24 +282,16 @@ const ActivityBudget: React.FC = () => {
           r.key === row.key
             ? {
               ...r,
-              originalBudget: existing.originalBudget ?? r.originalBudget,
-              originalBudgetDate:
-                existing.originalBudgetDate ?? r.originalBudgetDate,
+              originalBudget: Number(value),
+              originalBudgetDate: now,
               currentBudget: Number(value),
               currentBudgetDate: now,
-              revisionHistory: newHistory,
+              revisionHistory: [],
             }
             : r
         ),
       }))
     );
-  };
-
-  const handleClearBudget = async (row: ActivityRow) => {
-    if (!selectedProjectId) return;
-    await db.deleteActivityBudget(String(selectedProjectId), row.activityCode);
-    await loadModulesForProject(String(selectedProjectId));
-    notify.success("Budget cleared");
   };
 
   const numericParser = (value: string | undefined): number => {
@@ -395,6 +330,329 @@ const ActivityBudget: React.FC = () => {
     if (row.isModule) return;
     setHistoryModalRow(row);
     setHistoryModalVisible(true);
+  };
+
+  const startEdit = (row: TableRow) => {
+    if (row.isModule) return;
+    setEditingRowKey(row.key);
+    setEditOriginalValue(
+      typeof row.currentBudget === "number" ? row.currentBudget : null
+    );
+  };
+
+  const cancelEdit = () => {
+    if (editingRowKey == null) return;
+    const key = editingRowKey;
+    setModulesPanels((prev) =>
+      prev.map((p) => ({
+        ...p,
+        rows: p.rows.map((r) =>
+          r.key === key ? { ...r, currentBudget: editOriginalValue ?? null } : r
+        ),
+      }))
+    );
+    resetEditing();
+  };
+
+  const saveEdit = async () => {
+    if (!selectedProjectId || editingRowKey == null) return;
+
+    let targetRow: TableRow | null = null;
+    let targetModuleName = "";
+
+    for (const panel of modulesPanels) {
+      const found = panel.rows.find((r) => r.key === editingRowKey);
+      if (found) {
+        targetRow = { ...found, moduleName: panel.moduleName };
+        targetModuleName = panel.moduleName;
+        break;
+      }
+    }
+
+    if (!targetRow) {
+      resetEditing();
+      return;
+    }
+
+    const value = targetRow.currentBudget;
+    if (value === null || value === undefined || Number.isNaN(value)) {
+      notify.error("Budget value is invalid");
+      cancelEdit();
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const existing = await db.getActivityBudget(
+      String(selectedProjectId),
+      targetRow.activityCode
+    );
+
+    if (!existing) {
+      await db.upsertActivityBudget({
+        projectId: String(selectedProjectId),
+        activityCode: targetRow.activityCode,
+        activityName: targetRow.activityName,
+        moduleName: targetModuleName,
+        originalBudget: Number(value),
+        originalBudgetDate: now,
+        revisionHistory: [],
+      });
+
+      setModulesPanels((prev) =>
+        prev.map((p) => ({
+          ...p,
+          rows: p.rows.map((r) =>
+            r.key === editingRowKey
+              ? {
+                ...r,
+                originalBudget: Number(value),
+                originalBudgetDate: now,
+                currentBudget: Number(value),
+                currentBudgetDate: now,
+                revisionHistory: [],
+              }
+              : r
+          ),
+        }))
+      );
+
+      resetEditing();
+      return;
+    }
+
+    const existingHistory: RevisionEntry[] = existing.revisionHistory || [];
+
+    if (existingHistory.length > 0) {
+      const updatedHistory: RevisionEntry[] = [...existingHistory];
+      const idx = updatedHistory.length - 1;
+      updatedHistory[idx] = {
+        ...updatedHistory[idx],
+        amount: Number(value),
+        date: now,
+      };
+
+      await db.upsertActivityBudget({
+        projectId: String(selectedProjectId),
+        activityCode: targetRow.activityCode,
+        activityName: targetRow.activityName,
+        moduleName: targetModuleName,
+        originalBudget: existing.originalBudget,
+        originalBudgetDate: existing.originalBudgetDate,
+        revisionHistory: updatedHistory,
+      });
+
+      setModulesPanels((prev) =>
+        prev.map((p) => ({
+          ...p,
+          rows: p.rows.map((r) =>
+            r.key === editingRowKey
+              ? {
+                ...r,
+                originalBudget: existing.originalBudget ?? r.originalBudget,
+                originalBudgetDate:
+                  existing.originalBudgetDate ?? r.originalBudgetDate,
+                currentBudget: Number(value),
+                currentBudgetDate: now,
+                revisionHistory: updatedHistory,
+              }
+              : r
+          ),
+        }))
+      );
+
+      resetEditing();
+      return;
+    }
+
+    await db.upsertActivityBudget({
+      projectId: String(selectedProjectId),
+      activityCode: targetRow.activityCode,
+      activityName: targetRow.activityName,
+      moduleName: targetModuleName,
+      originalBudget: Number(value),
+      originalBudgetDate: existing.originalBudgetDate ?? now,
+      revisionHistory: [],
+    });
+
+    setModulesPanels((prev) =>
+      prev.map((p) => ({
+        ...p,
+        rows: p.rows.map((r) =>
+          r.key === editingRowKey
+            ? {
+              ...r,
+              originalBudget: Number(value),
+              originalBudgetDate: existing.originalBudgetDate ?? now,
+              currentBudget: Number(value),
+              currentBudgetDate: now,
+              revisionHistory: [],
+            }
+            : r
+        ),
+      }))
+    );
+
+    resetEditing();
+  };
+
+  const openRevisionModal = (row: TableRow) => {
+    if (row.isModule) return;
+    const hasPersistedBudget =
+      (typeof row.originalBudget === "number" && row.originalBudgetDate) ||
+      (row.revisionHistory && row.revisionHistory.length > 0);
+    if (!hasPersistedBudget) {
+      notify.error("There is no budget added for this activity. Please add a initial budget");
+      return;
+    }
+    setRevisionRow(row);
+    setRevisionValue(null);
+    setRevisionDate(dayjs());
+    setRevisionModalVisible(true);
+  };
+
+  // const handleRevisionSave = async () => {
+  //   if (!selectedProjectId || !revisionRow) {
+  //     resetRevision();
+  //     return;
+  //   }
+  //   if (
+  //     revisionValue === null ||
+  //     revisionValue === undefined ||
+  //     Number.isNaN(revisionValue)
+  //   ) {
+  //     notify.error("Please enter revised budget.");
+  //     return;
+  //   }
+
+  //   const now = new Date().toISOString();
+  //   const existing = await db.getActivityBudget(
+  //     String(selectedProjectId),
+  //     revisionRow.activityCode
+  //   );
+
+  //   if (!existing) {
+  //     notify.error("Existing budget nahi mila revise karne ke liye.");
+  //     resetRevision();
+  //     return;
+  //   }
+
+  //   const existingHistory: RevisionEntry[] = existing.revisionHistory || [];
+  //   const newHistory: RevisionEntry[] = [
+  //     ...existingHistory,
+  //     {
+  //       amount: Number(revisionValue),
+  //       date: now,
+  //     },
+  //   ];
+
+  //   await db.upsertActivityBudget({
+  //     projectId: String(selectedProjectId),
+  //     activityCode: revisionRow.activityCode,
+  //     activityName: revisionRow.activityName,
+  //     moduleName: revisionRow.moduleName || "",
+  //     originalBudget: existing.originalBudget,
+  //     originalBudgetDate: existing.originalBudgetDate,
+  //     revisionHistory: newHistory,
+  //   });
+
+  //   setModulesPanels((prev) =>
+  //     prev.map((p) => ({
+  //       ...p,
+  //       rows: p.rows.map((r) =>
+  //         r.key === revisionRow.key
+  //           ? {
+  //             ...r,
+  //             originalBudget: existing.originalBudget ?? r.originalBudget,
+  //             originalBudgetDate:
+  //               existing.originalBudgetDate ?? r.originalBudgetDate,
+  //             currentBudget: Number(revisionValue),
+  //             currentBudgetDate: now,
+  //             revisionHistory: newHistory,
+  //           }
+  //           : r
+  //       ),
+  //     }))
+  //   );
+
+  //   resetRevision();
+  // };
+
+  const handleRevisionSave = async () => {
+    if (!selectedProjectId || !revisionRow) {
+      resetRevision();
+      return;
+    }
+    if (
+      revisionValue === null ||
+      revisionValue === undefined ||
+      Number.isNaN(revisionValue)
+    ) {
+      notify.error("Please enter revised budget.");
+      return;
+    }
+
+    if (!revisionDate) {
+      notify.error("Please select revision date.");
+      return;
+    }
+
+    if (revisionDate.isAfter(dayjs(), "day")) {
+      notify.error("Future date can not be in future");
+      return;
+    }
+
+    const revisionDateIso = revisionDate.endOf("day").toDate().toISOString(); // ⬅️ date to ISO
+
+    const existing = await db.getActivityBudget(
+      String(selectedProjectId),
+      revisionRow.activityCode
+    );
+
+    if (!existing) {
+      notify.error("Existing budget nahi mila revise karne ke liye.");
+      resetRevision();
+      return;
+    }
+
+    const existingHistory: RevisionEntry[] = existing.revisionHistory || [];
+    const newHistory: RevisionEntry[] = [
+      ...existingHistory,
+      {
+        amount: Number(revisionValue),
+        date: revisionDateIso,
+      },
+    ];
+
+    await db.upsertActivityBudget({
+      projectId: String(selectedProjectId),
+      activityCode: revisionRow.activityCode,
+      activityName: revisionRow.activityName,
+      moduleName: revisionRow.moduleName || "",
+      originalBudget: existing.originalBudget,
+      originalBudgetDate: existing.originalBudgetDate,
+      revisionHistory: newHistory,
+    });
+
+    setModulesPanels((prev) =>
+      prev.map((p) => ({
+        ...p,
+        rows: p.rows.map((r) =>
+          r.key === revisionRow.key
+            ? {
+              ...r,
+              originalBudget: existing.originalBudget ?? r.originalBudget,
+              originalBudgetDate:
+                existing.originalBudgetDate ?? r.originalBudgetDate,
+              currentBudget: Number(revisionValue),
+              currentBudgetDate: revisionDateIso,
+              revisionHistory: newHistory,
+            }
+            : r
+        ),
+      }))
+    );
+
+    resetRevision();
   };
 
   const renderColumns = (): ColumnsType<TableRow> => [
@@ -436,20 +694,83 @@ const ActivityBudget: React.FC = () => {
     {
       title: "Budget (₹)",
       key: "currentBudget",
-      width: 140,
-      render: (_: any, row: TableRow) =>
-        row.isModule ? null : (
-          <InputNumber<number>
-            className="budget-input"
-            style={{ width: "100%" }}
-            min={0}
-            precision={0}
-            parser={numericParser}
-            value={row.currentBudget ?? undefined}
-            onChange={(v) => handleBudgetChange(row.key, v ?? null)}
-            onBlur={() => handleBudgetBlur(row, row.moduleName || "")}
-          />
-        ),
+      width: 170,
+      render: (_: any, row: TableRow) => {
+        if (row.isModule) return null;
+
+        const hasAnyBudget =
+          typeof row.currentBudget === "number" ||
+          typeof row.originalBudget === "number" ||
+          (row.revisionHistory && row.revisionHistory.length > 0);
+
+        const hasPersistedBudget =
+          (typeof row.originalBudget === "number" && row.originalBudgetDate) ||
+          (row.revisionHistory && row.revisionHistory.length > 0);
+
+        const hasRevisionHistory =
+          row.revisionHistory && row.revisionHistory.length > 0;
+
+        const isEditing = editingRowKey === row.key;
+        const disabled = hasAnyBudget && !isEditing;
+        const isHistoryActive = historyModalRow?.key === row.key;
+
+        return (
+          <div className="budget-cell rev-budg">
+            <InputNumber<number>
+              className={
+                isEditing
+                  ? "budget-input budget-input--editing"
+                  : "budget-input"
+              }
+              style={{ width: "100%" }}
+              min={0}
+              precision={0}
+              parser={numericParser}
+              value={row.currentBudget ?? undefined}
+              onChange={(v) => handleBudgetChange(row.key, v ?? null)}
+              onBlur={() => {
+                if (!hasAnyBudget && !isEditing) {
+                  handleInitialBudgetBlur(row, row.moduleName || "");
+                }
+              }}
+              disabled={disabled}
+            />
+
+            {hasPersistedBudget ? (
+              hasRevisionHistory ? (
+                <Tooltip title="View revision history">
+                  <Button
+                    type="link"
+                    size="small"
+                    icon={<HistoryOutlined />}
+                    onClick={() => openHistoryModal(row)}
+                    className={
+                      isHistoryActive
+                        ? "revision-btn revision-btn--history revision-btn--active"
+                        : "revision-btn revision-btn--history"
+                    }
+                    style={{ paddingInline: 4 }}
+                  />
+                </Tooltip>
+              ) : (
+                <span
+                  style={{
+                    marginLeft: 6,
+                    fontSize: 12,
+                    color: "#999",
+                    display: "inline-block",
+                    width: 18,
+                    textAlign: "center",
+                  }}
+                >
+                  –
+                </span>
+              )
+            ) : null}
+          </div>
+
+        );
+      },
     },
     {
       title: "Budgeted On",
@@ -465,29 +786,59 @@ const ActivityBudget: React.FC = () => {
         return date ? dayjs(date).format("DD-MM-YYYY HH:mm") : "-";
       },
     },
-    {
-      title: "History",
-      key: "history",
-      width: 70,
-      render: (_: any, row: TableRow) => {
-        if (row.isModule) return null;
+    // {
+    //   title: "Revision History",
+    //   key: "history",
+    //   width: 120,
+    //   render: (_: any, row: TableRow) => {
+    //     if (row.isModule) return null;
 
-        const hasRevisionHistory =
-          row.revisionHistory && row.revisionHistory.length > 0;
+    //     const hasPersistedBudget =
+    //       (typeof row.originalBudget === "number" && row.originalBudgetDate) ||
+    //       (row.revisionHistory && row.revisionHistory.length > 0);
 
-        if (!hasRevisionHistory) {
-          return <span>-</span>;
-        }
-        return (
-          <Button
-            type="link"
-            size="small"
-            icon={<HistoryOutlined />}
-            onClick={() => openHistoryModal(row)}
-          />
-        );
-      },
-    },
+    //     const hasRevisionHistory =
+    //       row.revisionHistory && row.revisionHistory.length > 0;
+
+    //     const isHistoryActive = historyModalRow?.key === row.key;
+
+    //     if (!hasPersistedBudget) {
+    //       return <span className="revision-cell revision-cell--empty">-</span>;
+    //     }
+
+    //     return (
+    //       <div className="revision-cell">
+    //         {hasRevisionHistory ? (
+    //           <Tooltip title="View revision history">
+    //             <Button
+    //               type="link"
+    //               size="small"
+    //               icon={<HistoryOutlined />}
+    //               onClick={() => openHistoryModal(row)}
+    //               className={
+    //                 isHistoryActive
+    //                   ? "revision-btn revision-btn--history revision-btn--active"
+    //                   : "revision-btn revision-btn--history"
+    //               }
+    //             />
+    //           </Tooltip>
+    //         ) : (
+    //           <span className="revision-cell__placeholder">&nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;</span>
+    //         )}
+
+    //         <Tooltip title="Add revision">
+    //           <Button
+    //             type="link"
+    //             size="small"
+    //             icon={<PlusCircleOutlined />}
+    //             onClick={() => openRevisionModal(row)}
+    //             className="revision-btn revision-btn--add"
+    //           />
+    //         </Tooltip>
+    //       </div>
+    //     );
+    //   },
+    // },
     {
       title: "Docs",
       key: "docs",
@@ -507,25 +858,53 @@ const ActivityBudget: React.FC = () => {
     {
       title: "Action",
       key: "actions",
-      width: 100,
+      align: "center",
+      width: 110,
       render: (_: any, row: TableRow) => {
         if (row.isModule) return null;
-        const hasBudget =
+
+        const hasPersistedBudget =
           (typeof row.originalBudget === "number" && row.originalBudgetDate) ||
           (row.revisionHistory && row.revisionHistory.length > 0);
+
+        if (!hasPersistedBudget) return null;
+
+        const isEditing = editingRowKey === row.key;
+
+        if (isEditing) {
+          return (
+            <Space>
+              <Tooltip title="Save">
+                <Button
+                  type="link"
+                  icon={<CheckOutlined />}
+                  onClick={saveEdit}
+                  className="budget-action-btn budget-action-btn--save budget-action-btn--active"
+                />
+              </Tooltip>
+              <Tooltip title="Cancel">
+                <Button
+                  type="link"
+                  icon={<CloseOutlined />}
+                  onClick={cancelEdit}
+                  className="budget-action-btn budget-action-btn--cancel budget-action-btn--active"
+                />
+              </Tooltip>
+            </Space>
+          );
+        }
+
         return (
-          <Popconfirm
-            title="Clear budget?"
-            description="For this activity all the budget will be delete! Are you sure?"
-            onConfirm={() => handleClearBudget(row)}
-            okText="Yes"
-            cancelText="No"
-            disabled={!hasBudget}
-          >
-            <Button type="link" danger disabled={!hasBudget}>
-              Clear
-            </Button>
-          </Popconfirm>
+          <Space>
+            <Tooltip title="Edit budget">
+              <Button
+                type="link"
+                icon={<EditOutlined />}
+                onClick={() => startEdit(row)}
+                className="budget-action-btn budget-action-btn--edit"
+              />
+            </Tooltip>
+          </Space>
         );
       },
     },
@@ -693,7 +1072,12 @@ const ActivityBudget: React.FC = () => {
 
   const historyModalData = useMemo(() => {
     if (!historyModalRow) return [];
-    const rows: { key: string; type: string; amount: number | null; date: string | null }[] = [];
+    const rows: {
+      key: string;
+      type: string;
+      amount: number | null;
+      date: string | null;
+    }[] = [];
 
     if (
       typeof historyModalRow.originalBudget === "number" ||
@@ -757,12 +1141,34 @@ const ActivityBudget: React.FC = () => {
 
             {timelineInfo && (
               <Space>
-                <Text className="meta-label">Updated:</Text>
+                <Text className="meta-label">Updated At:</Text>
                 <Text className="meta-value">
                   {dayjs(timelineInfo.updatedAt).format("DD-MM-YYYY HH:mm")}
                 </Text>
+
+                <Tooltip title="Add revision for selected activity">
+                  <Button
+                    size="small"
+                    type="primary"
+                    icon={<PlusCircleOutlined />}
+                    disabled={!selectedActivityRow}
+                    onClick={() => {
+                      if (!selectedActivityRow) {
+                        notify.error("Please select an activity row first.");
+                        return;
+                      }
+                      openRevisionModal(selectedActivityRow);
+                    }}
+                    style={{ marginLeft: 8 }}
+                  >
+                    Add Revision
+                  </Button>
+                </Tooltip>
+
+
               </Space>
             )}
+
           </Space>
         </div>
       </div>
@@ -780,19 +1186,30 @@ const ActivityBudget: React.FC = () => {
             expandedRowKeys: expandedKeys,
             onExpand: (expanded, record) => {
               setExpandedKeys((prev) =>
-                expanded
-                  ? [...prev, record.key]
-                  : prev.filter((k) => k !== record.key)
+                expanded ? [...prev, record.key] : prev.filter((k) => k !== record.key)
               );
             },
             rowExpandable: (record: any) =>
               record.isModule && !!record.children?.length,
           }}
           rowClassName={(record) =>
-            record.isModule ? "module-header" : "activity-row"
+            record.isModule
+              ? "module-header"
+              : record.key === selectedActivityRow?.key
+                ? "activity-row activity-row--selected"
+                : "activity-row"
           }
+          onRow={(record) => ({
+            onClick: () => {
+              if (record.isModule) return;
+              setSelectedActivityRow((prev) =>
+                prev?.key === record.key ? null : record
+              );
+            },
+          })}
           scroll={{ x: true, y: "calc(100vh - 260px)" }}
         />
+
       </div>
 
       <div
@@ -953,6 +1370,7 @@ const ActivityBudget: React.FC = () => {
         width="80%"
         bodyStyle={{ height: "75vh" }}
         title="Preview Document"
+        className="modal-container"
       >
         <div
           style={{
@@ -960,6 +1378,7 @@ const ActivityBudget: React.FC = () => {
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
+            padding: "10px"
           }}
         >
           {docPreviewContent?.startsWith("data:application/pdf") ? (
@@ -981,50 +1400,90 @@ const ActivityBudget: React.FC = () => {
       </Modal>
 
       <Modal
+        open={revisionModalVisible}
+        onCancel={resetRevision}
+        onOk={handleRevisionSave}
+        className="modal-container"
+        okText="Save"
+        title={
+          revisionRow
+            ? `Add Revision – ${revisionRow.activityName} (${revisionRow.activityCode})`
+            : "Add Revision"
+        }
+      >
+        <Space direction="vertical" style={{ width: "100%", padding: "10px" }}>
+          <Text>Revised Budget (₹)</Text>
+          <InputNumber<number>
+            style={{ width: "100%" }}
+            min={0}
+            precision={0}
+            parser={numericParser}
+            value={revisionValue ?? undefined}
+            onChange={(v) => setRevisionValue(v ?? null)}
+          />
+
+          <Text>Revision Date</Text>
+          <DatePicker
+            style={{ width: "100%" }}
+            format="DD-MM-YYYY"
+            value={revisionDate}
+            onChange={(value) => setRevisionDate(value)}
+            disabledDate={(current) =>
+              current ? current > dayjs().endOf("day") : false // ⬅️ future disable
+            }
+          />
+        </Space>
+      </Modal>
+
+
+      <Modal
         open={historyModalVisible}
         onCancel={() => setHistoryModalVisible(false)}
         footer={null}
         width="40%"
+        className="modal-container"
         title={
           historyModalRow
             ? `Budget History – ${historyModalRow.activityName} (${historyModalRow.activityCode})`
             : "Budget History"
         }
       >
-        {historyModalData.length ? (
-          <Table
-            size="small"
-            bordered
-            pagination={false}
-            rowKey="key"
-            dataSource={historyModalData}
-            columns={[
-              {
-                title: "Type",
-                dataIndex: "type",
-                key: "type",
-                width: 120,
-              },
-              {
-                title: "Amount (₹)",
-                dataIndex: "amount",
-                key: "amount",
-                width: 120,
-                render: (val: number | null) =>
-                  typeof val === "number" ? val.toLocaleString("en-IN") : "-",
-              },
-              {
-                title: "Date",
-                dataIndex: "date",
-                key: "date",
-                render: (val: string | null) =>
-                  val ? dayjs(val).format("DD-MM-YYYY HH:mm") : "-",
-              },
-            ]}
-          />
-        ) : (
-          <p>No history available.</p>
-        )}
+        <div style={{ padding: "10px" }}>
+          {historyModalData.length ? (
+            <Table
+              size="small"
+              bordered
+              pagination={false}
+              rowKey="key"
+              dataSource={historyModalData}
+              columns={[
+                {
+                  title: "Type",
+                  dataIndex: "type",
+                  key: "type",
+                  width: 120,
+                },
+                {
+                  title: "Amount (₹)",
+                  dataIndex: "amount",
+                  key: "amount",
+                  width: 120,
+                  render: (val: number | null) =>
+                    typeof val === "number" ? val.toLocaleString("en-IN") : "-",
+                },
+                {
+                  title: "Date",
+                  dataIndex: "date",
+                  key: "date",
+                  render: (val: string | null) =>
+                    val ? dayjs(val).format("DD-MM-YYYY HH:mm") : "-",
+                },
+              ]}
+            />
+          ) : (
+            <p>No history available.</p>
+          )}
+        </div>
       </Modal>
 
       <ToastContainer />

@@ -207,8 +207,8 @@
 }
 
 .tab-button.active {
-    background: #258790;
-    color: white;
+    background: #d1f1f4;
+    color: #258790;
     font-weight: bold;
 }
 
@@ -256,13 +256,18 @@
 .project-heading {
     font-size: 18px;
     font-weight: bold;
-    padding: 2px 12px;
+    padding: 2px;
     border-radius: 20px;
     transition: all 0.3s ease;
     color: #444;
     background-color: transparent;
     border: 1px solid transparent;
     display: inline-block;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: #2f2f2f;
+    line-height: 1;
 }
 
 .project-heading.focused {
@@ -280,4 +285,75 @@
     color: #10239e;
     box-shadow: 0 4px 10px rgba(24, 144, 255, 0.3);
     transform: translateY(-1px);
+}
+
+.projects-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 2px 8px;
+    margin-bottom: 6px;
+}
+
+.projects-title {
+    display: flex;
+    align-items: center;
+}
+
+.projects-header-actions {
+    display: flex;
+    align-items: center;
+    outline: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.people-link {
+    font-size: 13px;
+    font-weight: 600;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: background 0.15s ease, color 0.15s ease;
+    user-select: none;
+}
+
+.people-link:hover {
+    background: #f5f7ff;
+    color: #1d4ed8;
+}
+
+.people-link:active {
+    transform: translateY(0.5px);
+}
+
+.header-icon-btn {
+    padding: 0 !important;
+    min-width: 26px !important;
+    width: 26px;
+    height: 26px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    
+    transition: background 0.15s ease, color 0.15s ease, transform 0.12s ease;
+}
+
+.header-icon-btn:hover {
+    background: #f3f4f6;
+    color: #111827;
+    transform: translateY(-1px);
+}
+
+.header-icon-btn:active {
+    transform: translateY(0px);
+}
+
+.header-icon-btn:focus-visible,
+.people-link:focus-visible {
+    outline: 2px solid rgba(24, 144, 255, 0.35);
+    outline-offset: 2px;
+    border-radius: 10px;
 }
