@@ -404,7 +404,6 @@ const Projects = () => {
                                         </div>
                                     </div>
 
-                                    {/* ✅ People view: hide/disable 3-dot menu so no actions */}
                                     {!isPeopleView && (
                                         <Dropdown overlay={menu(project)} trigger={["hover"]}>
                                             <MoreOutlined className="three-dot-menu" />
@@ -415,7 +414,7 @@ const Projects = () => {
                         })}
                     </div>
                     <div className="create-project-btn-div">
-                        <div onClick={() => navigate("/create/register-new-project")} >
+                        <div style={{display:"flex", justifyContent:"center"}} onClick={() => navigate("/create/register-new-project")} >
                             <Button
                                 type="text"
                                 size="small"
