@@ -119,17 +119,8 @@
     font-size: 15px;
 }
 
-.raci-empty-icon {
-    font-size: 50px;
-    color: grey;
-}
-
 .raci-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-
-.raci-back-btn {
-  border-radius: 8px;
 }

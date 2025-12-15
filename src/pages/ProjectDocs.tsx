@@ -463,7 +463,7 @@ const ProjectDocs = (project: any) => {
                             }}
                         />
                     ) : (
-                        <Empty description="No documents found for this project" />
+                        <Empty style={{padding:"10px", marginTop:"20px"}} description="No documents found for this project" />
                     )}
                 </Spin>
             </div>

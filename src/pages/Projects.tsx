@@ -1,11 +1,18 @@
 import { useEffect, useState } from "react";
 import "../styles/projects.css";
-import { Input, Button, Modal, Select, Dropdown, Menu, Checkbox } from 'antd';
+import { Input, Button, Modal, Select, Dropdown, Menu } from "antd";
 import { Link } from "react-router-dom";
 import { SearchOutlined } from "@mui/icons-material";
-import { MoreOutlined, PlusOutlined, RobotOutlined } from "@ant-design/icons";
+import {
+    MoreOutlined,
+    RobotOutlined,
+    PushpinOutlined,
+    StarOutlined,
+    ShareAltOutlined,
+    DeleteOutlined,
+    TeamOutlined,
+} from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
-import { PushpinOutlined, StarOutlined, ShareAltOutlined, DeleteOutlined } from "@ant-design/icons";
 import CAPEXPerformance from "./CAPEXPerformance.tsx";
 import FDPP from "./FDPP.tsx";
 import MineInfra from "./MineInfra.tsx";
@@ -18,9 +25,8 @@ import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
 import { getCurrentUser } from "../Utils/moduleStorage.ts";
 import { useNavigate } from "react-router-dom";
-import { TeamOutlined } from "@ant-design/icons";
+import PeopleSearch from "./PeopleSearch.tsx";
 
-// import ManageRaci from "./ManageRaci.tsx";
 interface LocationDetails {
     state: string;
     district: string;
@@ -66,9 +72,18 @@ interface ProjectParameters {
     vestingOrderDate: string | null;
     pbgAmount: string;
     view?: boolean;
+    description?: string;
 }
 
 interface ProjectData {
+    id: string;
+    orgId?: string;
+    userGuiId?: string;
+    members?: any[];
+    status?: string;
+    startDate?: string;
+    endDate?: string;
+    projectTimeline?: any[];
     projectParameters: ProjectParameters;
     locations: LocationDetails;
     contractualDetails: ContractualDetails;
@@ -76,31 +91,41 @@ interface ProjectData {
 }
 
 const membersList = ["Alice", "Bob", "Charlie", "David", "Emma"];
+
+type RightPanelView = "project" | "people";
+
 const Projects = () => {
     const [allProjects, setAllProjects] = useState<any[]>([]);
     const [projectDetails, setProjectDetails] = useState<ProjectData | any>(null);
     const [selectedProjectName, setSelectedProjectName] = useState<string>("");
+
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [selectedMember, setSelectedMember] = useState<string | null>(null);
     const [addedMembers, setAddedMembers] = useState<string[]>([]);
+
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [projectToDelete, setProjectToDelete] = useState<any>(null);
-    const [isProjectFocused, setIsProjectFocused] = useState(false);
+
+    const [_isProjectFocused, setIsProjectFocused] = useState(false);
     const [currentUser, setCurrentUser] = useState<any>(null);
+
+    const [rightPanelView, setRightPanelView] = useState<RightPanelView>("project");
+
     const navigate = useNavigate();
+    const isPeopleView = rightPanelView === "people";
 
     const tabs = [
-        { key: 'fdpp', label: 'FDPP' },
-        { key: 'project-timeline', label: 'Project Timeline' },
-        { key: 'projectStatistics', label: 'Project Statistics' },
-        // { key: 'racisearch', label: 'People Search' },
-        { key: 'capex', label: 'CAPEX-Performance' },
-        { key: 'documents', label: 'Documents' },
-        { key: 'csr', label: 'Corporate Social Responsibility' },
-        { key: 'mineInfra', label: 'Mine Infra Updated' }
+        { key: "fdpp", label: "FDPP" },
+        { key: "project-timeline", label: "Project Timeline" },
+        { key: "projectStatistics", label: "Project Statistics" },
+        { key: "capex", label: "CAPEX-Performance" },
+        { key: "documents", label: "Documents" },
+        { key: "csr", label: "Corporate Social Responsibility" },
+        { key: "mineInfra", label: "Mine Infra Updated" },
     ];
 
-    const [activeTab, setActiveTab] = useState('fdpp');
+    const [activeTab, setActiveTab] = useState("fdpp");
+
     const getAllProjects = async () => {
         if (!currentUser) return;
 
@@ -119,12 +144,10 @@ const Projects = () => {
             setProjectDetails(orgProjects[0]);
             setSelectedProjectName(orgProjects[0].projectParameters.projectName);
             setIsProjectFocused(true);
-
         } catch (error) {
             console.error("An unexpected error occurred while fetching projects:", error);
         }
     };
-
 
     useEffect(() => {
         setCurrentUser(getCurrentUser());
@@ -137,26 +160,34 @@ const Projects = () => {
     }, [currentUser]);
 
     if (!projectDetails) {
-        return <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
-            No projects available. Please add a project to get started.
-            <div style={{ marginLeft: "30px" }}>
-                <Button size="small" className="bg-secondary" icon={<RobotOutlined />}>
-                    <Link style={{ color: "inherit", textDecoration: "none" }} to={"/create/register-new-project"}>New</Link>
-                </Button>
+        return (
+            <div style={{ display: "flex", justifyContent: "center", marginTop: "20px" }}>
+                No projects available. Please add a project to get started.
+                <div style={{ marginLeft: "30px" }}>
+                    <Button size="small" className="bg-secondary" icon={<RobotOutlined />}>
+                        <Link style={{ color: "inherit", textDecoration: "none" }} to={"/create/register-new-project"}>
+                            New
+                        </Link>
+                    </Button>
+                </div>
             </div>
-        </div>;
+        );
     }
 
     const handleProjectClick = (projectName: string) => {
+        // ✅ People view: project list should be view-only (no selection)
+        if (isPeopleView) return;
+
         const selectedProject = allProjects.find(
             (project) => project.projectParameters.projectName === projectName
         );
+
         if (selectedProject) {
             setProjectDetails(selectedProject);
             setSelectedProjectName(selectedProject.projectParameters.projectName);
-            setActiveTab('projectStatistics');
             setIsProjectFocused(true);
-            setActiveTab('fdpp');
+            setRightPanelView("project");
+            setActiveTab("fdpp");
         }
     };
 
@@ -179,8 +210,16 @@ const Projects = () => {
             await db.deleteProject(projectToDelete.id);
             const updatedProjects = await db.getProjects();
             setAllProjects(updatedProjects);
-            setProjectDetails(updatedProjects.length > 0 ? updatedProjects[0] : null);
-            setSelectedProjectName(updatedProjects.length > 0 ? updatedProjects[0]?.projectParameters?.projectName || "" : "");
+
+            // keep first project selected if exists
+            if (updatedProjects.length > 0) {
+                setProjectDetails(updatedProjects[0]);
+                setSelectedProjectName(updatedProjects[0]?.projectParameters?.projectName || "");
+            } else {
+                setProjectDetails(null);
+                setSelectedProjectName("");
+            }
+
             notify.success("Project removed successfully");
         } catch (error: any) {
             notify.error("Error deleting project:", error);
@@ -244,11 +283,7 @@ const Projects = () => {
                         if (canDelete) {
                             showDeleteModal(project);
                         } else {
-                            notify.error(
-                                !isOwner
-                                    ? "You are not the owner of this project"
-                                    : "Timeline created - deletion not allowed"
-                            );
+                            notify.error(!isOwner ? "You are not the owner of this project" : "Timeline created - deletion not allowed");
                         }
                     }}
                 >
@@ -260,154 +295,167 @@ const Projects = () => {
 
     const renderTabContent = () => {
         switch (activeTab) {
-            case 'projectStatistics':
+            case "projectStatistics":
                 return <ProjectStatistics code={projectDetails.id} />;
-            case 'fdpp':
+            case "fdpp":
                 return <FDPP code={projectDetails.id} />;
-            case 'project-timeline':
+            case "project-timeline":
                 return <ProjectTimeline code={projectDetails.id} />;
-            case 'timeline':
+            case "timeline":
                 return <TimelinePerformance />;
-            case 'capex':
+            case "capex":
                 return <CAPEXPerformance />;
-            case 'documents':
+            case "documents":
                 return <ProjectDocs code={projectDetails.id} />;
-            case 'csr':
+            case "csr":
                 return <CSR />;
-            case 'mineInfra':
+            case "mineInfra":
                 return <MineInfra />;
-            // case 'racisearch':
-            //     return <ManageRaci />;
             default:
                 return <div>Select a tab to see content</div>;
         }
     };
 
+    const goToPeople = () => setRightPanelView("people");
+    const goToProjects = () => setRightPanelView("project");
+
     return (
         <>
             <div className="project-container">
-                <div className="all-project-details">
-                    <div className="projects-header">
-                        <div className="projects-title">
-                            <span className="project-heading">Projects</span>
+                <div className="pppsdd">
+                    <div className="all-project-details">
+                        <div className="projects-header">
+                            <div className="projects-title">
+                                <span className="project-heading">Projects</span>
+                            </div>
 
-                            <Button
-                                type="text"
+                            <div className="projects-header-actions">
+                                {!isPeopleView ? (
+                                    <>
+                                        <span className="people-link" onClick={goToPeople}>
+                                            People
+                                        </span>
+                                        <Button
+                                            type="text"
+                                            size="small"
+                                            className="header-icon-btn"
+                                            title="People"
+                                            icon={<TeamOutlined />}
+                                            onClick={goToPeople}
+                                        />
+                                    </>
+                                ) : (
+                                    <>
+                                        <span className="people-link" onClick={goToProjects}>
+                                            Projects
+                                        </span>
+                                        <Button
+                                            type="text"
+                                            size="small"
+                                            className="header-icon-btn"
+                                            title="Projects"
+                                            icon={<RobotOutlined />}
+                                            onClick={goToProjects}
+                                        />
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="search">
+                            <Input
                                 size="small"
-                                className="header-icon-btn"
-                                title="New Project"
-                                icon={<PlusOutlined />}
-                                onClick={() => (window.location.href = "http://localhost:5000/create/register-new-project")}
+                                placeholder={isPeopleView ? "Projects (view only)..." : "Find the projects..."}
+                                onChange={handleSearch}
+                                prefix={<SearchOutlined style={{ fontSize: "18px", color: "#ddd" }} />}
+                                style={{ height: "26px", fontSize: "12px" }}
                             />
                         </div>
 
-                        <div className="projects-header-actions">
-                            <span
-                                className="people-link"
-                                onClick={() => (window.location.href = "http://localhost:5000/racisearch")}
-                            >
-                                People
-                            </span>
-                            <Button
-                                type="text"
-                                size="small"
-                                className="header-icon-btn"
-                                title="People"
-                                icon={<TeamOutlined />}
-                                onClick={() => (window.location.href = "http://localhost:5000/racisearch")}
-                            />
-                        </div>
+                        {allProjects.map((project) => {
+                            const isSelected = selectedProjectName === project.projectParameters.projectName;
 
-                    </div>
+                            return (
+                                <div
+                                    key={project.projectParameters.projectName}
+                                    className={`project-item animated-item ${isSelected && !isPeopleView ? "focused-project" : ""}`}
+                                    onClick={() => handleProjectClick(project.projectParameters.projectName)}
+                                    style={isPeopleView ? { cursor: "default" } : undefined}
+                                    title={isPeopleView ? "People view is open. Projects are view-only." : undefined}
+                                >
+                                    <div className="project-info-block">
+                                        <div className="project-title">{project.projectParameters.projectName}</div>
+                                        <div className="project-meta">
+                                            <span className="desc">{project.projectParameters.description || "No description available."}</span>
 
-                    <div className="search">
-                        <Input
-                            size="small"
-                            placeholder="Find the projects..."
-                            onChange={handleSearch}
-                            prefix={<SearchOutlined style={{ fontSize: "18px", color: "#ddd" }} />}
-                            style={{ height: "26px", fontSize: "12px" }}
-                        />
-                    </div>
-                    {allProjects.map((project, _index) => {
-                        const isSelected = selectedProjectName === project.projectParameters.projectName;
-                        // if (isProjectFocused && !isSelected) return null;
+                                            <div className="date-range">
+                                                <span className="date-label">📅</span>
+                                                <span className="date-value">
+                                                    {project.startDate || "2024-03-01"} → {project.endDate || "2024-09-30"}
+                                                </span>
+                                            </div>
 
-                        return (
-                            <div
-                                key={project.projectParameters.projectName}
-                                className={`project-item animated-item ${isSelected ? "focused-project" : ""}`}
-                                onClick={() => handleProjectClick(project.projectParameters.projectName)}
-                            >
-                                <div className="project-info-block">
-                                    <div className="project-title">{project.projectParameters.projectName}</div>
-                                    <div className="project-meta">
-                                        <span className="desc">{project.projectParameters.description || "No description available."}</span>
-
-                                        <div className="date-range">
-                                            <span className="date-label">📅</span>
-                                            <span className="date-value">
-                                                {project.startDate || "2024-03-01"} → {project.endDate || "2024-09-30"}
-                                            </span>
-                                        </div>
-
-                                        <div className="meta-row">
-                                            <span className="meta-item">👥 {project.members?.length || 0} members</span>
-                                            <span className={`status-badge ${project.status === "Active" ? "active" : "inactive"}`}>
-                                                {project.status || "Unknown"}
-                                            </span>
+                                            <div className="meta-row">
+                                                <span className="meta-item">👥 {project.members?.length || 0} members</span>
+                                                <span className={`status-badge ${project.status === "Active" ? "active" : "inactive"}`}>
+                                                    {project.status || "Unknown"}
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                                <Dropdown overlay={menu(project)} trigger={["hover"]}>
-                                    <MoreOutlined className="three-dot-menu" />
-                                </Dropdown>
-                            </div>
-                        );
-                    })}
 
-                    {/* {isProjectFocused && projectDetails?.initialStatus?.items && (
-                        <div className="modules-list">
-                            <p style={{ fontWeight: 600 }}>Modules</p>
-                            {projectDetails.initialStatus.items.map((mod: any) => (
-                                <div key={mod.parentModuleCode} className="module-checkbox">
-                                    <Checkbox
-                                        onChange={(e) => {
-                                            console.log(`Module ${mod.moduleName} is ${e.target.checked ? 'checked' : 'unchecked'}`);
-                                        }}
-                                    >
-                                        {mod.moduleName}
-                                    </Checkbox>
+                                    {/* ✅ People view: hide/disable 3-dot menu so no actions */}
+                                    {!isPeopleView && (
+                                        <Dropdown overlay={menu(project)} trigger={["hover"]}>
+                                            <MoreOutlined className="three-dot-menu" />
+                                        </Dropdown>
+                                    )}
                                 </div>
-                            ))}
+                            );
+                        })}
+                    </div>
+                    <div className="create-project-btn-div">
+                        <div onClick={() => navigate("/create/register-new-project")} >
+                            <Button
+                                type="text"
+                                size="small"
+                                onClick={() => navigate("/create/register-new-project")}
+                                className="create-project-btn"
+                            >
+                                <RobotOutlined style={{ marginRight: 6 }} />
+                                Create New Project
+                            </Button>
                         </div>
-                    )} */}
-
+                    </div>
                 </div>
-                <section className="project-info">
-                    <div className="base-details">
-                        <div className="">
-                            {tabs.map((tab) => (
-                                <button
-                                    key={tab.key}
-                                    className={`tab-button ${activeTab === tab.key ? "active" : ""}`}
-                                    onClick={() => setActiveTab(tab.key)}
-                                >
-                                    {tab.label}
-                                </button>
-                            ))}
+
+                {isPeopleView ? (
+                    <PeopleSearch />
+                ) : (
+                    <section className="project-info">
+                        <div className="base-details">
+                            <div className="">
+                                {tabs.map((tab) => (
+                                    <button
+                                        key={tab.key}
+                                        className={`tab-button ${activeTab === tab.key ? "active" : ""}`}
+                                        onClick={() => setActiveTab(tab.key)}
+                                    >
+                                        {tab.label}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                    <div className="details-paremeters">
-                        <div className="info-item">
-                            <div className="tab-container">
-                                <div className="tab-content">
-                                    {renderTabContent()}
+
+                        <div className="details-paremeters">
+                            <div className="info-item">
+                                <div className="tab-container">
+                                    <div className="tab-content">{renderTabContent()}</div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
+                )}
             </div>
 
             <Modal
@@ -442,6 +490,7 @@ const Projects = () => {
             >
                 <p>Are you sure you want to delete this project?</p>
             </Modal>
+
             <ToastContainer />
         </>
     );

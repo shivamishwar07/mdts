@@ -1,0 +1,19 @@
+.people-search-container {
+    width: 80%;
+    margin: 10px;
+    border-radius: 8px;
+}
+
+.people-search-top-container {
+    border: 1px solid #ddd;
+    padding: 7px;
+    border-radius: 8px;
+}
+
+.people-search-body {
+    border: 1px solid #ddd;
+    margin-top: 10px;
+    border-radius: 8px;
+    height: calc(100vh - 165px);
+    overflow: hidden;
+}
