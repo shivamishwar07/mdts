@@ -7,38 +7,45 @@ const serviceData = [
     {
         icon: "fa-solid fa-map-location-dot",
         title: "Mineral Exploration",
-        description: "Our mineral exploration services are designed to uncover valuable resources using state-of-the-art geological tools and remote sensing technologies. We conduct extensive surveys and geophysical mapping to identify the most promising sites for mining operations. By leveraging data-driven insights, we minimize risks and improve resource yield. Our exploration team works closely with clients to ensure accurate forecasting and responsible planning."
+        description:
+            "Our mineral exploration services are designed to uncover valuable resources using state-of-the-art geological tools and remote sensing technologies. We conduct extensive surveys and geophysical mapping to identify the most promising sites for mining operations. By leveraging data-driven insights, we minimize risks and improve resource yield. Our exploration team works closely with clients to ensure accurate forecasting and responsible planning.",
     },
     {
         icon: "fa-solid fa-chart-line",
         title: "Resource Assessment",
-        description: "Through detailed resource assessments, we help you understand the commercial viability of your mining project. Our geologists and analysts perform core sampling, reserve estimation, and 3D modeling to deliver comprehensive reports. These evaluations support critical investment decisions and long-term planning. We ensure all findings are transparent, scientifically validated, and tailored to your business objectives."
+        description:
+            "Through detailed resource assessments, we help you understand the commercial viability of your mining project. Our geologists and analysts perform core sampling, reserve estimation, and 3D modeling to deliver comprehensive reports. These evaluations support critical investment decisions and long-term planning. We ensure all findings are transparent, scientifically validated, and tailored to your business objectives.",
     },
     {
         icon: "fa-solid fa-seedling",
         title: "Sustainable Mining Solutions",
-        description: "Sustainability is a cornerstone of our mining philosophy. We implement low-impact mining strategies that prioritize environmental conservation and resource efficiency. Our methods reduce waste generation, optimize water usage, and utilize renewable energy where feasible."
+        description:
+            "Sustainability is a cornerstone of our mining philosophy. We implement low-impact mining strategies that prioritize environmental conservation and resource efficiency. Our methods reduce waste generation, optimize water usage, and utilize renewable energy where feasible.",
     },
     {
         icon: "fa-solid fa-recycle",
         title: "Environmental Impact Analysis",
-        description: "Before any extraction begins, our experts conduct in-depth environmental impact assessments to identify potential ecological disruptions. These evaluations cover biodiversity, water systems, air quality, and land usage. We work with regulatory agencies to ensure full compliance and prepare detailed mitigation plans."
-    }
+        description:
+            "Before any extraction begins, our experts conduct in-depth environmental impact assessments to identify potential ecological disruptions. These evaluations cover biodiversity, water systems, air quality, and land usage. We work with regulatory agencies to ensure full compliance and prepare detailed mitigation plans.",
+    },
 ];
 
 const mainServices = [
     {
         title: "Operational Consulting",
-        description: "Our consulting team specializes in optimizing mining operations from exploration through to closure. We help clients reduce costs, enhance productivity, and improve safety across all phases. With hands-on experience and global insights, our consultants identify inefficiencies and propose actionable strategies. We are committed to building resilient operations that stand the test of market fluctuations."
+        description:
+            "Our consulting team specializes in optimizing mining operations from exploration through to closure. We help clients reduce costs, enhance productivity, and improve safety across all phases. With hands-on experience and global insights, our consultants identify inefficiencies and propose actionable strategies. We are committed to building resilient operations that stand the test of market fluctuations.",
     },
     {
         title: "Technology Integration",
-        description: "We empower your mining operations with cutting-edge technologies such as AI-driven analytics, GIS mapping, IoT monitoring, and automation. These tools not only increase operational efficiency but also improve accuracy in data collection and reduce human error. We ensure seamless integration of these solutions with your existing infrastructure. Our technology roadmap is tailored to fit your specific operational needs and growth goals."
+        description:
+            "We empower your mining operations with cutting-edge technologies such as AI-driven analytics, GIS mapping, IoT monitoring, and automation. These tools not only increase operational efficiency but also improve accuracy in data collection and reduce human error. We ensure seamless integration of these solutions with your existing infrastructure. Our technology roadmap is tailored to fit your specific operational needs and growth goals.",
     },
     {
         title: "Regulatory Compliance",
-        description: "Navigating the regulatory landscape can be challenging, especially in cross-border projects. Our compliance team stays ahead of regional and international laws to keep your operations legal and ethical. We prepare documentation, perform audits, and offer advisory on environmental, labor, and safety regulations. By ensuring you meet all legal obligations, we help you avoid penalties and build trust with stakeholders."
-    }
+        description:
+            "Navigating the regulatory landscape can be challenging, especially in cross-border projects. Our compliance team stays ahead of regional and international laws to keep your operations legal and ethical. We prepare documentation, perform audits, and offer advisory on environmental, labor, and safety regulations. By ensuring you meet all legal obligations, we help you avoid penalties and build trust with stakeholders.",
+    },
 ];
 
 export default function Services() {
@@ -49,6 +56,7 @@ export default function Services() {
         "Empowering Project Teams with Smart Mining Workflows.",
         "Minimize Risks, Maximize Yields — Your Digital Mining Partner.",
     ];
+
     const [currentIndex, setCurrentIndex] = useState(0);
     const [displayedText, setDisplayedText] = useState("");
 
@@ -65,7 +73,7 @@ export default function Services() {
                 clearInterval(interval);
                 setTimeout(() => {
                     setCurrentIndex((prev) => (prev + 1) % slogans.length);
-                }, 3000); 
+                }, 3000);
             }
         }, 60);
 
@@ -76,9 +84,7 @@ export default function Services() {
         hidden: { opacity: 0 },
         visible: {
             opacity: 1,
-            transition: {
-                staggerChildren: 0.1,
-            },
+            transition: { staggerChildren: 0.1 },
         },
     };
 
@@ -90,11 +96,7 @@ export default function Services() {
     return (
         <div className="services-container">
             <div className="hero-section">
-                <img
-                    src="/banner2.jpg"
-                    alt="mining banner"
-                    className="hero-image"
-                />
+                <img src="/banner2.jpg" alt="mining banner" className="hero-image" />
                 <motion.div
                     className="hero-text-overlay"
                     key={currentIndex}
@@ -106,7 +108,6 @@ export default function Services() {
                 </motion.div>
             </div>
 
-            {/* Intro Section */}
             <motion.div
                 className="intro-section"
                 initial={{ opacity: 0, y: 30 }}
@@ -115,7 +116,8 @@ export default function Services() {
             >
                 <h2 className="section-title">Our Services</h2>
                 <p className="section-subtitle">
-                    From exploration to operation, we provide comprehensive solutions that drive efficiency and sustainability.
+                    From exploration to operation, we provide comprehensive solutions that
+                    drive efficiency and sustainability.
                 </p>
             </motion.div>
 
@@ -127,11 +129,7 @@ export default function Services() {
                 viewport={{ once: true, amount: 0.3 }}
             >
                 {serviceData.map((service, index) => (
-                    <motion.div
-                        className="service-card"
-                        key={index}
-                        variants={itemVariants}
-                    >
+                    <motion.div className="service-card" key={index} variants={itemVariants}>
                         <div className="service-icon">
                             <i className={service.icon}></i>
                         </div>
@@ -152,7 +150,10 @@ export default function Services() {
                     <img src="/mining.jpg" alt="Mineral Exploration" className="block-image" />
                     <div className="text-content">
                         <h3 className="highlight-heading">Comprehensive Mineral Exploration</h3>
-                        <p>Our mineral exploration services are designed to uncover valuable resources using state-of-the-art geological tools and remote sensing technologies.</p>
+                        <p>
+                            Our mineral exploration services are designed to uncover valuable resources
+                            using state-of-the-art geological tools and remote sensing technologies.
+                        </p>
                     </div>
                 </motion.div>
 
@@ -166,7 +167,11 @@ export default function Services() {
                     <img src="/mining2.jpg" alt="Resource Assessment" className="block-image" />
                     <div className="text-content">
                         <h3 className="highlight-heading">Detailed Resource Assessment</h3>
-                        <p>Through detailed resource assessments, we help you understand the commercial viability of your mining project. Our geologists and analysts perform core sampling, reserve estimation, and 3D modeling.</p>
+                        <p>
+                            Through detailed resource assessments, we help you understand the commercial
+                            viability of your mining project. Our geologists and analysts perform core
+                            sampling, reserve estimation, and 3D modeling.
+                        </p>
                     </div>
                 </motion.div>
             </div>

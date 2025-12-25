@@ -1,5 +1,5 @@
 import AppRoutes from "./routes/AppRoutes";
-
+import "./styles/theme.css";
 const App = () => {
   return (
     <main>

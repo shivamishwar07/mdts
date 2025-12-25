@@ -403,7 +403,7 @@ const Document: React.FC = () => {
                                 activityName: actName,
                                 linkedActivity: actName,
                                 documentName: resolvedDocName,
-                                documentType: docType, 
+                                documentType: docType,
                                 description,
                                 fileName: f.name,
                                 filePath: f.path,
@@ -579,13 +579,16 @@ const Document: React.FC = () => {
     return (
         <>
             <div className="main-doc-container">
-                <div className="document-table-container">
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px" }}>
-                        <p className="table-title">Documents</p>
-                        <Button type="primary" className="bg-secondary" size="small" icon={<PlusOutlined />} onClick={handleAddDocument}>
-                            Add Document
-                        </Button>
+                <div className="docs-heading ">
+                    <div>
+                        <p className="page-heading-title">Documents</p>
+                        <span className="pl-subtitle">Manage your org projects and ownership</span>
                     </div>
+                    <Button type="primary" className="bg-secondary add-doc-btn" size="small" icon={<PlusOutlined />} onClick={handleAddDocument}>
+                        Add Document
+                    </Button>
+                </div>
+                <div className="document-table-container">
                     <Table
                         columns={columns}
                         dataSource={documents}
@@ -627,7 +630,7 @@ const Document: React.FC = () => {
                 okButtonProps={{ className: "bg-secondary" }}
             >
                 <Form layout="horizontal" onFinish={handleSave} labelCol={{ span: 6 }} wrapperCol={{ span: 18 }} requiredMark={false}>
-                    <div className="main-doc-container" style={{width: "99%" ,height:"500px", overflow:"auto" }}>
+                    <div className="main-doc-container" style={{ width: "99%", height: "500px", overflow: "auto" }}>
                         <div className="left-create-document">
                             <div className="main-create-doc-container">
                                 <div className="left-create-document-item">

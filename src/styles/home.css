@@ -3,152 +3,174 @@
     flex-direction: column;
     min-height: 100vh;
     margin: 0 !important;
+    background: var(--bg-main);
+    color: var(--text-primary);
+}
+
+.content-wrap {
+    flex: 1
+}
+
+.home-navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, .14);
+    background: linear-gradient(90deg, rgba(2, 6, 23, .92), rgba(15, 23, 42, .92), rgba(2, 6, 23, .92));
+    backdrop-filter: saturate(180%) blur(10px);
+    overflow-x: auto;
+    white-space: nowrap;
+    flex-wrap: nowrap;
+}
+
+.logo-and-text-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+
+.logo-sections-cant {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    background: rgba(255, 255, 255, .86);
+    border-radius: var(--radius-md);
+    border: 1px solid rgba(0, 0, 0, .06);
+}
+
+.logo-image {
+    height: 46px;
+    object-fit: contain;
+    display: block;
+}
+
+.brand-text p {
+    margin: 0 0 0 8px;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, .92);
+    line-height: 1.15;
+}
+
+.tabs {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.tab-link {
+    text-decoration: none;
+}
+
+.tab-items {
+    color: rgba(255, 255, 255, .92) !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    letter-spacing: .2px;
+}
+
+.tab-link:hover .tab-items {
+    color: #ffffff !important;
+}
+
+.tab-link:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-radius: 10px;
+}
+
+.page-body {
+    margin-top: 70px;
+}
+
+.hero-wrapper {
+    background: var(--bg-main);
+}
+
+.what-we-do-section {
+    padding: 48px 20px;
+    background: var(--bg-muted);
+    border-top: 1px solid var(--border);
+}
+
+.content-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.image-and-text {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 40px;
+    align-items: flex-start;
+}
+
+.mine-image {
+    max-width: 520px;
+    width: 100%;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+}
+
+.text-content {
+    flex: 1;
+    min-width: 280px;
+}
+
+.section-title {
+    font-weight: 700 !important;
+    margin-bottom: 14px !important;
+    color: var(--text-primary) !important;
+}
+
+.section-description {
+    color: var(--text-secondary) !important;
+    margin-bottom: 14px !important;
+    line-height: 1.65 !important;
+}
+
+.feature-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    color: var(--text-secondary);
+}
+
+.feature-list li {
+    font-size: 15px;
+}
+
+.impacts-section {
+    margin-top: 52px;
+}
+
+@media screen and (max-width:768px) {
+    .home-navbar {
+        padding: 10px 12px;
+    }
 
     .tabs {
-        display: flex;
-        align-items: center;
-        gap: 20px;
-        overflow-x: auto;
-        white-space: nowrap;
-        margin-right: 20px;
+        gap: 14px;
     }
-    
-    .content-wrap {
-        flex: 1;
-    }
-    
-    .tab-items {
-        text-decoration: none;
-        color: #FFFFFF !important;
-        cursor: pointer;
-        font-size: 16px !important;
-        font-weight: bold !important;
-    }
-    
-    .logo-and-text-item {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-width: 0;
-    }
-    
-    .logo-and-text-item p {
-        margin: 0 0 0 8px;
-        padding: 0;
-        font-size: 16px;
-        font-weight: bold;
-        color: #fff !important;
-        line-height: 1.2;
-    }
-    
-    .logo-sections-cant {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 5px;
-        background: rgb(215, 208, 208);
-        border-radius: 10px;
-    }
-    
-    .logo-image {
-        height: 50px;
-        object-fit: contain;
-    }
-    
-    .home-navbar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 1000;
-        background: linear-gradient(90deg, #257180, #257180, #4C585B);
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 5px 10px;
-        overflow-x: auto;
-        white-space: nowrap;
-        flex-wrap: nowrap;
-    }
-    
-    .login-button {
-        background: #fff !important;
-        color: #4C585B !important;
-        border: none !important;
-        font-weight: bold !important;
-    }
-    
-    @media screen and (max-width: 768px) {
-        .navbar {
-            flex-direction: column;
-            align-items: flex-start;
-        }
-    
-        .tabs {
-            flex-direction: column;
-            align-items: flex-start;
-            width: 100%;
-        }
-    
-        .login-button {
-            margin-top: 10px;
-            width: 100%;
-        }
-    }
-    
-    .what-we-do-section {
-        padding: 40px 20px;
-        background-color: #f9f9f9;
-    }
-    
-    .content-wrapper {
-        max-width: 1200px;
-        margin: auto;
-    }
-    
-    .image-and-text {
-        display: flex;
-        flex-direction: row;
-        flex-wrap: wrap;
-        gap: 40px;
-        align-items: flex-start;
-    }
-    
-    .mine-image {
-        max-width: 500px;
-        width: 100%;
-        border-radius: 8px;
-        box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.1);
-    }
-    
-    .text-content {
-        flex: 1;
-    }
-    
-    .section-title {
-        font-weight: bold;
-        margin-bottom: 16px;
-        color: #1c1c1c;
-    }
-    
-    .section-description {
-        color: #4c585b;
-        margin-bottom: 16px;
-        line-height: 1.6;
-    }
-    
-    .feature-list {
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-    }
-    
-    .feature-list li {
-        margin-bottom: 10px;
-        font-size: 16px;
-    }
-    
-    .impacts-section {
-        margin-top: 50px;
+
+    .page-body {
+        margin-top: 78px;
     }
 }

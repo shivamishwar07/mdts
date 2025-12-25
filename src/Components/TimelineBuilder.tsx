@@ -358,27 +358,6 @@ const TimeBuilder = () => {
     fetchHolidays();
   }, [currentStep == 1]);
 
-  // const getProjectTimeline = async (timelineId: any) => {
-  //   if (timelineId) {
-  //     try {
-  //       const timeline = await db.getProjectTimelineById(timelineId);
-  //       if (timeline?.orgId !== currentUser.orgId) return;
-  //       const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
-  //       if (Array.isArray(finTimeline)) {
-  //         handleLibraryChange(finTimeline);
-  //       } else {
-  //         handleLibraryChange([]);
-  //       }
-
-  //       return finTimeline;
-  //     } catch (err) {
-  //       console.error("Error fetching timeline:", err);
-  //       return [];
-  //     }
-  //   }
-  //   return [];
-  // };
-
   const defaultSetup = async (allFoundlibrary: any = []) => {
     if (!isUpdateMode) {
       try {
@@ -2585,200 +2564,207 @@ const TimeBuilder = () => {
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between" }}>
-        <div style={{ width: "100%" }} className="time-builder-page">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+      <div className="time-builder-root">
+        <div className="time-builder-page">
+          <div className="time-builder-topbar">
             <div className="title-and-filter">
               <div className="heading">
-                <span>{isReplanMode ? 'Replan Timeline' : isUpdateMode ? 'Edit Timeline' : 'Timeline Builder'}</span>
+                <p className="page-heading-title">
+                  {isReplanMode ? "Replan Timeline" : isUpdateMode ? "Edit Timeline" : "Timeline Builder"}
+                </p>
+                <span className="pl-subtitle">Manage your org projects and ownership</span>
               </div>
-              {(allProjects.length > 0 || selectedProject) && (
-                <div>
-                  <div className="filters">
-                    <div className="form-row-top">
-                      <label>Project</label>
-                      <Select
-                        placeholder="Select Project"
-                        disabled={isUpdateMode}
-                        value={isUpdateMode ? selectedProjectName : selectedProjectId}
-                        onChange={handleProjectChange}
-                        style={{ minWidth: 200 }}
-                      >
-                        {allProjects.map((project) => (
-                          <Option key={project.id} value={project.id}>
-                            {project.projectParameters.projectName}
-                          </Option>
-                        ))}
-                      </Select>
-                    </div>
 
-                    <div className="form-row-top">
-                      <label>Mine Type</label>
-                      <Input
-                        value={selectedProjectMineType}
-                        placeholder="Project Mine Type"
-                        disabled
-                        style={{ minWidth: 200 }}
-                      />
-                    </div>
+              <div>
+                {(allProjects.length > 0 || selectedProject) && (
+                  <div className="filters-wrap">
+                    <div className="filters">
+                      <div className="form-row-top">
+                        <label>Select Project</label>
+                        <Select
+                          placeholder="Select Project"
+                          disabled={isUpdateMode}
+                          value={isUpdateMode ? selectedProjectName : selectedProjectId}
+                          onChange={handleProjectChange}
+                          className="tb-select-min"
+                        >
+                          {allProjects.map((project) => (
+                            <Option key={project.id} value={project.id}>
+                              {project.projectParameters.projectName}
+                            </Option>
+                          ))}
+                        </Select>
+                      </div>
 
-                    <div className="form-row-top">
-                      <label>Link Library</label>
-                      <Select
-                        placeholder="Select Library"
-                        disabled={!selectedProjectId}
-                        value={selectedLibraryId}
-                        onChange={handleGroupLibChange}
-                        style={{ minWidth: 200 }}
-                      >
-                        {(libraries || []).map((lib: any) => (
-                          <Option key={lib.id} value={lib.id}>
-                            {lib.name}
-                          </Option>
-                        ))}
-                      </Select>
+                      <div className="form-row-top">
+                        <label>Select Mine Type</label>
+                        <Input
+                          value={selectedProjectMineType}
+                          placeholder="Project Mine Type"
+                          disabled
+                          className="tb-input-min"
+                        />
+                      </div>
+
+                      <div className="form-row-top">
+                        <label>Link Library</label>
+                        <Select
+                          placeholder="Select Library"
+                          disabled={!selectedProjectId}
+                          value={selectedLibraryId}
+                          onChange={handleGroupLibChange}
+                          className="tb-select-min"
+                        >
+                          {(libraries || []).map((lib: any) => (
+                            <Option key={lib.id} value={lib.id}>
+                              {lib.name}
+                            </Option>
+                          ))}
+                        </Select>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
-            {(isUpdateMode || isMenualTimeline) && (<>
-              <div style={{ paddingRight: "5px" }}>
+
+            {(isUpdateMode || isMenualTimeline) && (
+              <div className="tb-discard-wrap">
                 <Button
                   type="primary"
                   disabled={!selectedProjectId}
                   icon={<CloseCircleOutlined />}
                   onClick={() => setIsCancelEditModalVisiblVisible(true)}
-                  style={{ marginLeft: "15px", backgroundColor: "#e74c3c", borderColor: "#e74c3c" }}
+                  className="tb-discard-btn"
                 >
                   Discard
                 </Button>
               </div>
-            </>)}
+            )}
           </div>
-          <hr style={{ margin: 0 }} />
-          {selectedProject != null && isMenualTimeline && (
-            <div className="timeline-steps">
-              <Steps current={currentStep}>
-                <Step title="Initial Status" />
-                <Step title="Sequencing" />
-                <Step title="Activities & Duration" />
-                <Step title="Prerequisites" />
-                <Step title="Slack" />
-                <Step title="Start Date" />
-                <Step title="Holiday" />
-                <Step title="Project Timeline" />
-              </Steps>
-            </div>
-          )}
 
-          {selectedProject != null && isMenualTimeline ? (
-            <div className="main-item-container">
-              <div className="timeline-items">
-                {currentStep == 0 ? (
-                  <div>
-                    <Form className="select-module-group" layout="horizontal">
-                      <Row gutter={[16, 16]}>
-                        <Col span={24}>
-                          <Form.Item
-                            colon={false}
-                            label="Select Group"
-                            labelAlign="left"
-                            labelCol={{ span: 6 }}
-                            wrapperCol={{ span: 18 }}
-                            style={{ fontSize: "18px", fontWeight: "400" }}
-                          >
-                            <Select
-                              value={selectedGroupName}
-                              onChange={handleGroupNameChange}
-                              allowClear={true}
+          {/* <hr className="tb-divider" /> */}
+          <div className="timeline-main-body-container">
+
+            {selectedProject != null && isMenualTimeline && (
+              <div className="timeline-steps">
+                <Steps current={currentStep}>
+                  <Step title="Initial Status" />
+                  <Step title="Sequencing" />
+                  <Step title="Activities & Duration" />
+                  <Step title="Prerequisites" />
+                  <Step title="Slack" />
+                  <Step title="Start Date" />
+                  <Step title="Holiday" />
+                  <Step title="Project Timeline" />
+                </Steps>
+              </div>
+            )}
+
+            {selectedProject != null && isMenualTimeline ? (
+              <div className="main-item-container">
+                <div className="timeline-items">
+                  {currentStep == 0 ? (
+                    <div>
+                      <Form className="select-module-group" layout="horizontal">
+                        <Row gutter={[16, 16]}>
+                          <Col span={24}>
+                            <Form.Item
+                              colon={false}
+                              label="Select Group"
+                              labelAlign="left"
+                              labelCol={{ span: 6 }}
+                              wrapperCol={{ span: 18 }}
+                              className="tb-form-item-lg"
                             >
-                              {libraries.map((lib: any) => (
-                                <Select.Option key={lib.name} value={lib.name}>
-                                  {lib.name}
-                                </Select.Option>
-                              ))}
-                            </Select>
-                          </Form.Item>
-                        </Col>
-                      </Row>
-                    </Form>
+                              <Select value={selectedGroupName} onChange={handleGroupNameChange} allowClear={true}>
+                                {libraries.map((lib: any) => (
+                                  <Select.Option key={lib.name} value={lib.name}>
+                                    {lib.name}
+                                  </Select.Option>
+                                ))}
+                              </Select>
+                            </Form.Item>
+                          </Col>
+                        </Row>
+                      </Form>
 
-                    <Table
-                      columns={columns}
-                      dataSource={selectedItems}
-                      pagination={false}
-                      rowKey="moduleName"
-                      className="project-timeline-table"
-                    />
-                  </div>
-                ) : currentStep == 1 ? (
-                  <DragDropContext onDragEnd={onDragEnd}>
-                    <Droppable droppableId="modules">
-                      {(provided) => (
-                        <div {...provided.droppableProps} ref={provided.innerRef}>
-                          {sequencedModules.map((module, index) => (
-                            <Draggable key={module.parentModuleCode} draggableId={module.parentModuleCode} index={index}>
-                              {(provided) => (
-                                <div
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                  {...provided.dragHandleProps}
-                                  style={{
-                                    padding: "10px",
-                                    margin: "0px 0px 8px 0px",
-                                    backgroundColor: "#00d8d6",
-                                    borderRadius: "4px",
-                                    ...provided.draggableProps.style,
-                                  }}
-                                >
-                                  <strong>{module.parentModuleCode}</strong> {module.moduleName}
-                                </div>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </div>
-                      )}
-                    </Droppable>
-                  </DragDropContext>
-                ) : currentStep == 6 ? (
-                  <div>
-                    <div className="holiday-actions">
-                      <div className="st-sun-field">
-                        <Checkbox
-                          className="saturday-sunday-checkbox"
-                          checked={isSaturdayWorking}
-                          onChange={(e) => setIsSaturdayWorking(e.target.checked)}
-                        >
-                          Saturday Working
-                        </Checkbox>
-                        <Checkbox
-                          className="saturday-sunday-checkbox"
-                          checked={isSundayWorking}
-                          onChange={(e) => setIsSundayWorking(e.target.checked)}
-                        >
-                          Sunday Working
-                        </Checkbox>
-                      </div>
-                      {holidayData.length > 0 && (
-                        <div className="add-new-holiday">
-                          <Button type="primary" className="bg-secondary" size="small" onClick={() => {
-                            setNewHoliday(prev => ({
-                              ...prev,
-                              userGuiId: currentUser?.guiId,
-                              orgId: currentUser?.orgId,
-                              createdAt: new Date().toISOString()
-                            }));
-                            setAddHolidayModalVisible(true);
-                          }}>
-                            Add New Holiday
-                          </Button>
-                        </div>
-                      )}
+                      <Table
+                        columns={columns}
+                        dataSource={selectedItems}
+                        pagination={false}
+                        rowKey="moduleName"
+                        className="project-timeline-table"
+                      />
                     </div>
-                    {holidayData.length > 0 ? (
-                      <>
+                  ) : currentStep == 1 ? (
+                    <DragDropContext onDragEnd={onDragEnd}>
+                      <Droppable droppableId="modules">
+                        {(provided) => (
+                          <div {...provided.droppableProps} ref={provided.innerRef}>
+                            {sequencedModules.map((module, index) => (
+                              <Draggable key={module.parentModuleCode} draggableId={module.parentModuleCode} index={index}>
+                                {(provided) => (
+                                  <div
+                                    ref={provided.innerRef}
+                                    {...provided.draggableProps}
+                                    {...provided.dragHandleProps}
+                                    className="tb-draggable-item"
+                                    style={provided.draggableProps.style}
+                                  >
+                                    <strong>{module.parentModuleCode}</strong> {module.moduleName}
+                                  </div>
+                                )}
+                              </Draggable>
+                            ))}
+                            {provided.placeholder}
+                          </div>
+                        )}
+                      </Droppable>
+                    </DragDropContext>
+                  ) : currentStep == 6 ? (
+                    <div>
+                      <div className="holiday-actions">
+                        <div className="st-sun-field">
+                          <Checkbox
+                            className="saturday-sunday-checkbox"
+                            checked={isSaturdayWorking}
+                            onChange={(e) => setIsSaturdayWorking(e.target.checked)}
+                          >
+                            Saturday Working
+                          </Checkbox>
+                          <Checkbox
+                            className="saturday-sunday-checkbox"
+                            checked={isSundayWorking}
+                            onChange={(e) => setIsSundayWorking(e.target.checked)}
+                          >
+                            Sunday Working
+                          </Checkbox>
+                        </div>
+
+                        {holidayData.length > 0 && (
+                          <div className="add-new-holiday">
+                            <Button
+                              type="primary"
+                              className="bg-secondary"
+                              size="small"
+                              onClick={() => {
+                                setNewHoliday((prev) => ({
+                                  ...prev,
+                                  userGuiId: currentUser?.guiId,
+                                  orgId: currentUser?.orgId,
+                                  createdAt: new Date().toISOString(),
+                                }));
+                                setAddHolidayModalVisible(true);
+                              }}
+                            >
+                              Add New Holiday
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+
+                      {holidayData.length > 0 ? (
                         <Table
                           className="project-timeline-table"
                           dataSource={isUpdateMode ? finalHolidays : holidayData}
@@ -2786,185 +2772,184 @@ const TimeBuilder = () => {
                           pagination={false}
                           scroll={{ y: "calc(100vh - 350px)" }}
                         />
-                      </>
-                    ) : (
-                      <div style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
-                        <Result
-                          icon={<CalendarOutlined style={{ color: "#1890ff", fontSize: "48px" }} />}
-                          title="No Holiday Records Found"
-                          subTitle="You haven't added any holidays yet. Click below to add one."
-                          extra={
-                            <Button type="primary" className="bg-secondary" size="large" onClick={() => setAddHolidayModalVisible(true)}>
-                              Add Holiday
-                            </Button>
-                          }
-                        />
-                      </div>
-                    )}
-                  </div>
-                ) : currentStep == 7 || currentStep == 8 ? (
-                  <div style={{ overflowX: "hidden" }}>
-                    <Table
-                      columns={finalColumns}
-                      dataSource={dataSource}
-                      className="project-timeline-table"
-                      pagination={false}
-                      expandable={{
-                        expandedRowRender: () => null,
-                        rowExpandable: (record) => record.children && record.children.length > 0,
-                        expandedRowKeys: expandedKeys,
-                        onExpand: (expanded, record) => {
-                          setExpandedKeys(
+                      ) : (
+                        <div className="tb-center">
+                          <Result
+                            icon={<CalendarOutlined className="tb-result-icon" />}
+                            title="No Holiday Records Found"
+                            subTitle="You haven't added any holidays yet. Click below to add one."
+                            extra={
+                              <Button
+                                type="primary"
+                                className="bg-secondary"
+                                size="large"
+                                onClick={() => setAddHolidayModalVisible(true)}
+                              >
+                                Add Holiday
+                              </Button>
+                            }
+                          />
+                        </div>
+                      )}
+                    </div>
+                  ) : currentStep == 7 || currentStep == 8 ? (
+                    <div className="tb-hide-x">
+                      <Table
+                        columns={finalColumns}
+                        dataSource={dataSource}
+                        className="project-timeline-table"
+                        pagination={false}
+                        expandable={{
+                          expandedRowRender: () => null,
+                          rowExpandable: (record) => record.children && record.children.length > 0,
+                          expandedRowKeys: expandedKeys,
+                          onExpand: (expanded, record) => {
+                            setExpandedKeys(
+                              expanded ? [...expandedKeys, record.key] : expandedKeys.filter((key: any) => key !== record.key)
+                            );
+                          },
+                        }}
+                        rowClassName={(record) => (record.isModule ? "module-header" : "activity-row")}
+                        bordered
+                        scroll={{ x: "max-content", y: "calc(100vh - 320px)" }}
+                      />
+                    </div>
+                  ) : (
+                    <div>
+                      <Table
+                        columns={getOuterTableColumns(currentStep)}
+                        className="project-timeline-table"
+                        dataSource={sequencedModules}
+                        pagination={false}
+                        sticky={{ offsetHeader: 0 }}
+                        rowClassName={(record) => (record.activities ? "module-heading" : "")}
+                        expandedRowKeys={expandedRowKeys}
+                        onExpand={(expanded, record) => {
+                          setExpandedRowKeys(
                             expanded
-                              ? [...expandedKeys, record.key]
-                              : expandedKeys.filter((key: any) => key !== record.key)
+                              ? [...expandedRowKeys, record.parentModuleCode]
+                              : expandedRowKeys.filter((key) => key !== record.parentModuleCode)
                           );
-                        },
-                      }}
-                      rowClassName={(record) => (record.isModule ? "module-header" : "activity-row")}
-                      bordered
-                      scroll={{
-                        x: "max-content",
-                        y: "calc(100vh - 320px)",
-                      }}
-                    />
-                  </div>
-                ) : (
-                  <div>
-                    <Table
-                      columns={getOuterTableColumns(currentStep)}
-                      className="project-timeline-table"
-                      dataSource={sequencedModules}
-                      pagination={false}
-                      sticky={{ offsetHeader: 0 }}
-                      rowClassName={(record) => (record.activities ? "module-heading" : "")}
-                      expandedRowKeys={expandedRowKeys}
-                      onExpand={(expanded, record) => {
-                        setExpandedRowKeys(expanded
-                          ? [...expandedRowKeys, record.parentModuleCode]
-                          : expandedRowKeys.filter((key) => key !== record.parentModuleCode)
-                        );
-                      }}
-                      expandable={{
-                        expandedRowRender: (module: any) => (
-                          <div>
-                            {(isUpdateMode || isReplanMode) && (
-                              <div style={{ textAlign: "right", marginBottom: 8 }}>
-                                <Button
-                                  type="dashed"
-                                  size="small"
-                                  icon={<PlusOutlined />}
-                                  onClick={() => openAddActivityModal(module.parentModuleCode)}
-                                >
-                                  Add Activity
-                                </Button>
-                              </div>
-                            )}
+                        }}
+                        expandable={{
+                          expandedRowRender: (module) => (
+                            <div>
+                              {(isUpdateMode || isReplanMode) && (
+                                <div className="tb-align-right tb-mb-8 project-timeline-table tb-hide-x">
+                                  <Button
+                                    type="dashed"
+                                    size="small"
+                                    icon={<PlusOutlined />}
+                                    onClick={() => openAddActivityModal(module.parentModuleCode)}
+                                  >
+                                    Add Activity
+                                  </Button>
+                                </div>
+                              )}
 
-                            <Table
-                              columns={getColumnsForStep(currentStep)}
-                              dataSource={module.activities}
-                              pagination={false}
-                              showHeader={false}
-                              bordered
-                              sticky
-                              style={{ overflowX: "hidden" }}
-                            />
-                          </div>
-                        ),
-                        rowExpandable: (module) => module.activities.length > 0,
-                      }}
+                              <Table
+                                columns={getColumnsForStep(currentStep)}
+                                dataSource={module.activities}
+                                pagination={false}
+                                showHeader={false}
+                                bordered
+                                sticky
+                                className="tb-hide-x"
+                              />
+                            </div>
+                          ),
+                          rowExpandable: (module) => module.activities.length > 0,
+                        }}
+                        scroll={{ y: `${window.innerHeight - 350}px` }}
+                        rowKey="parentModuleCode"
+                      />
+                    </div>
+                  )}
+                </div>
 
-                      scroll={{ y: `${window.innerHeight - 300}px`, x: "hidden" }}
-                      style={{ overflowX: "hidden" }}
-                      rowKey="parentModuleCode"
-                    />
-                  </div>
-                )}
-              </div>
-              <hr />
-              <div className={`action-buttons ${currentStep == 0 ? "float-right" : ""}`}>
-                {currentStep > 0 && (
-                  <Button className="bg-tertiary" onClick={handlePrev} style={{ marginRight: 8 }} size="small">
-                    Previous
-                  </Button>
-                )}
-                <Button
-                  disabled={selectedProjectId == null || !isNextStepAllowed()}
-                  className="bg-secondary"
-                  onClick={() => {
-                    if (currentStep == 7 && !isUpdateMode) {
-                      setIsReviewModalVisible(true);
-                    } else {
-                      handleNext();
-                    }
-                  }}
-                  type="primary"
-                  size="small"
-                >
-                  {currentStep == 7
-                    ? isUpdateMode
-                      ? "Update"
-                      : "Save"
-                    : currentStep == 7 && !isUpdateMode
-                      ? "Send For Review"
-                      : "Next"}
-                </Button>
-              </div>
-            </div>
-          ) : <div className="container">
-            <div className="no-project-message">
+                <hr className="tb-divider" />
 
-              {allProjects.length == 0 ? (
-                <>
-                  <h3>No Projects Available</h3>
-                  <p>Start by creating a new project to define a timeline.</p>
+                <div className={`action-buttons ${currentStep == 0 ? "float-right" : ""}`}>
+                  {currentStep > 0 && (
+                    <Button className="bg-tertiary" onClick={handlePrev} size="small">
+                      Previous
+                    </Button>
+                  )}
+
                   <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => navigate("/create/register-new-project")}
+                    disabled={selectedProjectId == null || !isNextStepAllowed()}
                     className="bg-secondary"
+                    onClick={() => {
+                      if (currentStep == 7 && !isUpdateMode) {
+                        setIsReviewModalVisible(true);
+                      } else {
+                        handleNext();
+                      }
+                    }}
+                    type="primary"
+                    size="small"
                   >
-                    Create Project
+                    {currentStep == 7 ? (isUpdateMode ? "Update" : "Save") : currentStep == 7 && !isUpdateMode ? "Send For Review" : "Next"}
                   </Button>
-                </>
-              ) : !selectedProject ? (
-                <>
-                  <ExclamationCircleOutlined style={{ fontSize: "50px", color: "#258790" }} />
-                  <h3>No Project Selected</h3>
-                  <p>Please select a project to continue.</p>
-                </>
-              ) : (
-                <>
-                  <ClockCircleOutlined style={{ fontSize: "50px", color: "#258790" }} />
-                  <h3>Manage Your Timeline</h3>
-                  <p>Choose an option below to proceed !</p>
-                  <div style={{ display: "flex", justifyContent: "space-between" }}>
-                    <Button
-                      type="primary"
-                      disabled={!selectedGroupName}
-                      icon={<LinkOutlined />}
-                      onClick={() => setOpenExistingTimelineModal(true)}
-                      style={{ marginLeft: "15px", backgroundColor: "grey", borderColor: "#4CAF50" }}
-                    >
-                      Link Existing Timeline
-                    </Button>
-                    <Button
-                      type="primary"
-                      disabled={!selectedGroupName}
-                      icon={<FolderOpenOutlined />}
-                      onClick={() => setIsMenualTimeline(true)}
-                      style={{ marginLeft: "15px", backgroundColor: "#D35400", borderColor: "#FF9800" }}
-                    >
-                      Create Timeline Manually
-                    </Button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>}
+                </div>
+              </div>
+            ) : (
+              <div className="container">
+                <div className="no-project-message">
+                  {allProjects.length == 0 ? (
+                    <>
+                      <h3>No Projects Available</h3>
+                      <p>Start by creating a new project to define a timeline.</p>
+                      <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => navigate("/create/register-new-project")}
+                        className="bg-secondary"
+                      >
+                        Create Project
+                      </Button>
+                    </>
+                  ) : !selectedProject ? (
+                    <>
+                      <ExclamationCircleOutlined className="tb-empty-icon" />
+                      <h3>No Project Selected</h3>
+                      <p>Please select a project to continue.</p>
+                    </>
+                  ) : (
+                    <>
+                      <ClockCircleOutlined className="tb-empty-icon" />
+                      <h3>Manage Your Timeline</h3>
+                      <p>Choose an option below to proceed !</p>
+                      <div className="tb-empty-actions">
+                        <Button
+                          type="primary"
+                          disabled={!selectedGroupName}
+                          icon={<LinkOutlined />}
+                          onClick={() => setOpenExistingTimelineModal(true)}
+                          className="tb-link-existing-btn"
+                        >
+                          Link Existing Timeline
+                        </Button>
+                        <Button
+                          type="primary"
+                          disabled={!selectedGroupName}
+                          icon={<FolderOpenOutlined />}
+                          onClick={() => setIsMenualTimeline(true)}
+                          className="tb-create-manual-btn"
+                        >
+                          Create Timeline Manually
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
         </div>
       </div>
+
 
       <Modal
         title="Confirm Discard Changes"

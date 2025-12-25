@@ -1,236 +1,5 @@
-// import { useEffect, useState } from "react";
-// import "../styles/status-update.css";
-// import { ColumnsType } from "antd/es/table";
-// import dayjs from "dayjs";
-// import { FolderOpenOutlined } from "@mui/icons-material";
-// import { useNavigate } from "react-router-dom";
-// import { Select, Table } from "antd";
-// import eventBus from "../Utils/EventEmitter";
-// import { db } from "../Utils/dataStorege.ts";
-// import { getCurrentUser } from '../Utils/moduleStorage';
-
-// const { Option } = Select;
-
-// const DelayCostCalculator = () => {
-//   const navigate = useNavigate();
-//   const [expandedKeys, setExpandedKeys] = useState<any>([]);
-//   const [allProjects, setAllProjects] = useState<any[]>([]);
-//   const [selectedProjectId, setSelectedProjectId] = useState(null);
-//   const [selectedProject, setSelectedProject] = useState<any>(null);
-//   const [dataSource, setDataSource] = useState<any>([]);
-//   const [currentUser, setCurrentUser] = useState<any>(null);
-
-//   useEffect(() => {
-//     const fetchUser = async () => {
-//       const user = await getCurrentUser();
-//       setCurrentUser(user);
-//     };
-//     fetchUser();
-//   }, []);
-
-//   useEffect(() => {
-//     if (currentUser && currentUser.orgId) {
-//       setup();
-//     }
-//   }, [currentUser]);
-
-//   const setup = async () => {
-//     const projects = (await db.getProjects()).filter(p => p.orgId === currentUser.orgId);
-//     setAllProjects(projects);
-//     let selected = null;
-//     const lastId = localStorage.getItem("selectedProjectId");
-//     if (projects.length === 1) selected = projects[0];
-//     else if (lastId) selected = projects.find(p => p.id == lastId);
-//     if (selected) {
-//       setSelectedProjectId(selected.id);
-//       setSelectedProject(selected);
-//       const timelineId = selected.projectTimeline?.[0]?.timelineId;
-
-//       if (timelineId) {
-//         const timeline = await db.getProjectTimelineById(timelineId);
-//         const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
-//         const viewData = finTimeline.map((mod: any, i: number) => ({
-//           key: `mod-${i}`,
-//           Code: mod.parentModuleCode,
-//           keyActivity: mod.moduleName,
-//           isModule: true,
-//           children: (mod.activities || []).map((act: any, j: number) => ({
-//             key: `act-${i}-${j}`,
-//             Code: act.code,
-//             keyActivity: act.activityName,
-//             preRequisite: act.prerequisite ?? '-',
-//             plannedStart: act.start ? act.start : '-',
-//             plannedFinish: act.end ? act.end : '-',
-//             actualStart: act.start ? act.actualStart : '-',
-//             actualFinish: act.end ? act.actualFinish : '-',
-//             delay: getWeekdayDifferenceInDays(act.end, act.start),
-//             projectCost: act.cost.projectCost ?? '',
-//             opCost: act.cost.opCost ?? '',
-//           }))
-//         }));
-//         setDataSource(viewData);
-//         setExpandedKeys(viewData.map((_: any, idx: any) => `mod-${idx}`));
-//       }
-//     }
-//   };
-
-//   const baseColumns: ColumnsType = [
-//     { title: "Sr No", dataIndex: "Code", key: "Code", align: "center", width: 100 },
-//     { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 250 },
-//     { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", align: "center", width: 120 },
-//     { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", align: "center", width: 120 },
-//     { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", align: "center", width: 120 },
-//     { title: "Actual Start", dataIndex: "actualStart", key: "actualStart", align: "center", width: 120 },
-//     { title: "Actual Finish", dataIndex: "actualFinish", key: "actualFinish", align: "center", width: 120 },
-//     { title: "Delay (Days)", dataIndex: "delay", key: "delay", align: "center", width: 120 },
-//     { title: "Project Cost", dataIndex: "projectCost", key: "projectCost", align: "right", width: 120 },
-//     { title: "Oppertunity Cost", dataIndex: "opCost", key: "opCost", align: "right", width: 120 },
-//   ];
-
-//   const handleProjectChange = async (projectId: any) => {
-//     setSelectedProjectId(projectId);
-//     const project = allProjects.find(p => p.id === projectId);
-//     localStorage.setItem("selectedProjectId", projectId);
-//     if (project?.projectTimeline?.length) {
-//       const timelineId = project.projectTimeline[0].timelineId;
-//       const timeline = await db.getProjectTimelineById(timelineId);
-//       const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
-//       const viewData = finTimeline.map((mod: any, i: number) => ({
-//         key: `mod-${i}`,
-//         Code: mod.parentModuleCode,
-//         keyActivity: mod.moduleName,
-//         isModule: true,
-//         children: (mod.activities || []).map((act: any, j: number) => ({
-//           key: `act-${i}-${j}`,
-//           Code: act.code,
-//           keyActivity: act.activityName,
-//           duration: act.duration ?? '',
-//           preRequisite: act.prerequisite ?? '-',
-//           slack: act.slack ?? '0',
-//           plannedStart: act.start ? dayjs(act.start).format("DD-MM-YYYY") : '-',
-//           plannedFinish: act.end ? dayjs(act.end).format("DD-MM-YYYY") : '-',
-//         }))
-//       }));
-//       setSelectedProject(project);
-//       setDataSource(viewData);
-//       setExpandedKeys(viewData.map((_: any, idx: any) => `mod-${idx}`));
-//     } else {
-//       setDataSource([]);
-//     }
-//   };
-
-//   const getWeekdayDifferenceInDays = (date1: any, date2: any): number => {
-//     let start = new Date(date2);
-//     let end = new Date(date1);
-
-//     if (start > end) {
-//       [start, end] = [end, start];
-//     }
-
-//     let count = 0;
-
-//     while (start <= end) {
-//       const day = start.getDay();
-//       if (day !== 0 && day !== 6) {
-//         count++;
-//       }
-//       start.setDate(start.getDate() + 1);
-//     }
-
-//     return count;
-//   };
-
-//   return (
-//     <>
-//       <div className="status-heading">
-//         <div className="status-update-header">
-//           <p>Delay Cost Builder</p>
-//           <div className="flex-item">
-//             <label htmlFor="" style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>Select Project</label>
-//             <Select
-//               placeholder="Select Project"
-//               value={selectedProjectId}
-//               onChange={handleProjectChange}
-//               popupMatchSelectWidth={false}
-//               style={{ width: "100%" }}
-//             >
-//               {allProjects.map((project) => (
-//                 <Option key={project.id} value={project.id}>
-//                   {project.projectParameters.projectName}
-//                 </Option>
-//               ))}
-//             </Select>
-//           </div>
-//         </div>
-//       </div>
-
-//       <div className="main-status-update">
-//         {selectedProject?.projectTimeline != null ? (
-//           <>
-//             <div className="status-update-items">
-//               <div className="status-update-table">
-//                 <Table
-//                   columns={baseColumns}
-//                   dataSource={dataSource}
-//                   className="project-timeline-table"
-//                   pagination={false}
-//                   expandable={{
-//                     expandedRowRender: () => null,
-//                     rowExpandable: (record) => record.children && record.children.length > 0,
-//                     expandedRowKeys: expandedKeys,
-//                     onExpand: (expanded, record) => {
-//                       setExpandedKeys(
-//                         expanded
-//                           ? [...expandedKeys, record.key]
-//                           : expandedKeys.filter((key: any) => key !== record.key)
-//                       );
-//                     },
-//                   }}
-//                   rowClassName={(record) => record.isModule ? "module-header" : "activity-row"}
-//                   bordered
-//                   scroll={{
-//                     x: "max-content",
-//                     y: "calc(100vh - 250px)",
-//                   }}
-//                 />
-//               </div>
-//             </div>
-//           </>
-//         ) : (
-//           <div className="container-msg">
-//             <div className="no-project-message">
-//               <FolderOpenOutlined style={{ fontSize: "50px", color: "grey" }} />
-//               {selectedProject?.projectTimeline == null ? (
-//                 <>
-//                   <h3>No Projects Timeline Found</h3>
-//                   <p>You need to create a project for defining a timeline.</p>
-//                   <button
-//                     onClick={() => {
-//                       eventBus.emit("updateTab", "/create/register-new-project");
-//                       navigate(`/create/timeline-builder`);
-//                     }}
-//                   >
-//                     Create Project Timeline
-//                   </button>
-//                 </>
-//               ) : (
-//                 <>
-//                   <h3>No Project Selected</h3>
-//                   <p>Please select a project to continue.</p>
-//                 </>
-//               )}
-//             </div>
-//           </div>
-//         )}
-//       </div>
-//     </>
-//   );
-// };
-
-// export default DelayCostCalculator
-
 import { useEffect, useState } from "react";
-import "../styles/status-update.css";
+import "../styles/delay-cost.css";
 import { ColumnsType } from "antd/es/table";
 import { Table } from "antd";
 
@@ -636,22 +405,24 @@ const DelayCostCalculator = () => {
 
   return (
     <>
-      <div className="status-heading">
-        <div className="status-update-header">
-          <p>Delay Cost Builder</p>
+      <div className="delay-cost-heading">
+        <div>
+          <p className="page-heading-title">Delay Cost Builder</p>
+          <span className="pl-subtitle">Manage your org projects and ownership</span>
         </div>
       </div>
-      <div className="main-status-update">
-        <div className="status-update-items">
-          <div className="status-update-table">
+
+      <div className="delay-cost-main">
+        <div className="delay-cost-content">
+          <div className="delay-cost-table-shell">
             <Table
               columns={baseColumns}
               dataSource={dataSource}
-              className="project-timeline-table"
+              className="delay-cost-table"
               pagination={false}
               expandable={{
                 expandedRowKeys: expandedKeys,
-                onExpand: (expanded, record) => {
+                onExpand: (expanded, record: any) => {
                   setExpandedKeys(
                     expanded
                       ? [...expandedKeys, record.key]
@@ -659,18 +430,16 @@ const DelayCostCalculator = () => {
                   );
                 },
               }}
-              rowClassName={(record) => {
-                if (record.delay > 30) return 'row-high-delay';
-                if (record.delay > 10) return 'row-medium-delay';
-                return '';
+              rowClassName={(record: any) => {
+                if (record.delay > 30) return "delay-cost-row-high";
+                if (record.delay > 10) return "delay-cost-row-medium";
+                return "";
               }}
-
               bordered
-              scroll={{ x: "max-content", y: "calc(100vh - 250px)" }}
+              scroll={{ x: "max-content", y: "calc(100vh - 300px)" }}
               summary={() => {
-                const flatten = (rows: any[]): any[] => {
-                  return rows.flatMap(row => [row, ...(row.children ? flatten(row.children) : [])]);
-                };
+                const flatten = (rows: any[]): any[] =>
+                  rows.flatMap((row) => [row, ...(row.children ? flatten(row.children) : [])]);
 
                 const allRows = flatten(dataSource);
 
@@ -686,32 +455,47 @@ const DelayCostCalculator = () => {
                   new Intl.NumberFormat("en-IN", {
                     style: "currency",
                     currency: "INR",
-                    maximumFractionDigits: 0
+                    maximumFractionDigits: 0,
                   }).format(value);
 
                 return (
                   <Table.Summary fixed>
-                    <Table.Summary.Row>
-                      <Table.Summary.Cell index={0} colSpan={8} align="right">
-                        <strong>Total Cost (Based on Delay × Per Day Cost)</strong>
+                    <Table.Summary.Row className="delay-cost-summary-row">
+                      <Table.Summary.Cell
+                        index={0}
+                        colSpan={8}
+                        align="right"
+                        className="delay-cost-summary-label"
+                      >
+                        Total Cost (Based on Delay × Per Day Cost)
                       </Table.Summary.Cell>
-                      <Table.Summary.Cell index={8} align="right">
-                        <strong>{formatCurrency(totalProjectCost)}</strong>
+
+                      <Table.Summary.Cell
+                        index={8}
+                        align="right"
+                        className="delay-cost-summary-value"
+                      >
+                        {formatCurrency(totalProjectCost)}
                       </Table.Summary.Cell>
-                      <Table.Summary.Cell index={9} align="right">
-                        <strong>{formatCurrency(totalOpCost)}</strong>
+
+                      <Table.Summary.Cell
+                        index={9}
+                        align="right"
+                        className="delay-cost-summary-value"
+                      >
+                        {formatCurrency(totalOpCost)}
                       </Table.Summary.Cell>
                     </Table.Summary.Row>
                   </Table.Summary>
                 );
               }}
-
             />
           </div>
         </div>
       </div>
     </>
   );
+
 };
 
 export default DelayCostCalculator;

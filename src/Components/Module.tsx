@@ -1012,7 +1012,10 @@ const Module = () => {
             <div className="module-main">
                 <div className="top-item" style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap" }}>
                     <div className="module-title" style={{ display: "flex", justifyContent: "space-between", gap: "100px", alignItems: "center" }}>
-                        <span className="">Modules</span>
+                        <div>
+                        <p className="page-heading-title">Modules</p>
+                        <span className="pl-subtitle">Manage your org projects and ownership</span>
+                        </div>
                         <div className="searching-and-create">
                             <Input
                                 placeholder="Search modules, activities, levels"
@@ -1225,7 +1228,7 @@ const Module = () => {
                         <Paper elevation={3}>
                             <Table className="custom-table">
                                 <TableHead className="custom-header">
-                                    <TableRow sx={{ backgroundColor: '#258790' }}>
+                                    <TableRow>
                                         <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Code</TableCell>
                                         <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Module Name</TableCell>
                                         <TableCell sx={{ fontWeight: 'bold', color: "white" }}>Duration (in days)</TableCell>

@@ -1,4 +1,5 @@
 import "../styles/image-container.css";
+
 interface ImageContainerProps {
     imageUrl: string | string[];
 }

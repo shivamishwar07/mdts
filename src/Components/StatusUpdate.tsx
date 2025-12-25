@@ -99,8 +99,6 @@ export const StatusUpdate = () => {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [costInfoOpen, setCostInfoOpen] = useState(false);
   const [costInfoData, _setCostInfoData] = useState<any | null>(null);
-  // const getCode = (x: any) => String(x?.Code ?? x?.code ?? "");
-  // const asNumber = (v: any) => (v === null || v === undefined || v === "" ? 0 : Number(v));
   const [detailsActiveTab, setDetailsActiveTab] = useState<string>('notes');
   const [activityBudget, setActivityBudget] = useState<ActivityBudget | null>(null);
   const [budgetLoading, setBudgetLoading] = useState(false);
@@ -208,50 +206,6 @@ export const StatusUpdate = () => {
   const showModal = () => {
     setIsModalOpen(true);
   };
-
-  // const getDelayDays = (act: any) => {
-  //   const plannedEnd = act?.end ? dayjs(act.end) : null;
-  //   if (!plannedEnd || !plannedEnd.isValid()) return 0;
-
-  //   if (act?.actualFinish) {
-  //     const af = dayjs(act.actualFinish, ["DD-MM-YYYY", "YYYY-MM-DD"], true);
-  //     if (af.isValid() && af.isAfter(plannedEnd)) {
-  //       return af.diff(plannedEnd, "day");
-  //     }
-  //     return 0;
-  //   }
-
-  //   const today = dayjs();
-  //   return today.isAfter(plannedEnd) ? today.diff(plannedEnd, "day") : 0;
-  // };
-
-  // const getDelayPerDay = (act: any) => {
-  //   const c = act?.cost ?? {};
-  //   if (c.delayPerDay != null && c.delayPerDay !== "") return asNumber(c.delayPerDay);
-  //   const proj = asNumber(c.projectCost);
-  //   const op = asNumber(c.opCost);
-  //   const denom = asNumber(act?.expectedDuration ?? act?.duration);
-  //   return denom > 0 ? (proj + op) / denom : 0;
-  // };
-
-  // const openCostInfoForActivity = (activityKey: string) => {
-  //   const activity = findActivityByKey(dataSource, activityKey);
-  //   if (!activity) return;
-
-  //   const delayDays = getDelayDays(activity);
-  //   const perDay = getDelayPerDay(activity);
-  //   const incurred = delayDays * perDay;
-
-  //   setCostInfoData({
-  //     name: activity?.keyActivity || activity?.activityName || getCode(activity),
-  //     projectCost: asNumber(activity?.cost?.projectCost),
-  //     opCost: asNumber(activity?.cost?.opCost),
-  //     delayPerDay: perDay,
-  //     delayDays,
-  //     incurred,
-  //   });
-  //   setCostInfoOpen(true);
-  // };
 
   const handleOpenCostCalcModal = () => setOpenCostCalcModal(true);
 
@@ -776,169 +730,11 @@ export const StatusUpdate = () => {
 
   const baseColumns: ColumnsType = [
     { title: "Sr No", dataIndex: "Code", key: "Code", width: 100, align: "center" },
-    // {
-    //   title: "Key Activity",
-    //   dataIndex: "keyActivity",
-    //   key: "keyActivity",
-    //   width: 250,
-    //   align: "left",
-    //   render: (_: any, record: any) => {
-    //     const {
-    //       activityStatus,
-    //       keyActivity,
-    //       duration,
-    //       actualStart,
-    //       actualFinish,
-    //       plannedStart,
-    //       plannedFinish,
-    //     } = record;
-
-    //     const plannedStartDate = plannedStart ? dayjs(plannedStart, "DD-MM-YYYY") : null;
-    //     const actualStartDate = actualStart ? dayjs(actualStart, "DD-MM-YYYY") : null;
-    //     const plannedFinishDate = plannedFinish ? dayjs(plannedFinish, "DD-MM-YYYY") : null;
-    //     const actualFinishDate = actualFinish ? dayjs(actualFinish, "DD-MM-YYYY") : null;
-
-    //     let iconSrc = "";
-    //     const isStartSame =
-    //       plannedStartDate && actualStartDate && plannedStartDate.isSame(actualStartDate, "day");
-    //     const isFinishSame =
-    //       plannedFinishDate && actualFinishDate && plannedFinishDate.isSame(actualFinishDate, "day");
-    //     const isWithinPlannedDuration =
-    //       plannedStartDate &&
-    //       plannedFinishDate &&
-    //       actualStartDate &&
-    //       getBusinessDays(actualStartDate, dayjs()) <= getBusinessDays(plannedStartDate, plannedFinishDate);
-
-    //     if (activityStatus === "completed") {
-    //       const isCompletedOnTime = isStartSame && isFinishSame;
-    //       iconSrc = isCompletedOnTime ? "/images/icons/completed.png" : "/images/icons/overdue.png";
-    //     } else if (activityStatus === "inProgress") {
-    //       iconSrc = isWithinPlannedDuration ? "/images/icons/inprogress.png" : "/images/icons/overdue.png";
-    //     } else {
-    //       iconSrc = "/images/icons/yettostart.png";
-    //     }
-
-    //     // const hasCost =
-    //     //   !!record?.cost &&
-    //     //   (record.cost.delayPerDay != null ||
-    //     //     record.cost.projectCost != null ||
-    //     //     record.cost.opCost != null);
-
-    //     // return (
-    //     //   <span
-    //     //     style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}
-    //     //     onClick={() => {
-    //     //       if (record.duration !== undefined)
-    //     //         setSelectedActivityKey((prevKey: any) => (prevKey === record.key ? null : record.key));
-    //     //     }}
-    //     //   >
-    //     //     {Array.isArray(record.notes) && record.notes.length > 0 && (
-    //     //       <span
-    //     //         onClick={(e) => {
-    //     //           e.stopPropagation();
-    //     //           setSelectedActivityKey(record.key);
-    //     //           setNoteModalVisible(true);
-    //     //           setNoteInput("");
-    //     //           setEditNoteId(null);
-    //     //         }}
-    //     //       >
-    //     //         <FileTextOutlined style={{ fontSize: 22, color: "#1890ff" }} />
-    //     //       </span>
-    //     //     )}
-
-    //     //     <span
-    //     //       onClick={(e) => {
-    //     //         e.stopPropagation();
-    //     //         if (hasCost) {
-    //     //           openCostInfoForActivity(record.key);
-    //     //           setSelectedActivityKey(record.key);
-    //     //         }
-    //     //       }}
-    //     //       title={hasCost ? "Show Delay Cost" : "No cost defined"}
-    //     //       style={{
-    //     //         display: "inline-flex",
-    //     //         alignItems: "center",
-    //     //         justifyContent: "center",
-    //     //         width: 24,
-    //     //         height: 24,
-    //     //         cursor: hasCost ? "pointer" : "not-allowed",
-    //     //         opacity: hasCost ? 1 : 0.5,
-    //     //       }}
-    //     //     >
-    //     //       <DollarOutlined style={{ fontSize: 20, color: hasCost ? "#e67e22" : "#bfbfbf" }} />
-    //     //     </span>
-
-    //     //     {duration ? (
-    //     //       <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
-    //     //     ) : (
-    //     //       <span style={{ width: 34, height: 34 }} />
-    //     //     )}
-
-    //     //     {keyActivity}
-    //     //   </span>
-    //     // );
-    //     // const hasCost =
-    //     //   !!record?.cost &&
-    //     //   (record.cost.delayPerDay != null ||
-    //     //     record.cost.projectCost != null ||
-    //     //     record.cost.opCost != null);
-
-    //     return (
-    //       <span
-    //         style={{ display: "flex", alignItems: "center", gap: "10px", cursor: "pointer" }}
-    //         onClick={() => {
-    //           if (record.duration !== undefined)
-    //             setSelectedActivityKey((prevKey: any) => (prevKey === record.key ? null : record.key));
-    //         }}
-    //       >
-    //         {/* {Array.isArray(record.notes) && record.notes.length > 0 && (
-    //           <span
-    //             onClick={(e) => {
-    //               e.stopPropagation();
-    //               setSelectedActivityKey(record.key);
-    //               setNoteModalVisible(true);
-    //               setNoteInput("");
-    //               setEditNoteId(null);
-    //             }}
-    //           >
-    //             <FileTextOutlined style={{ fontSize: 22, color: "#1890ff" }} />
-    //           </span>
-    //         )} */}
-
-    //         {/* NEW: Info icon to open Activity Details modal (Notes/Cost/RACI/Budget) */}
-    //         <span
-    //           onClick={(e) => openActivityDetails(record, e)}
-    //           title="View Activity Details"
-    //           style={{
-    //             display: "inline-flex",
-    //             alignItems: "center",
-    //             justifyContent: "center",
-    //             width: 24,
-    //             height: 24,
-    //             cursor: "pointer",
-    //           }}
-    //         >
-    //           <InfoCircleOutlined style={{ fontSize: 20, color: "#1890ff" }} />
-    //         </span>
-
-    //         {duration ? (
-    //           <img src={iconSrc} alt={activityStatus} style={{ width: 34, height: 34 }} />
-    //         ) : (
-    //           <span style={{ width: 34, height: 34 }} />
-    //         )}
-
-    //         {keyActivity}
-    //       </span>
-    //     );
-
-
-    //   },
-    // },
     {
       title: "Key Activity",
       dataIndex: "keyActivity",
       key: "keyActivity",
-      width: 250,
+      width: 350,
       align: "left",
       render: (_: any, record: any) => {
         const {
@@ -2797,363 +2593,344 @@ export const StatusUpdate = () => {
 
   return (
     <>
-      <div className="status-heading">
-        <div className="status-update-header">
-          <p>Status Update</p>
-          {selectedProject?.projectTimeline != null && (
-            <div style={{ display: "flex", gap: "10px" }}>
-              <span>Approval Status:</span>
-              <span
-                style={{ fontWeight: 'bold', textTransform: "uppercase" }}
-                className={
-                  selectedProjectTimeline?.status?.toLowerCase() == "approved"
-                    ? "text-approved"
-                    : selectedProjectTimeline?.status?.toLowerCase() == "pending"
-                      ? "text-warning"
-                      : selectedProjectTimeline?.status?.toLowerCase() == "replanned"
-                        ? "text-replanned"
-                        : "text-danger"
-                }
+<div className="status-heading">
+  <div className="status-update-header">
+    <div>
+    <p className="page-heading-title">Status Update</p>
+    <span className="pl-subtitle">Manage your org projects and ownership</span>
+    </div>
+
+    {selectedProject?.projectTimeline != null && (
+      <div className="status-approval">
+        <span className="status-approval-label">Approval Status:</span>
+        <span
+          className={
+            selectedProjectTimeline?.status?.toLowerCase() === "approved"
+              ? "status-approval-value badge badge-success"
+              : selectedProjectTimeline?.status?.toLowerCase() === "pending"
+              ? "status-approval-value badge badge-warning"
+              : selectedProjectTimeline?.status?.toLowerCase() === "replanned"
+              ? "status-approval-value badge status-badge-replanned"
+              : "status-approval-value badge badge-error"
+          }
+        >
+          {selectedProjectTimeline?.status}
+        </span>
+      </div>
+    )}
+
+    {selectedProject?.projectTimeline != null && (
+      <div className="status-times">
+        <div className="status-time-row">
+          <p className="status-time-label">Created&nbsp;/&nbsp;Updated By</p>
+          <p className="status-time-value">{selectedProjectTimeline?.addedBy || "N/A"}</p>
+        </div>
+        <div className="status-time-row">
+          <p className="status-time-label">Created&nbsp;/&nbsp;Updated At</p>
+          <p className="status-time-value">
+            {selectedProjectTimeline?.createdAt
+              ? new Date(selectedProjectTimeline.createdAt).toLocaleString("en-US", {
+                  year: "numeric",
+                  month: "short",
+                  day: "2-digit",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  hour12: true,
+                })
+              : "N/A"}
+          </p>
+        </div>
+      </div>
+    )}
+  </div>
+</div>
+
+<div className="main-status-update">
+  {allProjects.length !== 0 && (
+    <>
+      <div className="status-toolbar">
+        <div className="select-item">
+          <div className="flex-item">
+            <label className="label">Project</label>
+            <Select
+              placeholder="Select Project"
+              value={selectedProjectId}
+              onChange={handleProjectChange}
+              popupMatchSelectWidth={false}
+              className="status-select status-project-select"
+              disabled={replaneMode}
+            >
+              {allProjects.map((project) => (
+                <Option key={project.id} value={project.id}>
+                  {project.projectParameters.projectName}
+                </Option>
+              ))}
+            </Select>
+          </div>
+
+          {allVersions?.length > 0 && (
+            <div className="flex-item">
+              <label className="label">Version</label>
+              <Select
+                placeholder="Select Version"
+                value={{
+                  value: selectedVersionId,
+                  label: (
+                    <span className="status-select-label">
+                      {selectedProjectTimeline?.status === "pending" ? (
+                        <ClockCircleOutlined className="status-icon status-icon--pending" />
+                      ) : selectedProjectTimeline?.status === "replanned" ? (
+                        <SyncOutlined className="status-icon status-icon--replanned" />
+                      ) : selectedProjectTimeline?.status === "Revised" ? (
+                        <EditOutlined className="status-icon status-icon--revised" />
+                      ) : selectedProjectTimeline?.status === "amendment pending" ? (
+                        <FileSyncOutlined className="status-icon status-icon--amendment" />
+                      ) : (
+                        <LikeOutlined className="status-icon status-icon--approved" />
+                      )}
+                      {selectedProjectTimeline?.version}
+                    </span>
+                  ),
+                }}
+                onChange={(valueObj) => {
+                  const value = valueObj.value;
+                  const selectedVersion = allVersions.find((version: any) => version.versionId == value);
+                  setSelectedProjectTimeline(selectedVersion);
+                  setSelectedVersionId(value);
+                  handleChangeVersionTimeline(value);
+                  setSelectedActivityKey(null);
+                }}
+                disabled={replaneMode}
+                popupMatchSelectWidth={false}
+                className="status-select status-version-select"
+                labelInValue
               >
-                {selectedProjectTimeline?.status}
-              </span>
-            </div>
-          )}
-          {selectedProject?.projectTimeline != null && (
-            <div className="times-stamps" style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
-              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created&nbsp;/&nbsp;Updated By</p>
-                <p style={{ fontWeight: "bold", color: "#007bff" }}>
-                  {selectedProjectTimeline?.addedBy}
-                </p>
-              </div>
-              <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                <p style={{ color: "#6c757d", fontWeight: "900", minWidth: "80px" }}>Created&nbsp;/&nbsp;Updated At</p>
-                <p style={{ fontWeight: "bold", color: "#007bff" }}>
-                  {new Date(selectedProjectTimeline?.createdAt).toLocaleString('en-US', {
-                    year: 'numeric',
-                    month: 'short',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: true
-                  })}
-                </p>
-              </div>
+                {allVersions?.map((version: any) => (
+                  <Option key={version.versionId} value={version.versionId}>
+                    <span className="status-select-option">
+                      {version.status === "pending" ? (
+                        <ClockCircleOutlined className="status-icon status-icon--pending" />
+                      ) : version.status === "replanned" ? (
+                        <SyncOutlined className="status-icon status-icon--replanned" />
+                      ) : version.status === "amendment pending" ? (
+                        <FileSyncOutlined className="status-icon status-icon--amendment" />
+                      ) : (
+                        <LikeOutlined className="status-icon status-icon--approved" />
+                      )}
+                      {version.version}
+                    </span>
+                  </Option>
+                ))}
+              </Select>
             </div>
           )}
         </div>
-      </div>
 
-      <div className="main-status-update">
-        {allProjects.length != 0 && (
-          <>
-            <div className="status-toolbar">
-              <div className="select-item">
-                <div className="flex-item">
-                  <label htmlFor="" style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>Project</label>
-                  <Select
-                    placeholder="Select Project"
-                    value={selectedProjectId}
-                    onChange={handleProjectChange}
-                    popupMatchSelectWidth={false}
-                    style={{ width: "100%" }}
-                    disabled={replaneMode}
-                  >
-                    {allProjects.map((project) => (
-                      <Option key={project.id} value={project.id}>
-                        {project.projectParameters.projectName}
-                      </Option>
-                    ))}
-                  </Select>
-                </div>
-                {allVersions?.length > 0 && (
-                  <div className="flex-item">
-                    <label htmlFor="" style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>
-                      Version
-                    </label>
-                    <Select
-                      placeholder="Select Version"
-                      value={{
-                        value: selectedVersionId,
-                        label: (
-                          <>
-                            {selectedProjectTimeline?.status === 'pending' ? (
-                              <ClockCircleOutlined style={{ color: 'orange', marginRight: 8 }} />
-                            ) : selectedProjectTimeline?.status === 'replanned' ? (
-                              <SyncOutlined style={{ color: '#6f42c1', marginRight: 8 }} />
-                            ) : selectedProjectTimeline?.status === 'Revised' ? (
-                              <EditOutlined style={{ color: '#c00c0cff', marginRight: 8 }} />
-                            ) : selectedProjectTimeline?.status === 'amendment pending' ? (
-                              <FileSyncOutlined style={{ color: '#007bff', marginRight: 8 }} />
-                            ) : (
-                              <LikeOutlined style={{ color: 'green', marginRight: 8 }} />
-                            )}
-                            {selectedProjectTimeline?.version}
-                          </>
+        {selectedProject?.projectTimeline != null && (
+          <div className="actions">
+            <Button
+              icon={<UploadOutlined />}
+              disabled={!selectedActivityKey}
+              onClick={() => handleOpenDocumentsModal(selectedActivityKey)}
+              className="project-timeline-btn project-timeline-btn-docs"
+            >
+              Documents
+            </Button>
 
-                        ),
-                      }}
-                      onChange={(valueObj) => {
-                        const value = valueObj.value;
-                        const selectedVersion = allVersions.find((version: any) => version.versionId == value);
-                        setSelectedProjectTimeline(selectedVersion);
-                        setSelectedVersionId(value);
-                        handleChangeVersionTimeline(value);
-                        setSelectedActivityKey(null);
-                      }}
-                      disabled={replaneMode}
-                      popupMatchSelectWidth={false}
-                      style={{ width: '100%' }}
-                      labelInValue
-                    >
-                      {allVersions?.map((version: any) => (
-                        <Option key={version.versionId} value={version.versionId}>
-                          {version.status === 'pending' ? (
-                            <ClockCircleOutlined style={{ color: 'orange', marginRight: 8 }} />
-                          ) : version.status === 'replanned' ? (
-                            <SyncOutlined style={{ color: 'blue', marginRight: 8 }} />
-                          ) : version.status === 'amendment pending' ? (
-                            <FileSyncOutlined style={{ color: '#007bff', marginRight: 8 }} />
-                          ) : (
-                            <LikeOutlined style={{ color: 'green', marginRight: 8 }} />
-                          )}
-                          {version.version}
-                        </Option>
+            <Button
+              icon={<DollarOutlined />}
+              disabled={!selectedActivityKey}
+              onClick={handleOpenCostCalcModal}
+              className="project-timeline-btn project-timeline-btn-cost"
+            >
+              Cost
+            </Button>
 
-                      ))}
-                    </Select>
-                  </div>
-                )}
-              </div>
-              {selectedProject?.projectTimeline != null && (
-                <div className="actions">
-                  <Button
-                    icon={<UploadOutlined />}
-                    disabled={!selectedActivityKey}
-                    onClick={() => handleOpenDocumentsModal(selectedActivityKey)}
-                    style={{
-                      backgroundColor: selectedActivityKey ? '#0050b3' : '#f5f5f5',
-                      color: selectedActivityKey ? '#fff' : '#bfbfbf',
-                      marginLeft: 8,
-                    }}
-                  >
-                    Documents
-                  </Button>
+            <Button
+              icon={<UserOutlined />}
+              disabled={!selectedActivityKey}
+              onClick={showResponsibilityModal}
+              className="project-timeline-btn project-timeline-btn-raci"
+            >
+              RACI
+            </Button>
 
-                  <Button
-                    icon={<DollarOutlined />}
-                    disabled={!selectedActivityKey}
-                    onClick={handleOpenCostCalcModal}
-                    style={{
-                      backgroundColor: selectedActivityKey ? '#e67e22' : '#f5f5f5',
-                      color: selectedActivityKey ? '#fff' : '#bfbfbf',
-                      cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
-                    }}
-                  >
-                    Cost
-                  </Button>
+            <Button
+              icon={<FormOutlined />}
+              disabled={!selectedActivityKey}
+              onClick={() => setNoteModalVisible(true)}
+              className="project-timeline-btn project-timeline-btn-note"
+            >
+              Note
+            </Button>
 
-                  <Button
-                    icon={<UserOutlined />}
-                    disabled={!selectedActivityKey}
-                    onClick={showResponsibilityModal}
-                    style={{
-                      backgroundColor: selectedActivityKey ? '#2c3e50' : '#f5f5f5',
-                      color: selectedActivityKey ? '#fff' : '#bfbfbf',
-                      cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
-                    }}
-                  >
-                    RACI
-                  </Button>
+            {!replaneMode && (
+              <Button
+                type="primary"
+                disabled={!selectedProjectId}
+                icon={<DownloadOutlined />}
+                onClick={handleDownload}
+                className="project-timeline-btn project-timeline-btn-download"
+              >
+                Download
+              </Button>
+            )}
 
-                  <Button
-                    icon={<FormOutlined />}
-                    disabled={!selectedActivityKey}
-                    onClick={() => setNoteModalVisible(true)}
-                    style={{
-                      backgroundColor: selectedActivityKey ? '#990000' : '#f5f5f5',
-                      color: selectedActivityKey ? '#fff' : '#bfbfbf',
-                      cursor: selectedActivityKey ? 'pointer' : 'not-allowed',
-                    }}
-                  >
-                    Note
-                  </Button>
-                  {!replaneMode && (
-                    <Button
-                      type="primary"
-                      disabled={!selectedProjectId}
-                      icon={<DownloadOutlined />}
-                      onClick={handleDownload}
-                      style={{ backgroundColor: "#4CAF50" }}
-                    >
-                      Download
-                    </Button>
-                  )}
-                  {(
-                    selectedProjectTimeline?.status !== 'replanned' &&
-                    !replaneMode &&
-                    (
-                      (selectedProjectTimeline?.revisedByLog?.newUserId == (getCurrentUser()?.id) || (getCurrentUser()?.guiId) &&
-                        selectedProjectTimeline?.status !== 'Pending')
-                      || (!selectedProjectTimeline?.revisedByLog?.newUserId && selectedProjectTimeline?.userGuiId == getCurrentUser()?.guiId)
-                    )
-                  ) && (
-                      <Button
-                        type="primary"
-                        disabled={!selectedProjectId}
-                        icon={
-                          selectedProjectTimeline?.status !== 'Approved'
-                            ? <EditOutlined />
-                            : <ReloadOutlined />
-                        }
-                        onClick={
-                          selectedProjectTimeline?.status !== 'Approved'
-                            ? editTimeBuilder
-                            : rePlanTimeline
-                        }
-                        style={{ backgroundColor: "#715147ff" }}
-                      >
-                        {selectedProjectTimeline?.status !== 'Approved'
-                          ? 'Edit'
-                          : 'Replan'}
-                      </Button>
-                    )}
-
-                  {!replaneMode && (
-                    <Button
-                      type="primary"
-                      disabled={!selectedProjectId}
-                      icon={<ShareAltOutlined />}
-                      onClick={showModal}
-                      style={{ backgroundColor: "#00BFA6" }}
-                    >
-                      Share
-                    </Button>
-                  )}
-                  {(selectedProjectTimeline?.status == 'Approved') && (
-                    <Button
-                      type={isStatusUpdateMode ? "primary" : "default"}
-                      style={{
-                        backgroundColor: isStatusUpdateMode ? "#AB47BC" : "#5C6BC0",
-                        color: isStatusUpdateMode ? undefined : "#fff",
-                      }}
-                      icon={isStatusUpdateMode ? <SaveOutlined /> : <FormOutlined />}
-                      onClick={isStatusUpdateMode ? handleSaveStatus : handleUpdateStatus}
-                    >
-                      {(isStatusUpdateMode) ? "Save Status" : "Update Status"}
-                    </Button>
-                  )}
-
-                  {(selectedProjectTimeline?.status !== 'Revised' && selectedProjectTimeline?.status != 'Approved' && selectedProjectTimeline?.status != 'replanned') && (
-                    <div className="action-btn">
-                      <Button
-                        type="primary"
-                        disabled={!selectedProjectId}
-                        style={{ backgroundColor: "#E57373" }}
-                        onClick={() => setIsReviseModalOpen(true)}
-                      >
-                        Revise
-                      </Button>
-                      <Button
-                        type="primary"
-                        disabled={!selectedProjectId}
-                        onClick={() => setIsApproveModalOpen(true)}
-                        style={{ backgroundColor: "#258780" }}
-                      >
-                        Approve
-                      </Button>
-                    </div>
-                  )}
-                </div>
+            {selectedProjectTimeline?.status !== "replanned" &&
+              !replaneMode &&
+              ((selectedProjectTimeline?.revisedByLog?.newUserId == getCurrentUser()?.id ||
+                (getCurrentUser()?.guiId && selectedProjectTimeline?.status !== "Pending")) ||
+                (!selectedProjectTimeline?.revisedByLog?.newUserId &&
+                  selectedProjectTimeline?.userGuiId == getCurrentUser()?.guiId)) && (
+                <Button
+                  type="primary"
+                  disabled={!selectedProjectId}
+                  icon={selectedProjectTimeline?.status !== "Approved" ? <EditOutlined /> : <ReloadOutlined />}
+                  onClick={selectedProjectTimeline?.status !== "Approved" ? editTimeBuilder : rePlanTimeline}
+                  className="project-timeline-btn project-timeline-btn-edit"
+                >
+                  {selectedProjectTimeline?.status !== "Approved" ? "Edit" : "Replan"}
+                </Button>
               )}
-            </div>
-            <hr />
-          </>
-        )}
-        {selectedProject?.projectTimeline != null ? (
-          <>
-            <div className="status-update-items">
-              <div className="status-update-table">
-                <Table
-                  columns={finalColumns}
-                  dataSource={dataSource}
-                  className="project-timeline-table"
-                  pagination={false}
-                  expandable={{
-                    expandedRowRender: () => null,
-                    rowExpandable: (record) => record.children && record.children.length > 0,
-                    expandedRowKeys: expandedKeys,
-                    onExpand: (expanded, record) => {
-                      setExpandedKeys(
-                        expanded
-                          ? [...expandedKeys, record.key]
-                          : expandedKeys.filter((key: any) => key !== record.key)
-                      );
-                    },
-                  }}
-                  rowClassName={(record) => {
-                    if (record.isModule) return "module-header";
-                    return record.key == selectedActivityKey ? "activity-row selected-red-row" : "activity-row";
-                  }}
 
-                  bordered
-                  scroll={{
-                    x: "max-content",
-                    y: replaneMode ? "calc(100vh - 290px)" : "calc(100vh - 250px)",
-                  }}
-                />
-              </div>
-              {replaneMode && (
-                <div style={{ display: 'flex', gap: '10px', margin: '5px 10px 10px 0', justifyContent: 'end' }}>
+            {!replaneMode && (
+              <Button
+                type="primary"
+                disabled={!selectedProjectId}
+                icon={<ShareAltOutlined />}
+                onClick={showModal}
+                className="project-timeline-btn project-timeline-btn-share"
+              >
+                Share
+              </Button>
+            )}
+
+            {selectedProjectTimeline?.status == "Approved" && (
+              <Button
+                type={isStatusUpdateMode ? "primary" : "default"}
+                icon={isStatusUpdateMode ? <SaveOutlined /> : <FormOutlined />}
+                onClick={isStatusUpdateMode ? handleSaveStatus : handleUpdateStatus}
+                className={
+                  isStatusUpdateMode
+                    ? "project-timeline-btn project-timeline-btn-status-save"
+                    : "project-timeline-btn project-timeline-btn-status-update"
+                }
+              >
+                {isStatusUpdateMode ? "Save Status" : "Update Status"}
+              </Button>
+            )}
+
+            {selectedProjectTimeline?.status !== "Revised" &&
+              selectedProjectTimeline?.status != "Approved" &&
+              selectedProjectTimeline?.status != "replanned" && (
+                <div className="action-btn">
                   <Button
                     type="primary"
                     disabled={!selectedProjectId}
-                    icon={<CloseCircleOutlined />}
-                    onClick={() => setIsDiscardReplanMode(true)}
-                    style={{ marginLeft: "15px", backgroundColor: "#e74c3c", borderColor: "#e74c3c" }}
+                    onClick={() => setIsReviseModalOpen(true)}
+                    className="project-timeline-btn project-timeline-btn-revise"
                   >
-                    Discard
+                    Revise
                   </Button>
                   <Button
                     type="primary"
                     disabled={!selectedProjectId}
-                    onClick={() => setConfirmReplan(true)}
-                    style={{ backgroundColor: "#258790" }}
+                    onClick={() => setIsApproveModalOpen(true)}
+                    className="project-timeline-btn project-timeline-btn-approve"
                   >
-                    Apply
+                    Approve
                   </Button>
                 </div>
               )}
-            </div>
-          </>
-        ) : (
-          <div className="container-msg">
-            <div className="no-project-message">
-              <FolderOpenOutlined style={{ fontSize: "50px", color: "grey" }} />
-              {selectedProject?.projectTimeline == null ? (
-                <>
-                  <h3>No Projects Timeline Found</h3>
-                  <p>You need to create a project for defining a timeline.</p>
-                  <button
-                    onClick={() => {
-                      eventBus.emit("updateTab", "/create/register-new-project");
-                      navigate(`/create/timeline-builder`);
-                    }}
-                  >
-                    Create Project Timeline
-                  </button>
-                </>
-              ) : (
-                <>
-                  <h3>No Project Selected</h3>
-                  <p>Please select a project to continue.</p>
-                </>
-              )}
-            </div>
           </div>
         )}
       </div>
+
+      <hr />
+    </>
+  )}
+
+  {selectedProject?.projectTimeline != null ? (
+    <>
+      <div className="status-update-items">
+        <div className="status-update-table">
+          <Table
+            columns={finalColumns}
+            dataSource={dataSource}
+            className="project-timeline-table"
+            pagination={false}
+            expandable={{
+              expandedRowRender: () => null,
+              rowExpandable: (record) => record.children && record.children.length > 0,
+              expandedRowKeys: expandedKeys,
+              onExpand: (expanded, record) => {
+                setExpandedKeys(expanded ? [...expandedKeys, record.key] : expandedKeys.filter((key: any) => key !== record.key));
+              },
+            }}
+            rowClassName={(record) => {
+              if (record.isModule) return "module-header";
+              return record.key == selectedActivityKey ? "activity-row selected-red-row" : "activity-row";
+            }}
+            bordered
+            scroll={{
+              x: "max-content",
+              y: replaneMode ? "calc(100vh - 290px)" : "calc(100vh - 250px)",
+            }}
+          />
+        </div>
+
+        {replaneMode && (
+          <div className="project-timeline-replan-actions">
+            <Button
+              type="primary"
+              disabled={!selectedProjectId}
+              icon={<CloseCircleOutlined />}
+              onClick={() => setIsDiscardReplanMode(true)}
+              className="project-timeline-btn project-timeline-btn-discard"
+            >
+              Discard
+            </Button>
+            <Button
+              type="primary"
+              disabled={!selectedProjectId}
+              onClick={() => setConfirmReplan(true)}
+              className="project-timeline-btn project-timeline-btn-apply"
+            >
+              Apply
+            </Button>
+          </div>
+        )}
+      </div>
+    </>
+  ) : (
+    <div className="container-msg">
+      <div className="no-project-message">
+        <FolderOpenOutlined className="project-timeline-empty-icon" />
+        {selectedProject?.projectTimeline == null ? (
+          <>
+            <h3>No Projects Timeline Found</h3>
+            <p>You need to create a project for defining a timeline.</p>
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                eventBus.emit("updateTab", "/create/register-new-project");
+                navigate(`/create/timeline-builder`);
+              }}
+            >
+              Create Project Timeline
+            </button>
+          </>
+        ) : (
+          <>
+            <h3>No Project Selected</h3>
+            <p>Please select a project to continue.</p>
+          </>
+        )}
+      </div>
+    </div>
+  )}
+</div>
+
 
       <Modal
         title="Share Timeline"

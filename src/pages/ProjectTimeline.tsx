@@ -876,28 +876,26 @@ const ProjectTimeline = (project: any) => {
 
     return (
         <>
-            <div className="timeline-main">
+            <div className="project-timeline-main">
                 {allProjects[0]?.projectTimeline ? (
                     <>
-                        <div className="status-toolbar">
+                        <div className="project-timeline-status-toolbar">
                             {allVersions?.length > 0 && (
-                                <div className="select-item">
-                                    <div className="flex-item">
-                                        <label style={{ fontWeight: "bold", marginTop: "3px", width: "100%" }}>
-                                            Version
-                                        </label>
+                                <div className="project-timeline-select-item">
+                                    <div className="project-timeline-flex-item">
+                                        <label>Version</label>
                                         <Select
                                             placeholder="Select Version"
                                             value={{
                                                 value: selectedVersionId,
                                                 label: (
                                                     <>
-                                                        {selectedProjectTimeline?.status === 'pending' ? (
-                                                            <ClockCircleOutlined style={{ color: 'orange', marginRight: 8 }} />
-                                                        ) : selectedProjectTimeline?.status === 'replanned' ? (
-                                                            <SyncOutlined style={{ color: '#6f42c1', marginRight: 8 }} />
+                                                        {selectedProjectTimeline?.status === "pending" ? (
+                                                            <ClockCircleOutlined style={{ color: "var(--warning)", marginRight: 8 }} />
+                                                        ) : selectedProjectTimeline?.status === "replanned" ? (
+                                                            <SyncOutlined style={{ color: "#6f42c1", marginRight: 8 }} />
                                                         ) : (
-                                                            <LikeOutlined style={{ color: 'green', marginRight: 8 }} />
+                                                            <LikeOutlined style={{ color: "var(--success)", marginRight: 8 }} />
                                                         )}
                                                         {selectedProjectTimeline?.version}
                                                     </>
@@ -911,17 +909,17 @@ const ProjectTimeline = (project: any) => {
                                                 handleChangeVersionTimeline(value);
                                             }}
                                             popupMatchSelectWidth={false}
-                                            style={{ width: '100%' }}
+                                            style={{ width: "100%" }}
                                             labelInValue
                                         >
                                             {allVersions.map((version: any) => (
                                                 <Option key={version.versionId} value={version.versionId}>
-                                                    {version.status === 'pending' ? (
-                                                        <ClockCircleOutlined style={{ color: 'orange', marginRight: 8 }} />
-                                                    ) : version.status === 'replanned' ? (
-                                                        <SyncOutlined style={{ color: 'blue', marginRight: 8 }} />
+                                                    {version.status === "pending" ? (
+                                                        <ClockCircleOutlined style={{ color: "var(--warning)", marginRight: 8 }} />
+                                                    ) : version.status === "replanned" ? (
+                                                        <SyncOutlined style={{ color: "#6f42c1", marginRight: 8 }} />
                                                     ) : (
-                                                        <LikeOutlined style={{ color: 'green', marginRight: 8 }} />
+                                                        <LikeOutlined style={{ color: "var(--success)", marginRight: 8 }} />
                                                     )}
                                                     {version.version}
                                                 </Option>
@@ -930,65 +928,73 @@ const ProjectTimeline = (project: any) => {
                                     </div>
                                 </div>
                             )}
-                            <div style={{ display: "flex", gap: "10px" }}>
+
+                            <div className="project-timeline-status">
                                 <span>Status:</span>
                                 <span
-                                    style={{ fontWeight: 'bold', textTransform: "uppercase" }}
+                                    style={{ fontWeight: 900, textTransform: "uppercase" }}
                                     className={
                                         selectedProjectTimeline?.status?.toLowerCase() === "approved"
-                                            ? "text-approved"
+                                            ? "project-timeline-text-approved"
                                             : selectedProjectTimeline?.status?.toLowerCase() === "pending"
-                                                ? "text-warning"
+                                                ? "project-timeline-text-warning"
                                                 : selectedProjectTimeline?.status?.toLowerCase() === "replanned"
-                                                    ? "text-replanned"
-                                                    : "text-danger"
+                                                    ? "project-timeline-text-replanned"
+                                                    : "project-timeline-text-danger"
                                     }
                                 >
                                     {selectedProjectTimeline?.status}
                                 </span>
                             </div>
-                            <div className="actions">
+
+                            <div className="project-timeline-actions">
                                 <Tooltip title="Download Project">
                                     <Button
                                         type="primary"
                                         disabled={!selectedProjectId}
                                         icon={<DownloadOutlined />}
                                         onClick={handleDownload}
-                                        style={{ backgroundColor: "#4CAF50" }}
+                                        className="project-timeline-icon-btn project-timeline-icon-btn-primary"
                                     />
                                 </Tooltip>
+
                                 <Tooltip title="Share Project">
                                     <Button
                                         type="primary"
                                         disabled={!selectedProjectId}
                                         icon={<ShareAltOutlined />}
                                         onClick={showModal}
-                                        style={{ backgroundColor: "#00BFA6" }}
+                                        className="project-timeline-icon-btn"
                                     />
                                 </Tooltip>
+
                                 <Tooltip
                                     title={
-                                        <div className="times-stamps">
-                                            <div className="time-row">
-                                                <p className="time-label">Created / Updated By</p>
-                                                <p className="time-value">{selectedProjectTimeline?.addedBy || "N/A"}</p>
+                                        <div className="project-timeline-times-stamps">
+                                            <div className="project-timeline-time-row">
+                                                <p className="project-timeline-time-label">Created / Updated By</p>
+                                                <p className="project-timeline-time-value">{selectedProjectTimeline?.addedBy || "N/A"}</p>
                                             </div>
-                                            <div className="time-row">
-                                                <p className="time-label">Created / Updated At</p>
-                                                <p className="time-value">{formattedDate}</p>
+                                            <div className="project-timeline-time-row">
+                                                <p className="project-timeline-time-label">Created / Updated At</p>
+                                                <p className="project-timeline-time-value">{formattedDate}</p>
                                             </div>
                                         </div>
                                     }
-                                    overlayClassName="custom-tooltip"
+                                    overlayClassName="project-timeline-custom-tooltip"
                                 >
-                                    <Button type="primary" icon={<InfoCircleOutlined />} className="styled-button" />
+                                    <Button
+                                        type="primary"
+                                        icon={<InfoCircleOutlined />}
+                                        className="project-timeline-icon-btn project-timeline-icon-btn-muted"
+                                    />
                                 </Tooltip>
 
-                                <Space direction="vertical">
+                                <Space direction="vertical" className="project-timeline-filter-group">
                                     <Space wrap>
                                         <Button.Group>
                                             <Button icon={<FilterOutlined />} />
-                                            <Dropdown overlay={dropdownContent} placement="bottomLeft" trigger={['click']}>
+                                            <Dropdown overlay={dropdownContent} placement="bottomLeft" trigger={["click"]}>
                                                 <Button>Filters ({getAppliedFilterCount()})</Button>
                                             </Dropdown>
                                         </Button.Group>
@@ -996,9 +1002,11 @@ const ProjectTimeline = (project: any) => {
                                 </Space>
                             </div>
                         </div>
+
                         <hr />
-                        <div className="status-update-item">
-                            <div className="table-container">
+
+                        <div className="project-timeline-status-update-item">
+                            <div className="project-timeline-table-container">
                                 <Table
                                     columns={finalColumns}
                                     dataSource={filteredDataSource}
@@ -1009,28 +1017,23 @@ const ProjectTimeline = (project: any) => {
                                         rowExpandable: (record) => record.children?.length > 0,
                                         expandedRowKeys: expandedKeys,
                                         onExpand: (expanded, record) => {
-                                            setExpandedKeys(expanded
-                                                ? [...expandedKeys, record.key]
-                                                : expandedKeys.filter((key: any) => key !== record.key));
+                                            setExpandedKeys(
+                                                expanded ? [...expandedKeys, record.key] : expandedKeys.filter((key: any) => key !== record.key)
+                                            );
                                         },
                                         expandIconColumnIndex: 0,
                                     }}
-                                    rowClassName={(record) =>
-                                        record.isModule ? "module-header" : "activity-row"
-                                    }
+                                    rowClassName={(record) => (record.isModule ? "module-header" : "activity-row")}
                                     bordered
-                                    scroll={{
-                                        x: true,
-                                        y: "calc(100vh - 260px)",
-                                    }}
+                                    
                                 />
                             </div>
                         </div>
                     </>
                 ) : (
-                    <div className="container-msg">
-                        <div className="no-project-message">
-                            <FolderOpenOutlined style={{ fontSize: "50px", color: "grey" }} />
+                    <div className="project-timeline-container-msg">
+                        <div className="project-timeline-no-project">
+                            <FolderOpenOutlined style={{ fontSize: "50px", color: "var(--text-muted)" }} />
                             <h3>No Projects Timeline Found</h3>
                             <p>Please define the timeline.</p>
                             <button
@@ -1045,6 +1048,7 @@ const ProjectTimeline = (project: any) => {
                     </div>
                 )}
             </div>
+
             <Modal
                 title="Share Timeline"
                 visible={isModalOpen}
@@ -1141,7 +1145,7 @@ const ProjectTimeline = (project: any) => {
                                         : "—"}
                                 </div>
                                 {activityCost.updatedAt && (
-                                    <div style={{ marginTop: 8, fontSize: 12, color: "#888", float:"right" }}>
+                                    <div style={{ marginTop: 8, fontSize: 12, color: "#888", float: "right" }}>
                                         Last updated: {dayjs(activityCost.updatedAt).format("DD MMM YYYY HH:mm")}
                                     </div>
                                 )}

@@ -1,107 +1,112 @@
 .main-doc-container {
+    width: 100%;
+    background: var(--bg-main);
+}
+
+.docs-heading {
     display: flex;
-    width: 100%;
-}
-
-.left-create-document {
-    width: 100%;
-    margin: 10px 0px 8px 8px;
-    margin-right: 0px;
-    border-radius: 4px;
-    width: 100%;
-}
-
-.left-create-document-item {
-    padding: 10px;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
-
-.main-create-doc-container {
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
     border: 1px solid #ddd;
-    border-radius: 4px;
+    margin: 10px;
+    border-radius: 10px;
 }
 
-.create-doc-heading {
-    font-size: 16px !important;
-    font-weight: bold !important;
-    padding-left: 10px !important;
-}
-
-.right-images {
-    flex: 0 0 30%;
-    margin-left: 0px;
-    height: calc(100vh - 95px);
-    overflow-y: scroll;
-    overflow-x: hidden;
-    margin-left: 5px;
-}
-
-.action-buttons {
-    margin-bottom: 0px !important;
-    padding-bottom: 0px !important;
-    padding: 0px 10px;
+.add-doc-btn{
+    font-weight: bold;
+    padding: 20px;
+    border-radius: 10px;
 }
 
 .document-table-container {
-    width: 98.7%;
-    margin: 10px 0px 8px 8px;
-    margin-right: 0px;
-    border: 1px solid gray;
-    border-radius: 4px;
-    height: calc(100vh - 95px);
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding-bottom: 0px;
+    margin: 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+    height: calc(100vh - 195px);
+    display: flex;
+    flex-direction: column;
 }
 
+.document-table-container>div:first-child {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg-surface);
+}
 
 .table-title {
-    font-size: 17px;
-    font-weight: bold;
-    margin-bottom: 0px;
-    color: grey;
+    font-size: 15px;
+    font-weight: 900;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.custom-table {
+    width: 95%;
+}
+
+.custom-table .ant-table {
+    background: var(--bg-surface);
+}
+
+.custom-table .ant-table-container {
+    border: none !important;
+}
+
+.custom-table .ant-table-content {
+    overflow: auto;
+    max-height: calc(100vh - 190px);
 }
 
 .custom-table .ant-table-thead>tr>th {
-    background-color: #257180 !important;
-    color: #ffffff !important;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: var(--bg-muted) !important;
+    color: var(--text-secondary) !important;
     text-align: center;
-    font-size: 16px;
-    padding: 10px;
-    border-radius: 0px !important;
+    font-size: 12px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: 12px 12px;
+    border-bottom: 1px solid var(--border) !important;
 }
 
 .custom-table .ant-table-tbody>tr>td {
-    padding: 8px;
+    padding: 10px 12px;
     font-size: 14px;
     text-align: center;
-    color: #333;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+}
+
+.custom-table .ant-table-tbody>tr:hover>td {
+    background: rgba(31, 122, 99, .06);
 }
 
 .download-btn {
-    background-color: #257180 !important;
-    color: white !important;
-    border-radius: 5px;
-    font-weight: 600;
+    background: var(--color-primary) !important;
+    color: var(--text-inverse) !important;
+    border-radius: var(--radius-md);
+    font-weight: 800;
+    border: 1px solid transparent !important;
 }
 
 .download-btn:hover {
-    background-color: #0f6a7c !important;
+    background: var(--color-primary-hover) !important;
 }
 
 .delete-btn {
-    background-color: #dc3545 !important;
-    color: white !important;
-    border-radius: 5px;
-    font-weight: 600;
+    background: var(--error) !important;
+    color: var(--text-inverse) !important;
+    border-radius: var(--radius-md);
+    font-weight: 800;
+    border: 1px solid transparent !important;
 }
 
 .delete-btn:hover {
-    background-color: #c82333 !important;
-}
-
-.custom-table .ant-table-bordered .ant-table-container {
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    filter: brightness(.95);
 }

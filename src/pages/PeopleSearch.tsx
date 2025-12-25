@@ -1,10 +1,9 @@
 import "../styles/peoplesearch.css";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dayjs from "dayjs";
 import { Input, List, Table, Tag, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { FolderOpenOutlined, UserOutlined } from "@ant-design/icons";
-import "../styles/manageraci.css";
 import eventBus from "../Utils/EventEmitter";
 import { db } from "../Utils/dataStorege";
 import { getCurrentUser } from "../Utils/moduleStorage";
@@ -51,6 +50,7 @@ interface PersonProjectBlock {
     projectName: string;
     rows: PersonRaciRow[];
 }
+
 const PeopleSearch = () => {
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [allProjects, setAllProjects] = useState<any[]>([]);
@@ -60,6 +60,8 @@ const PeopleSearch = () => {
     const [personProjects, setPersonProjects] = useState<PersonProjectBlock[]>([]);
     const [searchText, setSearchText] = useState<string>("");
     const [showSuggestions, setShowSuggestions] = useState<boolean>(false);
+
+    const containerRef = useRef<HTMLDivElement | null>(null);
 
     const userMap = useMemo(
         () => Object.fromEntries(userOptions.map((u: any) => [u.id, u])),
@@ -92,6 +94,15 @@ const PeopleSearch = () => {
         init();
     }, [currentUser]);
 
+    useEffect(() => {
+        const onDocClick = (e: MouseEvent) => {
+            if (!containerRef.current) return;
+            if (!containerRef.current.contains(e.target as Node)) setShowSuggestions(false);
+        };
+        document.addEventListener("mousedown", onDocClick);
+        return () => document.removeEventListener("mousedown", onDocClick);
+    }, []);
+
     const getProjectTimeline = async (project: any) => {
         if (Array.isArray(project?.projectTimeline)) {
             try {
@@ -102,14 +113,10 @@ const PeopleSearch = () => {
                 const timelineId = latestTimelineMeta.timelineId;
 
                 const timeline = await db.getProjectTimelineById(timelineId);
-                if (!Array.isArray(timeline)) {
-                    console.warn("Timeline is not array", timeline);
-                    return [];
-                }
+                if (!Array.isArray(timeline)) return [];
                 const finTimeline = timeline.map(({ id, ...rest }: any) => rest);
                 return finTimeline as Module[];
-            } catch (e) {
-                console.error("Error fetching timeline:", e);
+            } catch {
                 return [];
             }
         }
@@ -138,53 +145,43 @@ const PeopleSearch = () => {
             const rows: PersonRaciRow[] = [];
 
             modules.forEach((module: Module, moduleIndex: number) => {
-                (module.activities || []).forEach(
-                    (activity: Activity, actIndex: number) => {
-                        const raci = activity.raci || {};
-                        const categories: string[] = [];
+                (module.activities || []).forEach((activity: Activity, actIndex: number) => {
+                    const raci = activity.raci || {};
+                    const categories: string[] = [];
 
-                        if (raci.responsible === personId) categories.push("R");
-                        if (raci.accountable === personId) categories.push("A");
-                        if ((raci.consulted || []).includes(personId)) categories.push("C");
-                        if ((raci.informed || []).includes(personId)) categories.push("I");
+                    if (raci.responsible === personId) categories.push("R");
+                    if (raci.accountable === personId) categories.push("A");
+                    if ((raci.consulted || []).includes(personId)) categories.push("C");
+                    if ((raci.informed || []).includes(personId)) categories.push("I");
 
-                        if (!categories.length) return;
+                    if (!categories.length) return;
 
-                        const plannedStart = activity.start
-                            ? dayjs(activity.start).format("DD-MM-YYYY")
-                            : "-";
-                        const plannedFinish = activity.end
-                            ? dayjs(activity.end).format("DD-MM-YYYY")
-                            : "-";
+                    const plannedStart = activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-";
+                    const plannedFinish = activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-";
 
-                        const actualStart =
-                            activity.actualStart && activity.actualStart !== "null"
-                                ? activity.actualStart
-                                : "";
-                        const actualFinish =
-                            activity.actualFinish && activity.actualFinish !== "null"
-                                ? activity.actualFinish
-                                : "";
+                    const actualStart =
+                        activity.actualStart && activity.actualStart !== "null" ? activity.actualStart : "";
+                    const actualFinish =
+                        activity.actualFinish && activity.actualFinish !== "null" ? activity.actualFinish : "";
 
-                        rows.push({
-                            key: `${project.id}-${moduleIndex}-${actIndex}`,
-                            moduleName: module.moduleName,
-                            activityName: activity.activityName,
-                            plannedStart,
-                            plannedFinish,
-                            actualStart,
-                            actualFinish,
-                            activityStatus: activity.activityStatus || "yetToStart",
-                            category: categories.join(","),
-                        });
-                    }
-                );
+                    rows.push({
+                        key: `${project.id}-${moduleIndex}-${actIndex}`,
+                        moduleName: module.moduleName,
+                        activityName: activity.activityName,
+                        plannedStart,
+                        plannedFinish,
+                        actualStart,
+                        actualFinish,
+                        activityStatus: activity.activityStatus || "yetToStart",
+                        category: categories.join(","),
+                    });
+                });
             });
 
             if (rows.length) {
                 blocks.push({
                     projectId: project.id,
-                    projectName: project.projectParameters.projectName,
+                    projectName: project.projectParameters?.projectName || project.name || "Project",
                     rows,
                 });
             }
@@ -206,70 +203,28 @@ const PeopleSearch = () => {
     }, [selectedPersonId, allProjects, userMap]);
 
     const columns: ColumnsType<PersonRaciRow> = [
-        {
-            title: "Module Name",
-            dataIndex: "moduleName",
-            key: "moduleName",
-            width: 220,
-        },
-        {
-            title: "Activity",
-            dataIndex: "activityName",
-            key: "activityName",
-            width: 260,
-        },
-        {
-            title: "Planned Start",
-            dataIndex: "plannedStart",
-            key: "plannedStart",
-            width: 130,
-            align: "center",
-        },
-        {
-            title: "Planned Finish",
-            dataIndex: "plannedFinish",
-            key: "plannedFinish",
-            width: 130,
-            align: "center",
-        },
-        {
-            title: "Actual Start",
-            dataIndex: "actualStart",
-            key: "actualStart",
-            width: 130,
-            align: "center",
-            render: (val: string) => val || "—",
-        },
-        {
-            title: "Actual Finish",
-            dataIndex: "actualFinish",
-            key: "actualFinish",
-            width: 130,
-            align: "center",
-            render: (val: string) => val || "—",
-        },
+        { title: "Module", dataIndex: "moduleName", key: "moduleName", width: 220 },
+        { title: "Activity", dataIndex: "activityName", key: "activityName", width: 280 },
+        { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", width: 130, align: "center" },
+        { title: "Planned Finish", dataIndex: "plannedFinish", key: "plannedFinish", width: 130, align: "center" },
+        { title: "Actual Start", dataIndex: "actualStart", key: "actualStart", width: 130, align: "center", render: (v: string) => v || "—" },
+        { title: "Actual Finish", dataIndex: "actualFinish", key: "actualFinish", width: 130, align: "center", render: (v: string) => v || "—" },
         {
             title: "Status",
             dataIndex: "activityStatus",
             key: "activityStatus",
-            width: 120,
+            width: 140,
             align: "center",
             render: (status: string) => {
                 if (!status) return "—";
                 const st = status.toLowerCase();
-                if (st === "yettostart") return <Tag>Yet to Start</Tag>;
-                if (st === "inprogress") return <Tag color="blue">In Progress</Tag>;
-                if (st === "completed") return <Tag color="green">Completed</Tag>;
-                return <Tag>{status}</Tag>;
+                if (st === "yettostart") return <Tag className="raci-tag">Yet to Start</Tag>;
+                if (st === "inprogress") return <Tag className="raci-tag raci-tag--progress">In Progress</Tag>;
+                if (st === "completed") return <Tag className="raci-tag raci-tag--done">Completed</Tag>;
+                return <Tag className="raci-tag">{status}</Tag>;
             },
         },
-        {
-            title: "Category (R/A/C/I)",
-            dataIndex: "category",
-            key: "category",
-            width: 120,
-            align: "center",
-        },
+        { title: "R/A/C/I", dataIndex: "category", key: "category", width: 110, align: "center" },
     ];
 
     const matchedUsers = useMemo(() => {
@@ -278,93 +233,98 @@ const PeopleSearch = () => {
         return userOptions.filter((u: any) => {
             const name = (u.name || "").toLowerCase();
             const email = (u.email || u.primaryEmail || "").toLowerCase();
-            return name.startsWith(lower) || email.startsWith(lower);
+            return name.includes(lower) || email.includes(lower);
         });
     }, [searchText, userOptions]);
 
-    return (
-        <div className="people-search-container">
-            <div className="people-search-top-container status-update-header raci-header">
-                <span>Search by People – RACI View</span>
-            </div>
-            {allProjects.length ? (
-                <div className="people-search-body">
-                    <div className="raci-toolbar">
-                        <div className="raci-search-container">
-                            <Input
-                                className="raci-search-input"
-                                placeholder="Type name or email"
-                                value={searchText}
-                                onChange={(e) => {
-                                    setSearchText(e.target.value);
-                                    setShowSuggestions(true);
-                                }}
-                                prefix={<UserOutlined />}
-                                allowClear
-                            />
-                        </div>
+    const showEmptyProjects = !allProjects.length;
+    const showEmptyPerson = allProjects.length > 0 && !selectedPerson;
+    const showEmptyRaci = selectedPerson && personProjects.length === 0;
 
-                        {selectedPerson && (
-                            <div className="raci-person-details">
-                                <div>
-                                    <Text strong>Name:&nbsp;</Text>
-                                    <Text>{selectedPerson.name || "-"}</Text>
-                                </div>
-                                <div>
-                                    <Text strong>Contact:&nbsp;</Text>
-                                    <Text>
-                                        {selectedPerson.phone ||
-                                            selectedPerson.contact ||
-                                            selectedPerson.mobile ||
-                                            "-"}
-                                    </Text>
-                                </div>
-                                <div>
-                                    <Text strong>Email:&nbsp;</Text>
-                                    <Text>
-                                        {selectedPerson.email ||
-                                            selectedPerson.primaryEmail ||
-                                            "-"}
-                                    </Text>
-                                </div>
+    return (
+        <div className="people-search-container" ref={containerRef}>
+            <div className="people-search-header">
+                <div className="people-search-header-left">
+                    <p className="page-heading-title">Search by People – RACI View</p>
+                    <span className="pl-subtitle">See where a person is mapped as R/A/C/I across projects</span>
+                </div>
+
+                <div className="people-search-header-right">
+                    <div className="raci-search-block">
+                        <Input
+                            className="raci-search-input"
+                            placeholder="Search name or email"
+                            value={searchText}
+                            onChange={(e) => {
+                                setSearchText(e.target.value);
+                                setShowSuggestions(true);
+                            }}
+                            onFocus={() => setShowSuggestions(true)}
+                            prefix={<UserOutlined />}
+                            allowClear
+                        />
+
+                        {showSuggestions && searchText && (
+                            <div className="raci-suggestion-wrapper">
+                                <List
+                                    className="raci-suggestion-list"
+                                    bordered
+                                    size="small"
+                                    dataSource={matchedUsers.slice(0, 25)}
+                                    locale={{ emptyText: "No records found" }}
+                                    renderItem={(user: any) => (
+                                        <List.Item
+                                            className="raci-suggestion-item"
+                                            onClick={() => {
+                                                setSelectedPersonId(user.id);
+                                                setSearchText(user.name || "");
+                                                setShowSuggestions(false);
+                                            }}
+                                        >
+                                            <div className="raci-suggestion-content">
+                                                <span className="raci-suggestion-name">{user.name || "-"}</span>
+                                                <span className="raci-suggestion-email">{user.email || user.primaryEmail || "-"}</span>
+                                            </div>
+                                        </List.Item>
+                                    )}
+                                />
                             </div>
                         )}
                     </div>
+                </div>
+            </div>
 
-                    {showSuggestions && searchText && (
-                        <div className="raci-suggestion-wrapper">
-                            <List
-                                className="raci-suggestion-list"
-                                bordered
-                                size="small"
-                                dataSource={matchedUsers}
-                                locale={{ emptyText: "No records found" }}
-                                renderItem={(user: any) => (
-                                    <List.Item
-                                        className="raci-suggestion-item"
-                                        onClick={() => {
-                                            setSelectedPersonId(user.id);
-                                            setSearchText(user.name || "");
-                                            setShowSuggestions(false);
-                                        }}
-                                    >
-                                        <div className="raci-suggestion-content">
-                                            <span className="raci-suggestion-name">
-                                                {user.name}
-                                            </span>
-                                            <span className="raci-suggestion-email">
-                                                {user.email || user.primaryEmail || "-"}
-                                            </span>
-                                        </div>
-                                    </List.Item>
-                                )}
-                            />
+            {showEmptyProjects ? (
+                <div className="container-msg">
+                    <div className="no-project-message">
+                        <FolderOpenOutlined className="raci-empty-icon" />
+                        <h3>No Projects Found</h3>
+                        <p>You need to create a project and its timeline before viewing RACI.</p>
+                        <button onClick={() => eventBus.emit("updateTab", "/create/register-new-project")}>
+                            Create Project
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <div className="people-search-body">
+                    {selectedPerson && (
+                        <div className="raci-person-bar">
+                            <div className="raci-person-bar-item">
+                                <Text strong>Name:&nbsp;</Text>
+                                <Text>{selectedPerson.name || "-"}</Text>
+                            </div>
+                            <div className="raci-person-bar-item">
+                                <Text strong>Contact:&nbsp;</Text>
+                                <Text>{selectedPerson.phone || selectedPerson.contact || selectedPerson.mobile || "-"}</Text>
+                            </div>
+                            <div className="raci-person-bar-item">
+                                <Text strong>Email:&nbsp;</Text>
+                                <Text>{selectedPerson.email || selectedPerson.primaryEmail || "-"}</Text>
+                            </div>
                         </div>
                     )}
 
-                    <hr className="raci-divider" />
-
-                    {!selectedPerson && (
+                    {showEmptyPerson && (
                         <div className="container-msg">
                             <div className="no-project-message">
                                 <FolderOpenOutlined className="raci-empty-icon" />
@@ -374,71 +334,44 @@ const PeopleSearch = () => {
                         </div>
                     )}
 
-                    {selectedPerson && personProjects.length === 0 && (
+                    {showEmptyRaci && (
                         <div className="container-msg">
                             <div className="no-project-message">
                                 <FolderOpenOutlined className="raci-empty-icon" />
                                 <h3>No RACI Assignments</h3>
-                                <p>
-                                    This person is currently not mapped as R/A/C/I in any
-                                    project.
-                                </p>
+                                <p>This person is currently not mapped as R/A/C/I in any project.</p>
                             </div>
                         </div>
                     )}
 
-                    <div className="raci-main-page">
-                        {selectedPerson &&
-                            personProjects.map((project) => {
+                    {selectedPerson && personProjects.length > 0 && (
+                        <div className="raci-main-page">
+                            {personProjects.map((project) => {
                                 if (!project.rows.length) return null;
 
                                 return (
-                                    <div
-                                        key={project.projectId}
-                                        className="raci-project-block status-update-items"
-                                    >
-                                        <div className="raci-project-header">
-                                            {project.projectName}
-                                        </div>
-                                        <div className="status-update-table">
+                                    <div key={project.projectId} className="raci-project-block">
+                                        <div className="raci-project-header">{project.projectName}</div>
+                                        <div className="raci-project-table">
                                             <Table<PersonRaciRow>
                                                 rowKey="key"
                                                 columns={columns}
                                                 dataSource={project.rows}
                                                 pagination={false}
                                                 bordered
-                                                scroll={{
-                                                    x: "max-content",
-                                                    y: "calc(50vh - 80px)",
-                                                }}
+                                                className="raci-table"
+                                                scroll={{ x: "max-content", y: 420 }}
                                             />
                                         </div>
                                     </div>
                                 );
                             })}
-                    </div>
-                </div>
-            ) : (
-                <div className="container-msg">
-                    <div className="no-project-message">
-                        <FolderOpenOutlined className="raci-empty-icon" />
-                        <h3>No Projects Found</h3>
-                        <p>
-                            You need to create a project and its timeline before viewing
-                            RACI.
-                        </p>
-                        <button
-                            onClick={() => {
-                                eventBus.emit("updateTab", "/create/register-new-project");
-                            }}
-                        >
-                            Create Project
-                        </button>
-                    </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
-    )
-}
+    );
+};
 
 export default PeopleSearch;

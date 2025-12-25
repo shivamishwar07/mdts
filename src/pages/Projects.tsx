@@ -296,7 +296,7 @@ const Projects = () => {
     const renderTabContent = () => {
         switch (activeTab) {
             case "projectStatistics":
-                return <ProjectStatistics code={projectDetails.id} />;
+                return <ProjectStatistics />;
             case "fdpp":
                 return <FDPP code={projectDetails.id} />;
             case "project-timeline":
@@ -325,40 +325,32 @@ const Projects = () => {
                 <div className="pppsdd">
                     <div className="all-project-details">
                         <div className="projects-header">
-                            <div className="projects-title">
-                                <span className="project-heading">Projects</span>
+                            <div className={`projects-header-actions ${!isPeopleView ? "tab-active" : ""}`}>
+                                <span className="people-link" onClick={goToProjects}>
+                                    Projects
+                                </span>
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    className="header-icon-btn"
+                                    title="Projects"
+                                    icon={<RobotOutlined />}
+                                    onClick={goToProjects}
+                                />
                             </div>
 
-                            <div className="projects-header-actions">
-                                {!isPeopleView ? (
-                                    <>
-                                        <span className="people-link" onClick={goToPeople}>
-                                            People
-                                        </span>
-                                        <Button
-                                            type="text"
-                                            size="small"
-                                            className="header-icon-btn"
-                                            title="People"
-                                            icon={<TeamOutlined />}
-                                            onClick={goToPeople}
-                                        />
-                                    </>
-                                ) : (
-                                    <>
-                                        <span className="people-link" onClick={goToProjects}>
-                                            Projects
-                                        </span>
-                                        <Button
-                                            type="text"
-                                            size="small"
-                                            className="header-icon-btn"
-                                            title="Projects"
-                                            icon={<RobotOutlined />}
-                                            onClick={goToProjects}
-                                        />
-                                    </>
-                                )}
+                            <div className={`projects-header-actions ${isPeopleView ? "tab-active" : ""}`}>
+                                <span className="people-link" onClick={goToPeople}>
+                                    People
+                                </span>
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    className="header-icon-btn"
+                                    title="People"
+                                    icon={<TeamOutlined />}
+                                    onClick={goToPeople}
+                                />
                             </div>
                         </div>
 
@@ -414,7 +406,7 @@ const Projects = () => {
                         })}
                     </div>
                     <div className="create-project-btn-div">
-                        <div style={{display:"flex", justifyContent:"center"}} onClick={() => navigate("/create/register-new-project")} >
+                        <div style={{ display: "flex", justifyContent: "center" }} onClick={() => navigate("/create/register-new-project")} >
                             <Button
                                 type="text"
                                 size="small"

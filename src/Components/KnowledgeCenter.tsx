@@ -140,7 +140,7 @@ export default function KnowledgeCenter() {
   return (
     <div className="kc-root light">
       <header className="kc-header">
-        <div className="kc-brand">Knowledge Center</div>
+        <p className="page-heading-title">Knowledge Center</p>
         <div className="kc-cta">
           <input
             aria-label="Search articles"

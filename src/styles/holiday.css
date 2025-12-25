@@ -1,83 +1,427 @@
-.left-part {
-    margin: 8px;
-    border: 1px solid gray;
-    border-radius: 4px;
-    width: 98.8%;
+.holiday-main-container {
+  display: flex;
+  gap: 12px;
+  background: transparent;
+  margin: 5px;
 }
 
-.table-items {
-    /* height: calc(100vh - 230px) !important; */
-    height: calc(100vh - 140px);
-    overflow-y: auto !important;
-    overflow-x: hidden !important;
+.holiday-left {
+  margin: 8px;
+  transition: width 0.5s ease-in-out;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  --hc-surface: var(--bg-surface);
+  --hc-muted: var(--bg-muted);
+  --hc-border: var(--border);
+
+  --hc-text: var(--text-primary);
+  --hc-text-2: var(--text-secondary);
+  --hc-text-muted: var(--text-muted);
+
+  --hc-accent: var(--color-primary);
+  --hc-accent-hover: var(--color-primary-hover);
+
+  --hc-shadow: var(--shadow-sm);
+  --hc-shadow-md: var(--shadow-md);
+
+  --hc-radius: var(--radius-lg);
 }
 
-.right-part {
-    margin: 8px 8px 8px 0px;
-    height: calc(100vh - 95px);
-    border: 1px solid gray;
-    overflow-y: auto;
-    overflow-x: hidden;
+.holiday-left--with-calendar {
+  width: 75%;
 }
 
-.aad-btn {
-    padding: 3px 5px;
-    font-weight: 400 !important;
-    color: #fff;
-    outline: 1px solid #fff !important;
-    font-size: 12px !important;
+.holiday-left--full {
+  width: 98.8%;
 }
 
-.holiday-page-heading {
-    color: gray;
-    font-size: 18px;
-    font-weight: bold;
+.holiday-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: transparent;
+  padding: 10px;
+  border: 1px solid var(--hc-border);
+  border-radius: 10px;
+  box-shadow: var(--hc-shadow);
 }
 
-.card-header-items {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 5px;
-    background-color: transparent;
+.holiday-title {
+  color: var(--hc-text-muted);
+  font-size: 18px;
+  font-weight: 800;
 }
 
-.table-header {
-    background-color: transparent;
+.holiday-header-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
-.table-cell {
-    padding: 10px !important;
-    font-weight: 400 !important;
-    text-align: center !important;
-    color: white !important;
-    font-size: 16px !important;
+.holiday-btn.ant-btn {
+  height: 36px;
+  border-radius: 10px;
+  font-weight: 800;
+  padding: 0 12px;
+  border: 1px solid var(--hc-border);
+  background: var(--hc-surface);
+  color: var(--hc-text);
+  box-shadow: var(--hc-shadow);
 }
 
-.react-calendar {
-    width: 100%;
-    border: none;
-    box-shadow: 0px 2px 5px rgba(0, 0, 0, 0.1);
+.holiday-btn.ant-btn:hover {
+  background: var(--hc-muted);
+  border-color: rgba(31, 122, 99, .25);
+}
+
+.holiday-btn--primary.ant-btn {
+  background: var(--hc-accent);
+  border-color: transparent;
+  color: var(--text-inverse);
+}
+
+.holiday-btn--primary.ant-btn:hover {
+  background: var(--hc-accent-hover);
+}
+
+.holiday-btn--secondary.ant-btn {
+  background: var(--hc-surface);
+  color: var(--hc-text);
+}
+
+.holiday-table-container {
+  height: calc(100vh - 195px);
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  border: 1px solid var(--hc-border);
+  border-radius: 10px;
+  background: var(--hc-surface);
+  box-shadow: var(--hc-shadow);
+}
+
+.holiday-table {
+  background: var(--hc-surface);
+}
+
+.holiday-table-head-cell,
+.holiday-table-head .MuiTableCell-stickyHeader {
+  background: var(--hc-muted) !important;
+  color: var(--hc-text) !important;
+  font-weight: 900 !important;
+  text-transform: none !important;
+  font-size: 14px !important;
+  border-bottom: 1px solid var(--hc-border) !important;
+  text-align: center !important;
+}
+
+.holiday-table-row .MuiTableCell-root {
+  padding: 6px 8px !important;
+  text-align: center !important;
+  color: var(--hc-text-2) !important;
+  border-bottom: 1px solid var(--hc-border) !important;
+}
+
+.holiday-table-row:hover .MuiTableCell-root {
+  background: rgba(209, 250, 229, .35) !important;
+}
+
+.holiday-empty-cell {
+  text-align: center !important;
+  padding: 30px !important;
+  color: var(--hc-text-muted) !important;
+  border-bottom: none !important;
+}
+
+.holiday-empty-text {
+  color: var(--hc-text-muted) !important;
+  font-weight: 700;
+}
+
+.holiday-date-picker {
+  width: 100%;
+}
+
+.holiday-date-picker--full {
+  width: 100%;
+}
+
+.holiday-input.ant-input,
+.holiday-input .ant-input {
+  border-radius: 10px;
+  border: 1px solid var(--hc-border);
+  background: var(--hc-surface);
+  color: var(--hc-text);
+}
+
+.holiday-input.ant-input::placeholder,
+.holiday-input .ant-input::placeholder {
+  color: var(--hc-text-muted);
+}
+
+.holiday-select.ant-select {
+  width: 180px;
+}
+
+.holiday-select .ant-select-selector {
+  border-radius: 10px !important;
+  border-color: var(--hc-border) !important;
+  background: var(--hc-surface) !important;
+  color: var(--hc-text) !important;
+}
+
+.holiday-select .ant-select-selection-placeholder {
+  color: var(--hc-text-muted) !important;
+}
+
+.holiday-select.ant-select-focused .ant-select-selector {
+  border-color: rgba(31, 122, 99, .6) !important;
+  box-shadow: var(--focus-ring) !important;
+}
+
+.holiday-modules-readonly {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+}
+
+.holiday-module-text {
+  color: var(--hc-text-2) !important;
+  font-weight: 600;
+}
+
+.holiday-impact {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.holiday-impact-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.holiday-impact-input .MuiInputBase-root {
+  width: 60px;
+  border-radius: 10px;
+  background: var(--hc-surface);
+  color: var(--hc-text);
+}
+
+.holiday-impact-input .MuiOutlinedInput-notchedOutline {
+  border-color: var(--hc-border);
+}
+
+.holiday-impact-input .MuiInputBase-root:hover .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(31, 122, 99, .35);
+}
+
+.holiday-impact-input .MuiInputBase-root.Mui-focused .MuiOutlinedInput-notchedOutline {
+  border-color: rgba(31, 122, 99, .6);
+}
+
+.holiday-impact-text {
+  color: var(--hc-text-2) !important;
+  font-weight: 700;
+}
+
+.holiday-actions-cell {
+  text-align: center !important;
+  display: flex !important;
+  gap: 10px !important;
+  justify-content: center !important;
+  align-items: center !important;
+  border-bottom: none !important;
+}
+
+.holiday-icon-btn.ant-btn {
+  width: 36px;
+  min-width: 36px;
+  height: 36px;
+  padding: 0;
+  border-radius: 10px;
+  border: 1px solid var(--hc-border);
+  background: var(--hc-surface);
+  color: var(--hc-text);
+  box-shadow: var(--hc-shadow);
+}
+
+.holiday-icon-btn.ant-btn:hover {
+  background: var(--hc-muted);
+  border-color: rgba(31, 122, 99, .25);
+}
+
+.holiday-icon-btn--primary.ant-btn {
+  background: var(--hc-accent);
+  border-color: transparent;
+  color: var(--text-inverse);
+}
+
+.holiday-icon-btn--primary.ant-btn:hover {
+  background: var(--hc-accent-hover);
+}
+
+.holiday-icon-btn--danger.ant-btn {
+  background: var(--error);
+  border-color: transparent;
+  color: var(--text-inverse);
+}
+
+.holiday-icon-btn--danger.ant-btn:hover {
+  filter: brightness(.95);
+}
+
+.holiday-icon-btn--muted.ant-btn {
+  background: var(--hc-muted);
+  color: var(--hc-text);
+}
+
+.holiday-icon-btn--muted.ant-btn:hover {
+  background: rgba(209, 250, 229, .45);
+}
+
+.holiday-right {
+  width: 35%;
+  padding: 10px;
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: repeat(1, 1fr);
+  gap: 10px;
+  margin: 8px 8px 8px 0px;
+  height: calc(100vh - 110px);
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: var(--shadow-sm);
+}
+
+.holiday-right .react-calendar {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.holiday-right .react-calendar__navigation button {
+  border-radius: 10px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.holiday-right .react-calendar__month-view__weekdays {
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+  font-weight: 800;
+}
+
+.holiday-right .react-calendar__tile {
+  border-radius: 10px;
+}
+
+.holiday-right .react-calendar__tile:enabled:hover,
+.holiday-right .react-calendar__tile:enabled:focus {
+  background: rgba(209, 250, 229, .45);
+}
+
+.holiday-right .react-calendar__tile--active {
+  background: rgba(31, 122, 99, .20) !important;
+  color: var(--text-primary) !important;
+}
+
+.holiday-right .react-calendar__tile:disabled {
+  opacity: .45;
+}
+
+.holiday-modal-body {
+  padding: 0 10px;
+}
+
+.holiday-modal-text {
+  margin: 0;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.modal-container .ant-modal-content {
+  border-radius: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-md);
+}
+
+.modal-container .ant-modal-header {
+  background: transparent;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-container .ant-modal-title {
+  color: var(--text-primary);
+  font-weight: 900;
+}
+
+.modal-container .ant-modal-close {
+  color: var(--text-muted);
+}
+
+.modal-container .ant-modal-close:hover {
+  color: var(--text-primary);
+}
+
+.modal-container .ant-btn-dangerous.ant-btn-primary {
+  background: var(--error);
+  border-color: transparent;
+  font-weight: 800;
+  border-radius: 10px;
+  height: 36px;
+  padding: 0 16px;
+}
+
+.modal-container .ant-btn-dangerous.ant-btn-primary:hover {
+  filter: brightness(.95);
+}
+
+.modal-container .ant-btn-default {
+  border-radius: 10px;
+  height: 36px;
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.modal-container .ant-btn-default:hover {
+  background: var(--bg-muted);
+  border-color: rgba(31, 122, 99, .25);
 }
 
 @media (max-width: 768px) {
-    .main-container-div {
-        flex-direction: column;
-    }
+  .holiday-main-container {
+    flex-direction: column;
+  }
 
-    .left-part,
-    .right-part {
-        width: 100%;
-        max-width: none;
-    }
+  .holiday-left,
+  .holiday-right {
+    width: 100% !important;
+    max-width: none;
+  }
 
-    .right-part {
-        height: auto;
-    }
+  .holiday-right {
+    height: auto;
+    margin: 8px;
+  }
 }
 
 @media (min-width: 768px) {
-    .main-container-div {
-        flex-direction: row;
-    }
+  .holiday-main-container {
+    flex-direction: row;
+  }
 }

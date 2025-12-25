@@ -1,0 +1,168 @@
+.delay-cost-main {
+  background: var(--bg-main);
+  color: var(--text-secondary);
+  font-family: var(--font-base);
+
+  --dc-surface: var(--bg-surface);
+  --dc-muted: var(--bg-muted);
+  --dc-border: var(--border);
+
+  --dc-text: var(--text-primary);
+  --dc-text-2: var(--text-secondary);
+  --dc-text-muted: var(--text-muted);
+
+  --dc-accent: var(--color-primary);
+  --dc-accent-hover: var(--color-primary-hover);
+
+  --dc-shadow: var(--shadow-sm);
+  --dc-shadow-md: var(--shadow-md);
+
+  --dc-radius-sm: var(--radius-sm);
+  --dc-radius-md: var(--radius-md);
+  --dc-radius-lg: var(--radius-lg);
+
+  width: 99%;
+  margin: 8px;
+  border: 1px solid var(--dc-border);
+  border-radius: var(--dc-radius-md);
+  overflow: hidden;
+}
+
+.delay-cost-heading {
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  padding: 10px 12px;
+  margin: 8px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+}
+
+.delay-cost-heading-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.delay-cost-title {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.delay-cost-content {
+  padding: 8px;
+  height: calc(100vh - 190px);
+}
+
+.delay-cost-table-shell {
+  border: 1px solid var(--dc-border);
+  border-radius: var(--dc-radius-md);
+  overflow: hidden;
+  background: var(--dc-surface);
+  box-shadow: var(--dc-shadow);
+}
+
+.delay-cost-table-shell .delay-cost-table.ant-table-wrapper .ant-table {
+  background: var(--dc-surface) !important;
+}
+
+.delay-cost-table-shell .delay-cost-table .ant-table-thead > tr > th {
+  background: var(--dc-muted) !important;
+  color: var(--dc-text) !important;
+  font-weight: 900 !important;
+  font-size: 13px;
+  text-align: center;
+  padding: 12px 14px !important;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--dc-border) !important;
+  position: sticky !important;
+  top: 0;
+  z-index: 2;
+  box-shadow: inset 0 -2px 0 0 rgba(31, 122, 99, .35);
+}
+
+.delay-cost-table-shell .delay-cost-table .ant-table-tbody > tr > td {
+  padding: 12px 14px !important;
+  text-align: center;
+  color: var(--dc-text-2) !important;
+  border-bottom: 1px solid var(--dc-border) !important;
+  background: var(--dc-surface) !important;
+}
+
+.delay-cost-table-shell .delay-cost-table .ant-table-tbody > tr:hover > td {
+  background: rgba(209, 250, 229, .45) !important;
+}
+
+.delay-cost-row-high > td {
+  background: rgba(185, 28, 28, .08) !important;
+}
+
+.delay-cost-row-medium > td {
+  background: rgba(217, 119, 6, .08) !important;
+}
+
+.delay-cost-summary-row > td {
+  background: var(--dc-muted) !important;
+  border-top: 1px solid var(--dc-border) !important;
+}
+
+.delay-cost-summary-label {
+  font-weight: 900;
+  color: var(--dc-text) !important;
+}
+
+.delay-cost-summary-value {
+  font-weight: 900;
+  color: var(--dc-text) !important;
+}
+
+[data-theme="dark"] .delay-cost-main {
+  --dc-surface: var(--bg-surface-dark);
+  --dc-muted: rgba(148, 163, 184, .10);
+  --dc-border: var(--border-dark);
+
+  --dc-text: var(--text-primary-dark);
+  --dc-text-2: var(--text-secondary-dark);
+  --dc-text-muted: var(--text-muted-dark);
+}
+
+[data-theme="dark"] .delay-cost-heading {
+  background: var(--bg-surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .delay-cost-table-shell {
+  background: var(--dc-surface);
+  border-color: var(--dc-border);
+}
+
+[data-theme="dark"] .delay-cost-table-shell .delay-cost-table .ant-table-thead > tr > th {
+  background: rgba(148, 163, 184, .10) !important;
+  color: var(--dc-text) !important;
+  border-bottom-color: var(--dc-border) !important;
+  box-shadow: inset 0 -2px 0 0 rgba(52, 211, 153, .35);
+}
+
+[data-theme="dark"] .delay-cost-table-shell .delay-cost-table .ant-table-tbody > tr > td {
+  background: var(--dc-surface) !important;
+  border-bottom-color: var(--dc-border) !important;
+  color: var(--dc-text-2) !important;
+}
+
+[data-theme="dark"] .delay-cost-table-shell .delay-cost-table .ant-table-tbody > tr:hover > td {
+  background: rgba(52, 211, 153, .08) !important;
+}
+
+[data-theme="dark"] .delay-cost-summary-row > td {
+  background: rgba(148, 163, 184, .10) !important;
+  border-top-color: var(--dc-border) !important;
+}
+
+[data-theme="dark"] .delay-cost-row-high > td {
+  background: rgba(185, 28, 28, .14) !important;
+}
+
+[data-theme="dark"] .delay-cost-row-medium > td {
+  background: rgba(217, 119, 6, .14) !important;
+}

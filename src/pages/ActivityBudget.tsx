@@ -510,73 +510,6 @@ const ActivityBudget: React.FC = () => {
     setRevisionModalVisible(true);
   };
 
-  // const handleRevisionSave = async () => {
-  //   if (!selectedProjectId || !revisionRow) {
-  //     resetRevision();
-  //     return;
-  //   }
-  //   if (
-  //     revisionValue === null ||
-  //     revisionValue === undefined ||
-  //     Number.isNaN(revisionValue)
-  //   ) {
-  //     notify.error("Please enter revised budget.");
-  //     return;
-  //   }
-
-  //   const now = new Date().toISOString();
-  //   const existing = await db.getActivityBudget(
-  //     String(selectedProjectId),
-  //     revisionRow.activityCode
-  //   );
-
-  //   if (!existing) {
-  //     notify.error("Existing budget nahi mila revise karne ke liye.");
-  //     resetRevision();
-  //     return;
-  //   }
-
-  //   const existingHistory: RevisionEntry[] = existing.revisionHistory || [];
-  //   const newHistory: RevisionEntry[] = [
-  //     ...existingHistory,
-  //     {
-  //       amount: Number(revisionValue),
-  //       date: now,
-  //     },
-  //   ];
-
-  //   await db.upsertActivityBudget({
-  //     projectId: String(selectedProjectId),
-  //     activityCode: revisionRow.activityCode,
-  //     activityName: revisionRow.activityName,
-  //     moduleName: revisionRow.moduleName || "",
-  //     originalBudget: existing.originalBudget,
-  //     originalBudgetDate: existing.originalBudgetDate,
-  //     revisionHistory: newHistory,
-  //   });
-
-  //   setModulesPanels((prev) =>
-  //     prev.map((p) => ({
-  //       ...p,
-  //       rows: p.rows.map((r) =>
-  //         r.key === revisionRow.key
-  //           ? {
-  //             ...r,
-  //             originalBudget: existing.originalBudget ?? r.originalBudget,
-  //             originalBudgetDate:
-  //               existing.originalBudgetDate ?? r.originalBudgetDate,
-  //             currentBudget: Number(revisionValue),
-  //             currentBudgetDate: now,
-  //             revisionHistory: newHistory,
-  //           }
-  //           : r
-  //       ),
-  //     }))
-  //   );
-
-  //   resetRevision();
-  // };
-
   const handleRevisionSave = async () => {
     if (!selectedProjectId || !revisionRow) {
       resetRevision();
@@ -1105,74 +1038,70 @@ const ActivityBudget: React.FC = () => {
 
   return (
     <div className="budget-main-container">
-      <div className="budget-heading">
-        <Text className="budget-title">Activity Budget</Text>
+      <div className="budget-heading budget-heading--top">
+        <div className="budget-heading-left">
+          <p className="page-heading-title">Activity Budget</p>
+            <span className="pl-subtitle">Manage your org projects and ownership</span>
+        </div>
 
-        <div className="budget-meta-row">
-          <Space size={20} align="center">
-            <Space>
-              <Text className="meta-label">Project:</Text>
-              <Select
-                style={{ minWidth: 220 }}
-                value={selectedProjectId ?? undefined}
-                onChange={handleProjectChange}
-              >
-                {projects.map((p) => (
-                  <Option key={p.id} value={String(p.id)}>
-                    {p.projectParameters?.projectName || p.name}
-                  </Option>
-                ))}
-              </Select>
-            </Space>
+        <div className="budget-heading-right">
+          <div className="budget-field">
+            <div className="budget-field-label">Project</div>
+            <Select
+              value={selectedProjectId ?? undefined}
+              onChange={handleProjectChange}
+              className="budget-field-control"
+            >
+              {projects.map((p) => (
+                <Option key={p.id} value={String(p.id)}>
+                  {p.projectParameters?.projectName || p.name}
+                </Option>
+              ))}
+            </Select>
+          </div>
 
-            {timelineInfo && (
-              <Space>
-                <Text className="meta-label">Version:</Text>
-                <Text className="meta-value">{timelineInfo.version}</Text>
-              </Space>
-            )}
+          <div className="budget-field">
+            <div className="budget-field-label">Version</div>
+            <div className="budget-field-value">
+              {timelineInfo ? timelineInfo.version : "-"}
+            </div>
+          </div>
 
-            {timelineInfo && (
-              <Space>
-                <Text className="meta-label">Status:</Text>
-                <Text className="meta-value">{timelineInfo.status}</Text>
-              </Space>
-            )}
+          <div className="budget-field">
+            <div className="budget-field-label">Status</div>
+            <div className="budget-field-value">
+              {timelineInfo ? timelineInfo.status : "-"}
+            </div>
+          </div>
 
-            {timelineInfo && (
-              <Space>
-                <Text className="meta-label">Updated At:</Text>
-                <Text className="meta-value">
-                  {dayjs(timelineInfo.updatedAt).format("DD-MM-YYYY HH:mm")}
-                </Text>
+          <div className="budget-field">
+            <div className="budget-field-label">Updated At</div>
+            <div className="budget-field-value">
+              {timelineInfo ? dayjs(timelineInfo.updatedAt).format("DD-MM-YYYY HH:mm") : "-"}
+            </div>
+          </div>
 
-                <Tooltip title="Add revision for selected activity">
-                  <Button
-                    size="small"
-                    type="primary"
-                    icon={<PlusCircleOutlined />}
-                    disabled={!selectedActivityRow}
-                    onClick={() => {
-                      if (!selectedActivityRow) {
-                        notify.error("Please select an activity row first.");
-                        return;
-                      }
-                      openRevisionModal(selectedActivityRow);
-                    }}
-                    style={{ marginLeft: 8 }}
-                  >
-                    Add Revision
-                  </Button>
-                </Tooltip>
-
-
-              </Space>
-            )}
-
-          </Space>
+          <div className="budget-field budget-field--button">
+            <Button
+              size="middle"
+              type="primary"
+              icon={<PlusCircleOutlined />}
+              disabled={!selectedActivityRow}
+              onClick={() => {
+                if (!selectedActivityRow) {
+                  notify.error("Please select an activity row first.");
+                  return;
+                }
+                openRevisionModal(selectedActivityRow);
+              }}
+              className="budget-add-revision-btn"
+            >
+              Add Revision
+            </Button>
+          </div>
         </div>
       </div>
-
+      
       <div className="budget-table-container">
         <Table<TableRow>
           columns={renderColumns()}
@@ -1189,8 +1118,7 @@ const ActivityBudget: React.FC = () => {
                 expanded ? [...prev, record.key] : prev.filter((k) => k !== record.key)
               );
             },
-            rowExpandable: (record: any) =>
-              record.isModule && !!record.children?.length,
+            rowExpandable: (record: any) => record.isModule && !!record.children?.length,
           }}
           rowClassName={(record) =>
             record.isModule
@@ -1202,27 +1130,18 @@ const ActivityBudget: React.FC = () => {
           onRow={(record) => ({
             onClick: () => {
               if (record.isModule) return;
-              setSelectedActivityRow((prev) =>
-                prev?.key === record.key ? null : record
-              );
+              setSelectedActivityRow((prev) => (prev?.key === record.key ? null : record));
             },
           })}
           scroll={{ x: true, y: "calc(100vh - 260px)" }}
+          className="budget-table"
         />
-
       </div>
 
-      <div
-        className="budget-footer"
-        style={{
-          position: "absolute",
-          bottom: "25px",
-          right: "10px",
-        }}
-      >
+      <div className="budget-footer">
         <Button
           type="primary"
-          className="save-button"
+          className="budget-save-button"
           onClick={handleSaveAll}
           disabled={!selectedProjectId}
         >
@@ -1242,26 +1161,22 @@ const ActivityBudget: React.FC = () => {
         width="50%"
         className="modal-container"
       >
-        <div style={{ padding: "10px" }}>
+        <div className="budget-docs-modal-body">
           <Table<ActivityBudgetDocument>
             dataSource={docModalDocs}
             rowKey="id"
             size="small"
             pagination={false}
             bordered
+            className="budget-docs-table"
             columns={[
-              {
-                title: "Name",
-                dataIndex: "name",
-                key: "name",
-              },
+              { title: "Name", dataIndex: "name", key: "name" },
               {
                 title: "Uploaded At",
                 dataIndex: "uploadedAt",
                 key: "uploadedAt",
                 width: 160,
-                render: (val: string) =>
-                  val ? dayjs(val).format("DD-MM-YYYY HH:mm") : "-",
+                render: (val: string) => (val ? dayjs(val).format("DD-MM-YYYY HH:mm") : "-"),
               },
               {
                 title: "Uploaded By",
@@ -1276,11 +1191,7 @@ const ActivityBudget: React.FC = () => {
                 width: 170,
                 render: (_: any, rec: ActivityBudgetDocument) => (
                   <Space>
-                    <Button
-                      size="small"
-                      icon={<EyeOutlined />}
-                      onClick={() => handlePreviewDoc(rec)}
-                    />
+                    <Button size="small" icon={<EyeOutlined />} onClick={() => handlePreviewDoc(rec)} />
                     <Button
                       size="small"
                       icon={<DownloadOutlined />}
@@ -1298,48 +1209,24 @@ const ActivityBudget: React.FC = () => {
             ]}
           />
 
-          <div
-            style={{
-              marginTop: 16,
-              borderTop: "1px solid #f0f0f0",
-              paddingTop: 12,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
-                width: "100%",
-              }}
-            >
+          <div className="budget-docs-uploader">
+            <div className="budget-docs-uploader-row">
               <Input
                 placeholder="Document name"
                 value={docName}
                 onChange={(e) => setDocName(e.target.value)}
-                style={{ flex: 3 }}
+                className="budget-docs-name-input"
               />
 
               <Button
                 icon={<UploadOutlined />}
-                onClick={() =>
-                  document.getElementById("activity-doc-file-input")?.click()
-                }
-                style={{ flex: 1 }}
+                onClick={() => document.getElementById("activity-doc-file-input")?.click()}
+                className="budget-docs-choose-btn"
               >
                 {docFile ? "Change file" : "Choose file"}
               </Button>
 
-              <span
-                style={{
-                  flex: 2,
-                  fontSize: 12,
-                  color: "#888",
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
+              <span className="budget-docs-file-name">
                 {docFile ? docFile.name : "No file selected"}
               </span>
 
@@ -1347,7 +1234,7 @@ const ActivityBudget: React.FC = () => {
                 type="primary"
                 size="small"
                 onClick={handleSaveDoc}
-                style={{ marginLeft: "auto" }}
+                className="budget-docs-save-btn"
               >
                 Save
               </Button>
@@ -1356,7 +1243,7 @@ const ActivityBudget: React.FC = () => {
             <input
               id="activity-doc-file-input"
               type="file"
-              style={{ display: "none" }}
+              className="budget-docs-hidden-file"
               onChange={handleDocFileChange}
             />
           </div>
@@ -1368,33 +1255,16 @@ const ActivityBudget: React.FC = () => {
         onCancel={() => setDocPreviewVisible(false)}
         footer={null}
         width="80%"
-        bodyStyle={{ height: "75vh" }}
         title="Preview Document"
         className="modal-container"
       >
-        <div
-          style={{
-            height: "100%",
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            padding: "10px"
-          }}
-        >
+        <div className="budget-preview-wrap">
           {docPreviewContent?.startsWith("data:application/pdf") ? (
-            <iframe
-              src={docPreviewContent}
-              title="PDF Preview"
-              style={{ border: "none", width: "100%", height: "100%" }}
-            />
+            <iframe src={docPreviewContent} title="PDF Preview" className="budget-preview-iframe" />
           ) : docPreviewContent?.startsWith("data:image/") ? (
-            <img
-              src={docPreviewContent}
-              alt="Document Preview"
-              style={{ maxWidth: "100%", maxHeight: "100%" }}
-            />
+            <img src={docPreviewContent} alt="Document Preview" className="budget-preview-img" />
           ) : (
-            <p>Preview not available. Download to view.</p>
+            <p className="budget-preview-fallback">Preview not available. Download to view.</p>
           )}
         </div>
       </Modal>
@@ -1411,30 +1281,27 @@ const ActivityBudget: React.FC = () => {
             : "Add Revision"
         }
       >
-        <Space direction="vertical" style={{ width: "100%", padding: "10px" }}>
+        <Space direction="vertical" className="budget-revision-form">
           <Text>Revised Budget (₹)</Text>
           <InputNumber<number>
-            style={{ width: "100%" }}
             min={0}
             precision={0}
             parser={numericParser}
             value={revisionValue ?? undefined}
             onChange={(v) => setRevisionValue(v ?? null)}
+            className="budget-revision-input"
           />
 
           <Text>Revision Date</Text>
           <DatePicker
-            style={{ width: "100%" }}
             format="DD-MM-YYYY"
             value={revisionDate}
             onChange={(value) => setRevisionDate(value)}
-            disabledDate={(current) =>
-              current ? current > dayjs().endOf("day") : false // ⬅️ future disable
-            }
+            disabledDate={(current) => (current ? current > dayjs().endOf("day") : false)}
+            className="budget-revision-date"
           />
         </Space>
       </Modal>
-
 
       <Modal
         open={historyModalVisible}
@@ -1448,7 +1315,7 @@ const ActivityBudget: React.FC = () => {
             : "Budget History"
         }
       >
-        <div style={{ padding: "10px" }}>
+        <div className="budget-history-body">
           {historyModalData.length ? (
             <Table
               size="small"
@@ -1456,13 +1323,9 @@ const ActivityBudget: React.FC = () => {
               pagination={false}
               rowKey="key"
               dataSource={historyModalData}
+              className="budget-history-table"
               columns={[
-                {
-                  title: "Type",
-                  dataIndex: "type",
-                  key: "type",
-                  width: 120,
-                },
+                { title: "Type", dataIndex: "type", key: "type", width: 120 },
                 {
                   title: "Amount (₹)",
                   dataIndex: "amount",
@@ -1475,13 +1338,12 @@ const ActivityBudget: React.FC = () => {
                   title: "Date",
                   dataIndex: "date",
                   key: "date",
-                  render: (val: string | null) =>
-                    val ? dayjs(val).format("DD-MM-YYYY HH:mm") : "-",
+                  render: (val: string | null) => (val ? dayjs(val).format("DD-MM-YYYY HH:mm") : "-"),
                 },
               ]}
             />
           ) : (
-            <p>No history available.</p>
+            <p className="budget-history-empty">No history available.</p>
           )}
         </div>
       </Modal>
@@ -1489,6 +1351,7 @@ const ActivityBudget: React.FC = () => {
       <ToastContainer />
     </div>
   );
+
 };
 
 export default ActivityBudget;

@@ -1,26 +1,71 @@
+/* NAVBAR – Global design tokens */
+
 .main-navbar {
-    background-color: #04646d;
+    background: var(--color-primary);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 5px 15px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24);
-    border-bottom-left-radius: 15px;
-    border-bottom-right-radius: 15px;
+    padding: 10px 16px;
+    box-shadow: var(--shadow-sm);
+    border-bottom-left-radius: var(--radius-lg);
+    border-bottom-right-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.10);
 }
 
+/* Left brand cluster */
+.logo-and-text {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.logo-and-text p {
+    margin: 0;
+    padding: 0;
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-inverse);
+    line-height: 1.2;
+    text-transform: uppercase;
+    opacity: 0.95;
+}
+
+/* Tabs container */
+.nav-tab-items {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Links (antd Button type="text" + Link inside) */
 .nav-item {
     position: relative;
-    padding: 5px 10px;
+    padding: 6px 10px !important;
     cursor: pointer;
     text-decoration: none;
-    color: #fff;
+    color: var(--text-inverse) !important;
     font-size: 14px !important;
-    font-weight: bold;
-    transition: all 0.3s ease-in-out;
-    background-color: transparent !important;
+    font-weight: 700;
+    transition: color 0.16s ease, transform 0.16s ease, background-color 0.16s ease;
+    background: transparent !important;
+    border-radius: var(--radius-md);
 }
 
+.nav-item:hover {
+    color: var(--color-accent) !important;
+    background: rgba(255, 255, 255, 0.08) !important;
+}
+
+.nav-item:active {
+    transform: translateY(1px);
+}
+
+.nav-item:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
+}
+
+/* Underline anim */
 .nav-item::after {
     content: "";
     position: absolute;
@@ -28,220 +73,167 @@
     left: 50%;
     width: 0;
     height: 2px;
-    background-color: #f37921;
-    transition: width 0.3s ease-in-out, left 0.3s ease-in-out;
+    background: var(--color-accent);
+    transition: width 0.2s ease, left 0.2s ease;
 }
 
-.nav-tab-items {
-    display: flex;
-}
-
-.nav-dropdown-cust {
-    cursor: pointer;
-    text-decoration: none;
-    color: grey;
-    font-weight: 900 !important;
-    font-size: 13px !important;
-    transition: all 0.3s ease-in-out;
-    background-color: transparent !important;
-
-    button {
-        font-size: 14px;
-        color: #fff;
-        font-weight: bold;
-        background-color: transparent;
-    }
-
-    button:hover {
-        background-color: transparent !important;
-        color: #4daeb6 !important;
-    }
-}
-
-.nav-item:hover::after {
-    width: 100%;
-    left: 0;
-}
-
+.nav-item:hover::after,
 .nav-item.active::after {
     width: 100%;
     left: 0;
-    background-color: #f37921;
 }
 
-.nav-item:hover {
-    color: #f37921 !important;
-}
-
-@media (max-width: 600px) {
-    .nav-item {
-        display: block;
-        padding: 10px 20px;
-    }
-
-    .nav-item:hover::after {
-        width: 0;
-        left: 0;
-    }
-
-    .nav-item.active::after {
-        width: 0;
-        left: 0;
-    }
-
-    .nav-item:hover {
-        color: #f37921;
-    }
-
-    .nav-menu {
-        font-size: 13px !important;
-    }
-}
-
-@media (min-width: 601px) {
-    .nav-item {
-        padding: 5px 10px;
-    }
-
-    .nav-item:hover::after {
-        width: 100%;
-        left: 0;
-    }
-
-    .nav-item.active::after {
-        width: 100%;
-        left: 0;
-        background-color: #f37921;
-    }
-
-    .nav-item:hover {
-        color: #f37921;
-    }
-
-    .nav-menu {
-        font-size: 13px !important;
-    }
-}
-
-.project-title {
-    p {
-        font-style: italic;
-        margin: 0px;
-        font-weight: bold;
-        color: #ddd;
-        padding: 0px 10px;
-        font-size: 14px;
-        position: absolute;
-        bottom: 10px;
-    }
-}
-
-.signin-btn {
-    outline: 1px solid #fff !important;
-    background-color: transparent !important;
-    color: white;
-    border: none !important;
-    border-radius: 5px;
-    padding-top: 0px !important;
-    padding-bottom: 0px !important;
-    font-size: 13px !important;
+/* Dropdown container */
+.nav-dropdown-cust {
     cursor: pointer;
-    position: relative;
-    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+    text-decoration: none;
+    background: transparent !important;
+}
+
+/* AntD dropdown trigger button */
+.nav-dropdown-cust button {
+    font-size: 14px !important;
+    color: var(--text-inverse) !important;
+    font-weight: 700 !important;
+    background: transparent !important;
+    border-radius: var(--radius-md) !important;
+    padding: 6px 10px !important;
+    transition: background-color 0.16s ease, color 0.16s ease;
+}
+
+.nav-dropdown-cust button:hover {
+    background: rgba(255, 255, 255, 0.08) !important;
+    color: var(--color-accent) !important;
+}
+
+/* Project title (if you still use it somewhere) */
+.project-title p {
+    font-style: italic;
+    margin: 0;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.85);
+    padding: 0 10px;
+    font-size: 14px;
+}
+
+/* Login button */
+.signin-btn {
+    border: 1px solid rgba(255, 255, 255, 0.85) !important;
+    background: transparent !important;
+    color: var(--text-inverse) !important;
+    border-radius: var(--radius-md);
+    height: 36px;
+    padding: 0 12px !important;
+    font-size: 13px !important;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background-color 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
 }
 
 .signin-btn:hover {
-    background-color: #f37921 !important;
-    outline: none !important;
-    color: white !important;
-    transform: scale(1.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    filter: brightness(1.2);
+    background: rgba(255, 255, 255, 0.10) !important;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
 }
 
 .signin-btn:active {
-    transform: scale(1);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    filter: brightness(1);
+    transform: translateY(0);
 }
 
-@keyframes pulse {
-    0% {
-        transform: scale(1);
-    }
-
-    50% {
-        transform: scale(1.05);
-    }
-
-    100% {
-        transform: scale(1);
-    }
+.signin-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring);
 }
 
-.signin-btn:focus {
-    animation: pulse 1s ease-in-out infinite;
-}
-
-.logo-and-text {
+/* Profile + notification cluster */
+.user-data {
     display: flex;
     align-items: center;
-
-    p {
-        margin: 0 0 0 8px;
-        padding: 0;
-        font-size: 14px;
-        font-weight: bold;
-        color: #fff !important;
-        line-height: 1.2;
-        text-transform: uppercase;
-    }
+    gap: 12px;
 }
 
+/* Notification icon */
+.notification-icon-wrapper {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.10);
+    transition: background-color 0.16s ease, transform 0.16s ease;
+}
+
+.notification-icon-wrapper:hover {
+    background: rgba(255, 255, 255, 0.16);
+}
+
+.notification-icon-wrapper:active {
+    transform: translateY(1px);
+}
+
+.bell-icon {
+    font-size: 22px;
+    color: var(--text-inverse);
+}
+
+/* Profile button */
 .custom-dropdown-btn {
-    padding: 0;
-    background: transparent;
-    border: none;
-    box-shadow: none;
-    outline: 1px solid #ddd;
+    padding: 0 !important;
+    background: transparent !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    border-radius: var(--radius-md) !important;
+    box-shadow: none !important;
 }
 
+.custom-dropdown-btn:focus-visible {
+    outline: none;
+    box-shadow: var(--focus-ring) !important;
+}
+
+/* Avatar */
 .profile-wrapper {
     position: relative;
-    width: 50px;
-    height: 50px;
+    width: 46px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .avatar-img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
     object-fit: cover;
-    margin-top: 5px;
 }
 
 .badge-icon {
     position: absolute;
-    bottom: 4px;
-    right: 3px;
-    background: white;
-    border-radius: 50%;
+    bottom: 2px;
+    right: 2px;
+    background: var(--bg-surface);
+    border-radius: 999px;
     padding: 2px;
-    font-size: 7px;
-    background-color: #dee7f4;
-    outline: 1px solid #258790;
+    font-size: 9px;
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+}
+
+/* Profile dropdown menu (AntD Menu) */
+.custom-profile-menu {
+    width: 260px;
+    padding: 10px;
+    border-radius: var(--radius-lg);
 }
 
 .user-basic-info {
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.16), 0 3px 6px rgba(0, 0, 0, 0.23);
-    border-radius: 8px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
     margin: 8px 12px;
     padding: 10px;
-}
-
-.custom-profile-menu {
-    width: 250px;
-    padding: 10px;
+    background: var(--bg-surface);
+    box-shadow: var(--shadow-sm);
 }
 
 .profile-header {
@@ -251,123 +243,97 @@
 }
 
 .avatar-large {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
+    width: 52px;
+    height: 52px;
+    border-radius: 999px;
     object-fit: cover;
-    outline: 1px solid #ddd;
-    margin-bottom: 5px;
+    border: 1px solid var(--border);
 }
 
 .user-name {
-    font-weight: 600;
+    font-weight: 800;
     font-size: 16px;
-    margin-bottom: 4px;
+    color: var(--text-primary);
 }
 
+/* "See all profiles" */
 .see-profiles-btn {
-    margin-top: 5px;
-    font-size: 14px;
-    padding: 0;
-    height: auto;
+    margin-top: 8px;
+    font-size: 13px !important;
+    padding: 8px 10px !important;
+    height: auto !important;
     width: 100%;
-    background-color: #dddddd;
-    padding: 5px 12px;
-    color: black;
-    font-weight: bold;
+    background: var(--bg-muted) !important;
+    color: var(--text-primary) !important;
+    font-weight: 800 !important;
+    border-radius: var(--radius-md) !important;
 }
 
-.user-data {
-    display: flex;
-    align-items: center;
-    gap: 10px;
+.see-profiles-btn:hover {
+    background: rgba(31, 122, 99, 0.10) !important;
 }
 
-.notification-icon-wrapper {
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 6px;
-    border-radius: 50%;
-    background-color: #2e2e2e;
-    transition: background-color 0.3s ease;
-}
-
-.notification-icon-wrapper:hover {
-    background-color: #3a3a3a;
-}
-
-.bell-icon {
-    font-size: 25px;
-    color: white;
-}
-
-.search-bar-wrapper {
-    margin-left: 20px;
-}
-
-.spectacledcoder-search-bar {
-    width: 30px;
-    height: 30px;
-    margin: auto;
-    background-color: white;
-    display: flex;
-    border-radius:5px;
-    width: 350px;
-    margin-top: -15px;
-    position: fixed;
-}
-
-.search-icon {
-    padding: 5px;
-    margin-bottom: auto;
-    margin-top: auto;
-    margin-left: 5px;
-    margin-right: 5px;
-    border-radius: 50%;
-    background-color: #E9F1FF;
-}
-
-.spectacledcoder-search-input {
-    outline: none;
-    border: none;
-    font-family: 'Belanosima', sans-serif;
-    border-radius: 25px;
-    padding-left: 5px;
-    width: 100%;
-    margin-right: 10px;
-}
-
-@media only screen and (max-width: 600px) {
-    .spectacledcoder-search-bar:hover {
-        width: 80%;
-        border-radius: 0% 30px 30px 15px;
-    }
-}
-
+/* Search input in navbar */
 .generic-input-wrapper {
-    margin-left: 20px;
+    margin-left: 16px;
     display: flex;
     align-items: center;
 }
 
 .generic-input-wrapper input[type="text"] {
-    padding: 4px 15px;
-    border:  .75px solid #fff;
-    border-radius: 10px;
-    font-size: 15px;
-    color: #04646d;
-    background-color: #e8e8e8;
-    width: 250px;
-    transition: all 0.3s ease;
+    padding: 8px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.45);
+    border-radius: var(--radius-lg);
+    font-size: 14px;
+    color: var(--text-primary);
+    background: var(--bg-surface);
+    width: 280px;
+    transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
     outline: none;
-    font-weight: 500;
-    box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.15);
+    font-weight: 600;
+    box-shadow: none;
+}
+
+.generic-input-wrapper input[type="text"]::placeholder {
+    color: var(--text-muted);
 }
 
 .generic-input-wrapper input[type="text"]:focus {
-    border-color: #f37921;
-    background-color: #fff;
-    box-shadow: 0 0 0 4px rgba(243, 121, 33, 0.3), inset 0 1px 4px rgba(0, 0, 0, 0.15);
+    border-color: rgba(31, 122, 99, 0.6);
+    box-shadow: var(--focus-ring);
 }
+
+/* Responsive */
+@media (max-width: 900px) {
+    .generic-input-wrapper {
+        display: none;
+    }
+}
+
+@media (max-width: 600px) {
+    .nav-tab-items {
+        gap: 4px;
+    }
+
+    .nav-item {
+        padding: 6px 8px !important;
+        font-size: 13px !important;
+    }
+
+    .nav-item:hover::after,
+    .nav-item.active::after {
+        width: 0;
+        left: 0;
+    }
+}
+
+/* Dark theme note:
+   Your navbar background is already primary (green),
+   so it stays consistent across themes.
+   If you want a darker navbar in dark mode, uncomment:
+
+[data-theme="dark"] .main-navbar {
+  background: #0b1220;
+  border-color: var(--border-dark);
+}
+*/
