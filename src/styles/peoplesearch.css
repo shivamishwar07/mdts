@@ -1,5 +1,5 @@
 .people-search-container {
-    width: 99%;
+    width: 80%;
     margin: 8px;
     box-shadow: var(--shadow-sm);
     overflow: hidden;
@@ -87,7 +87,7 @@
 }
 
 .people-search-body {
-    height: calc(100vh - 185px);
+    height: calc(100vh - 195px);
     overflow: hidden;
     display: flex;
     flex-direction: column;

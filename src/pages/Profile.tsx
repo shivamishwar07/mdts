@@ -625,7 +625,6 @@ const Profile = () => {
                 </div>
             </div>
 
-
             <div className="modal-container">
                 <Modal
                     title={formData.name ? "Name" : "Email"}

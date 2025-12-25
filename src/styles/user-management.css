@@ -78,7 +78,7 @@
 }
 
 .user-profile-body {
-    height: calc(100vh - 175px);
+    height: calc(100vh - 200px);
     border: 1px solid #ddd;
     overflow-y: scroll;
     border-radius: 10px;

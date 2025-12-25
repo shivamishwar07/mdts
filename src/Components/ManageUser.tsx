@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import "../styles/user-management.css";
 
 import { useNavigate } from "react-router-dom";
-import { Button, Col, Form, Input, Modal, Row, Select, Switch, Table, Tooltip, Space } from "antd";
-import { ExclamationCircleOutlined, ReloadOutlined, UserAddOutlined } from "@ant-design/icons";
+import { Button, Col, Form, Input, Modal, Row, Select, Switch, Table, Tooltip } from "antd";
+import { ExclamationCircleOutlined, UserAddOutlined } from "@ant-design/icons";
 
 import { getCurrentUser } from "../Utils/moduleStorage";
 import { db } from "../Utils/dataStorege.ts";
@@ -89,12 +89,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
       : parts[0][0]?.toUpperCase() || "";
   }
-
-  const handleRefresh = async () => {
-    const cu = getCurrentUser();
-    const allUsers = (await db.getUsers()).filter((u: any) => u.orgId == cu?.orgId);
-    setUsers(allUsers);
-  };
 
   const handleViewUser = (record: User) => {
     setSelectedUser(record);
@@ -237,15 +231,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     [users]
   );
 
-  // -------- antd row selection ----------
-  const rowSelection = {
-    type: "radio" as const,
-    selectedRowKeys: selectedUser?.id ? [selectedUser.id] : [],
-    onChange: (_keys: React.Key[], selectedRows: User[]) => {
-      setSelectedUser(selectedRows?.[0] || null);
-    },
-  };
-
   const columns: any[] = [
     { title: "S.No", dataIndex: "serialNumber", key: "serialNumber", align: "center", width: 80 },
     { title: "Name", dataIndex: "name", key: "name", align: "center" },
@@ -291,7 +276,10 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
         <div className="users-profile-top">
           <div className="title-add-btn">
             <div className="holiday-page-heading" style={{ marginLeft: 10 }}>
-              {options?.title || "RACI, Alert & Notification"}
+              <div>
+                <p className="page-heading-title">{options?.title || "RACI, Alert & Notification"}</p>
+                <span className="pl-subtitle">Manage your org projects and ownership</span>
+              </div>
             </div>
 
             {options?.isAddMember && (

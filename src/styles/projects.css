@@ -7,7 +7,7 @@
 }
 
 .all-project-details {
-    height: calc(100vh - 145px);
+    height: calc(100vh - 155px);
     padding: 12px;
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
