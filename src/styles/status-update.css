@@ -1,9 +1,32 @@
 .main-status-update {
+    background: var(--bg-main);
+    color: var(--text-secondary);
+    font-family: var(--font-base);
+
+    --su-surface: var(--bg-surface);
+    --su-muted: var(--bg-muted);
+    --su-border: var(--border);
+
+    --su-text: var(--text-primary);
+    --su-text-2: var(--text-secondary);
+    --su-text-muted: var(--text-muted);
+
+    --su-accent: var(--color-primary);
+    --su-accent-hover: var(--color-primary-hover);
+
+    --su-shadow: var(--shadow-sm);
+    --su-shadow-md: var(--shadow-md);
+
+    --su-radius-sm: var(--radius-sm);
+    --su-radius-md: var(--radius-md);
+    --su-radius-lg: var(--radius-lg);
+
     width: 99%;
     margin: 8px;
-    outline: 1px solid #ddd;
-    border-radius: 4px;
+    border: 1px solid var(--su-border);
+    border-radius: var(--su-radius-md);
     overflow-x: hidden;
+    overflow-y: hidden !important;
 }
 
 .status-update-table {
@@ -11,68 +34,331 @@
 }
 
 .status-heading {
-    font-weight: bold;
-    outline: 1px solid #ddd;
-    padding: 10px;
+    border: 1px solid #ddd;
+    background: var(--su-surface);
+    padding: 10px 12px;
     margin: 8px;
-    border-radius: 4px;
+    border-radius: 8px;
+    box-shadow: var(--su-shadow);
+}
 
-    p {
-        font-size: 18px;
-        margin: 0px !important;
-        color: grey;
-    }
+.status-update-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 14px;
+}
 
-    span {
-        font-size: 16px;
-        font-weight: normal;
-    }
+.status-title {
+    font-size: 18px;
+    margin: 0;
+    color: var(--su-text);
+    font-weight: 800;
+    line-height: 1.2;
+}
+
+.status-approval {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 10px;
+    border: 1px solid var(--su-border);
+    border-radius: 999px;
+    background: var(--su-muted);
+    color: var(--su-text-2);
+    white-space: nowrap;
+}
+
+.status-approval-label {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--su-text-muted);
+}
+
+.status-approval-value {
+    text-transform: uppercase;
+    font-weight: 900;
+    letter-spacing: .02em;
+}
+
+.status-badge-replanned {
+    border: 1px solid rgba(111, 66, 193, .25);
+    background: rgba(111, 66, 193, .10);
+    color: #6f42c1;
+}
+
+.status-times {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    line-height: 1.1;
+}
+
+.status-time-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.status-time-label {
+    color: var(--su-text-muted);
+    font-weight: 900;
+    min-width: 160px;
+    margin: 0;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.status-time-value {
+    margin: 0;
+    font-weight: 900;
+    color: var(--su-accent);
+    font-size: 12px;
 }
 
 .status-toolbar {
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    gap: 12px;
     padding: 0px 10px 0px 0px;
-
-    .actions {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-        align-items: center;
-    }
 }
 
-.custom-table-cell {
-    color: #fff !important;
+.select-item {
+    display: flex;
+    padding: 10px;
+    gap: 10px;
+    align-items: center;
 }
 
-.ant-table-tbody>tr.module-header td {
-    background-color: #ddd !important;
+.flex-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 200px;
 }
 
-.module-header td {
-    background-color: #b0b0b0 !important;
-    font-weight: bold;
-    color: black;
+.status-project-select,
+.status-version-select {
+    width: 100%;
 }
 
-.ant-table-thead>tr>th {
-    /* background-color: #258790 !important; */
-    color: white !important;
+.status-select-label,
+.status-select-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-icon {
     font-size: 14px;
+}
+
+.status-icon--pending {
+    color: var(--warning);
+}
+
+.status-icon--replanned {
+    color: #6f42c1;
+}
+
+.status-icon--revised {
+    color: var(--error);
+}
+
+.status-icon--amendment {
+    color: #007bff;
+}
+
+.status-icon--approved {
+    color: var(--success);
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.project-timeline-btn.ant-btn {
+    height: 36px;
+    border-radius: 10px;
+    border: 1px solid var(--su-border);
+    background: var(--su-surface);
+    color: var(--su-text);
+    box-shadow: var(--su-shadow);
+    font-weight: 800;
+    transition: background-color .16s ease, border-color .16s ease, transform .16s ease, box-shadow .16s ease;
+}
+
+.project-timeline-btn.ant-btn:hover {
+    background: var(--su-muted);
+    border-color: rgba(31, 122, 99, .25);
+}
+
+.project-timeline-btn.ant-btn:active {
+    transform: translateY(1px);
+}
+
+.project-timeline-btn.ant-btn[disabled] {
+    background: var(--su-muted);
+    color: var(--su-text-muted);
+    border-color: var(--su-border);
+    box-shadow: none;
+}
+
+.project-timeline-btn-docs.ant-btn:not([disabled]) {
+    background: var(--su-accent);
+    border-color: transparent;
+    color: var(--text-inverse);
+}
+
+.project-timeline-btn-docs.ant-btn:not([disabled]):hover {
+    background: var(--su-accent-hover);
+}
+
+.project-timeline-btn-cost.ant-btn:not([disabled]) {
+    background: var(--warning);
+    border-color: transparent;
+    color: var(--text-inverse);
+}
+
+.project-timeline-btn-raci.ant-btn:not([disabled]) {
+    background: var(--info);
+    border-color: transparent;
+    color: var(--text-inverse);
+}
+
+.project-timeline-btn-note.ant-btn:not([disabled]) {
+    background: var(--error);
+    border-color: transparent;
+    color: var(--text-inverse);
+}
+
+.project-timeline-btn-download.ant-btn:not([disabled]) {
+    background: var(--success);
+    border-color: transparent;
+    color: var(--text-inverse);
+}
+
+.project-timeline-btn-edit.ant-btn:not([disabled]) {
+    background: #715147ff;
+    border-color: transparent;
+    color: var(--text-inverse);
+}
+
+.project-timeline-btn-share.ant-btn:not([disabled]) {
+    background: #00BFA6;
+    border-color: transparent;
+    color: var(--text-inverse);
+}
+
+.project-timeline-btn-status-update.ant-btn:not([disabled]) {
+    background: #5C6BC0;
+    border-color: transparent;
+    color: var(--text-inverse);
+}
+
+.project-timeline-btn-status-save.ant-btn:not([disabled]) {
+    background: #AB47BC;
+    border-color: transparent;
+    color: var(--text-inverse);
+}
+
+.project-timeline-btn-revise.ant-btn:not([disabled]) {
+    background: rgba(185, 28, 28, .75);
+    border-color: transparent;
+    color: var(--text-inverse);
+}
+
+.project-timeline-btn-approve.ant-btn:not([disabled]) {
+    background: #258780;
+    border-color: transparent;
+    color: var(--text-inverse);
+}
+
+.action-btn {
+    display: flex;
+    gap: 10px;
+}
+
+.status-update-items {
+    padding: 0 8px 8px;
+    height: calc(100vh - 275px);
+}
+
+.status-update-table {
+    border-radius: var(--su-radius-md);
+    overflow: hidden;
+    background: var(--su-surface);
+    box-shadow: var(--su-shadow);
+    margin-top: 5px;
+}
+
+.status-update-table .project-timeline-table.ant-table-wrapper .ant-table {
+    background: var(--su-surface) !important;
+}
+
+.status-update-table .project-timeline-table .ant-table-thead>tr>th {
+    background: var(--su-muted) !important;
+    color: var(--su-text) !important;
+    font-weight: 900 !important;
+    font-size: 13px;
     text-align: center;
-    padding: 14px;
+    padding: 12px 14px !important;
     white-space: nowrap;
+    border-bottom: 1px solid var(--su-border) !important;
 }
 
-.activity-row td {
-    background-color: #ffffff !important;
+.status-update-table .project-timeline-table .ant-table-tbody>tr>td {
+    padding: 12px 14px !important;
     text-align: center;
+    color: var(--su-text-2) !important;
+    border-bottom: 1px solid var(--su-border) !important;
+    background: var(--su-surface) !important;
 }
 
-.ant-table-tbody>tr>td {
-    padding: 12px;
-    text-align: center;
+.status-update-table .project-timeline-table .ant-table-tbody>tr:hover>td {
+    background: rgba(209, 250, 229, .45) !important;
+}
+
+.status-update-table .project-timeline-table .ant-table-tbody>tr.module-header>td {
+    /* background: rgba(209, 250, 229, .55) !important; */
+    color: var(--su-text) !important;
+    font-weight: 900 !important;
+}
+
+.project-timeline-table .selected-red-row>td {
+    background: rgba(209, 250, 229, .45) !important;
+}
+
+.row-high-delay {
+    background-color: rgba(185, 28, 28, .08) !important;
+}
+
+.row-medium-delay {
+    background-color: rgba(217, 119, 6, .08) !important;
+}
+
+.project-timeline-replan-actions {
+    display: flex;
+    gap: 10px;
+    margin: 5px 10px 10px 0;
+    justify-content: flex-end;
+}
+
+.project-timeline-btn-discard.ant-btn:not([disabled]) {
+    background: var(--error);
+    border-color: transparent;
+    color: var(--text-inverse);
+}
+
+.project-timeline-btn-apply.ant-btn:not([disabled]) {
+    background: var(--su-accent);
+    border-color: transparent;
+    color: var(--text-inverse);
 }
 
 .container-msg {
@@ -82,126 +368,142 @@
     height: calc(100vh - 195px);
 }
 
-.highlighted-field {
-    border: 2px solid #1fc235 !important;
-    background-color: #fff !important;
-    transition: all 0.3s ease-in-out;
-}
-
-.status-select .ant-select-selection-item {
-    font-weight: bold;
-}
-
-.status-select.yetToStart .ant-select-selection-item {
-    color: #B0BEC5;
-    text-transform: uppercase;
-    font-size: 12px !important;
-}
-
-.status-select.inProgress .ant-select-selection-item {
-    color: #FFA500;
-    text-transform: uppercase;
-    font-size: 12px !important;
-}
-
-.status-select.completed .ant-select-selection-item {
-    color: #2E7D32;
-    text-transform: uppercase;
-    font-size: 12px !important;
-}
-
-.flex-item {
+.no-project-message {
     display: flex;
-    gap: 10px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 20px;
+    background: var(--su-surface);
+    color: var(--su-text-muted);
+    font-weight: 800;
+    border-radius: var(--su-radius-lg);
+    width: 550px;
+    border: 1px solid var(--su-border);
+    box-shadow: var(--su-shadow-md);
 }
 
-.flex-item label {
-    font-weight: bold;
-    margin-top: 3px;
-    width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
+.project-timeline-empty-icon {
+    font-size: 50px;
+    color: var(--su-text-muted);
 }
 
-.status-update-header {
-    display: flex;
-    justify-content: space-between;
+.no-project-message h3 {
+    margin: 10px 0;
+    color: var(--su-text);
 }
 
-.action-btn {
-    display: flex;
-    gap: 10px;
-}
-
-.select-item {
-    display: flex;
-    padding: 10px;
-    gap: 10px;
-}
-
-.times-stamps {
-    line-height: 1.1;
-
-    p {
-        font-size: 12px !important;
-    }
-}
-
-.revise {
-    p {
-        margin: 0px;
-    }
-
+.no-project-message p {
+    font-size: 0.95rem;
+    color: var(--su-text-muted);
     margin-bottom: 15px;
+    font-weight: 600;
 }
 
-.main-filter-container {
-    display: flex;
-    justify-content: center;
-}
-
-.tabs-container {
-    display: flex;
-    background: #f0f0f0;
-    border-radius: 10px 10px 0 0;
-    overflow: hidden;
-    width: max-content;
-    margin: 5px 0px;
-}
-
-.tab {
-    padding: 5px 15px;
+.no-project-message button {
+    background-color: var(--su-accent);
+    color: var(--text-inverse);
+    border: 1px solid transparent;
+    padding: 10px 25px;
+    font-size: 1rem;
     cursor: pointer;
-    background: #e0dfdf;
-    color: #000;
-    border-right: 1px solid #ddd;
-    transition: background 0.3s;
-    white-space: nowrap;
-    font-size: 12px;
+    border-radius: var(--su-radius-md);
+    transition: background .16s ease, box-shadow .16s ease, transform .16s ease;
 }
 
-.tab:last-child {
-    border-right: none;
+.no-project-message button:hover {
+    background-color: var(--su-accent-hover);
 }
 
-.tab:hover {
-    background: #e0e0e0;
+.no-project-message button:active {
+    transform: translateY(1px);
 }
 
-.tab.active {
-    background: #258790;
-    color: #fff;
-    font-weight: bold;
+[data-theme="dark"] .main-status-update {
+    --su-surface: var(--bg-surface-dark);
+    --su-muted: rgba(148, 163, 184, .10);
+    --su-border: var(--border-dark);
+    --su-text: var(--text-primary-dark);
+    --su-text-2: var(--text-secondary-dark);
+    --su-text-muted: var(--text-muted-dark);
 }
 
-.project-timeline-table .selected-red-row>td {
-    background-color: #e0e3f2 !important;
+[data-theme="dark"] .status-heading,
+[data-theme="dark"] .status-update-table,
+[data-theme="dark"] .no-project-message {
+    background: var(--su-surface);
+    border-color: var(--su-border);
 }
 
-.row-high-delay {
-  background-color: #fff1f0 !important;
+[data-theme="dark"] .status-update-table .project-timeline-table .ant-table-thead>tr>th {
+    background: rgba(148, 163, 184, .10) !important;
+    color: var(--su-text) !important;
+    border-bottom-color: var(--su-border) !important;
 }
 
-.row-medium-delay {
-  background-color: #fffbe6 !important;
+[data-theme="dark"] .status-update-table .project-timeline-table .ant-table-tbody>tr>td {
+    background: var(--su-surface) !important;
+    border-bottom-color: var(--su-border) !important;
+    color: var(--su-text-2) !important;
+}
+
+[data-theme="dark"] .status-update-table .project-timeline-table .ant-table-tbody>tr:hover>td {
+    background: rgba(52, 211, 153, .08) !important;
+}
+
+[data-theme="dark"] .project-timeline-btn.ant-btn {
+    background: var(--su-surface);
+    border-color: var(--su-border);
+    color: var(--su-text);
+}
+
+[data-theme="dark"] .project-timeline-btn.ant-btn:hover {
+    background: rgba(148, 163, 184, .10);
+    border-color: rgba(52, 211, 153, .25);
+}
+
+[data-theme="dark"] .project-timeline-btn-docs.ant-btn:not([disabled]),
+[data-theme="dark"] .project-timeline-btn-apply.ant-btn:not([disabled]) {
+    background: var(--color-primary-dark);
+    color: #06121a;
+}
+
+[data-theme="dark"] .project-timeline-btn-download.ant-btn:not([disabled]) {
+    background: var(--color-primary-hover-dark);
+    color: #06121a;
+}
+
+[data-theme="dark"] .project-timeline-btn-share.ant-btn:not([disabled]) {
+    background: var(--color-primary-dark);
+    color: #06121a;
+}
+
+[data-theme="dark"] .project-timeline-btn-approve.ant-btn:not([disabled]) {
+    background: var(--color-primary-hover-dark);
+    color: #06121a;
+}
+
+.project-timeline-table .ant-table-tbody>tr.activity-row.selected-red-row>td {
+    background: rgba(209, 250, 229, .65) !important;
+}
+
+.project-timeline-table .ant-table-tbody>tr.activity-row.selected-red-row>td:first-child {
+    box-shadow: inset 4px 0 0 0 var(--color-primary);
+}
+
+.project-timeline-table .ant-table-tbody>tr.activity-row.selected-red-row>td {
+    color: var(--text-primary) !important;
+    font-weight: 700;
+}
+
+[data-theme="dark"] .project-timeline-table .ant-table-tbody>tr.activity-row.selected-red-row>td {
+    background: rgba(52, 211, 153, .14) !important;
+}
+
+[data-theme="dark"] .project-timeline-table .ant-table-tbody>tr.activity-row.selected-red-row>td:first-child {
+    box-shadow: inset 4px 0 0 0 var(--color-primary-dark);
+}
+
+[data-theme="dark"] .project-timeline-table .ant-table-tbody>tr.activity-row.selected-red-row>td {
+    color: var(--text-primary-dark) !important;
 }

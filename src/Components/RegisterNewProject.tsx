@@ -1,4 +1,3 @@
-import "../styles/register-new-project.css";
 import { useEffect, useState } from "react";
 import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, Table, Tooltip, Typography, List } from "antd";
 import "../styles/register-new-project.css";
@@ -22,7 +21,6 @@ import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
 import { useNavigate, useParams } from "react-router-dom";
 import dayjs from "dayjs";
-const { Text } = Typography;
 export const RegisterNewProject: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(1);
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -829,186 +827,192 @@ export const RegisterNewProject: React.FC = () => {
   return (
     <>
       <div className="registration-container">
-        <div className="step-registration-form">
-          <div className="page-heading-main bg-secondary">
-            <span className="page-heading">Register New Project</span>
+        <div className="registration-left">
+          <div className="registration-page-heading">
+            <p className="page-heading-title">Register New Project</p>
+            <span className="pl-subtitle">Manage your org projects and ownership</span>
           </div>
-          <div className="form-container-item-div">
-            <div className="form-items">
-              <div className="progress-bars">
-                <ul>
-                  {steps.map((step, index) => (
-                    <li
-                      key={step.id}
-                      className={`step ${currentStep > index + 1 ? "completed" : currentStep === index + 1 ? "active" : ""}`}
-                    >
-                      <span className="step-title">{step.title}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="form-container">
-                <form>
-                  <div className="form-group">{renderStepForm()}</div>
-                </form>
-              </div>
-              <hr className="saparation-line" />
-              <div className="form-buttons">
-                {/* <Button variant="outlined" onClick={handlePrevious} className="bg-tertiary text-white" disabled={currentStep === 1}>
-                  Previous
-                </Button>
-                <Button className="bg-secondary text-white" onClick={currentStep === steps.length ? showConfirmationModal : handleNext}>
-                  {currentStep === steps.length ? (isEditMode ? 'Update' : 'Submit') : "Next"}
-                </Button> */}
-                <Button
-                  variant="outlined"
-                  onClick={handlePrevious}
-                  className="bg-tertiary text-white"
-                  disabled={currentStep === 1}
-                >
-                  Previous
-                </Button>
 
+          <div className="step-registration-form">
+            <div className="form-container-item-div">
+              <div className="form-items">
+                <div className="progress-bars">
+                  <ul>
+                    {steps.map((step, index) => (
+                      <li
+                        key={step.id}
+                        className={`step ${currentStep > index + 1
+                            ? "completed"
+                            : currentStep === index + 1
+                              ? "active"
+                              : ""
+                          }`}
+                      >
+                        <span className="step-title">{step.title}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
 
-                <div style={{ display: "flex", gap: "10px" }}>
-                  {isEditMode && (
-                    <Button
-                      type="default"
-                      danger
-                      className="bg-danger text-white"
-                      onClick={showDiscardModal}
-                    >
-                      Discard
-                    </Button>
-                  )}
+                <div className="form-container">
+                  <form>
+                    <div className="form-group">{renderStepForm()}</div>
+                  </form>
+                </div>
 
+                <hr className="saparation-line" />
+
+                <div className="form-buttons">
                   <Button
-                    type="primary"
-                    className="bg-secondary text-white"
-                    onClick={currentStep === steps.length ? showConfirmationModal : handleNext}
+                    variant="outlined"
+                    onClick={handlePrevious}
+                    className="bg-tertiary text-white"
+                    disabled={currentStep === 1}
                   >
-                    {currentStep === steps.length ? (isEditMode ? "Update" : "Submit") : "Next"}
+                    Previous
                   </Button>
+
+                  <div style={{ display: "flex", gap: "10px" }}>
+                    {isEditMode && (
+                      <Button
+                        type="default"
+                        danger
+                        className="bg-danger text-white"
+                        onClick={showDiscardModal}
+                      >
+                        Discard
+                      </Button>
+                    )}
+
+                    <Button
+                      type="primary"
+                      className="bg-secondary text-white"
+                      onClick={
+                        currentStep === steps.length
+                          ? showConfirmationModal
+                          : handleNext
+                      }
+                    >
+                      {currentStep === steps.length
+                        ? isEditMode
+                          ? "Update"
+                          : "Submit"
+                        : "Next"}
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        {currentStep == 2 ? (
-          <div className="maips-data">
-            <MapComponent />
-          </div>
-        ) : currentStep == 3 ? (
-          <div className="image-container">
-            <div className="bg-secondary create-doc-heading">
-              <div style={{ margin: "0px 0px 10px 0px", padding: "5px" }}>Attach Document</div>
+
+        <div className="registration-right">
+          {currentStep === 2 ? (
+            <div className="maips-data">
+              <MapComponent />
             </div>
-            <div className="contractual-upload-doc-container">
-              <div className="contractual-upload-body">
-                <Form.Item
-                  label={<span style={{ textAlign: "left" }}>Contractual File Name</span>}
-                  labelAlign="left"
-                  colon={false}
-                  required
-                >
-                  <Input
-                    placeholder="Enter file name"
-                    value={documentName}
-                    onChange={(e) => setDocumentName(e.target.value)}
-                    allowClear
-                    style={{ marginBottom: "15px" }}
-                  />
-                </Form.Item>
+          ) : currentStep === 3 ? (
+            <div className="image-container">
+              <div className="create-doc-heading">
+                <div>Attach Document</div>
+              </div>
 
-                <Form.Item
-                  label={<span style={{ textAlign: "left" }}> Upload Files </span>}
-                  name="files"
-                  rules={[{ required: files.length === 0, message: "Please upload at least one file" }]}
-                  labelAlign="left"
-                  colon={false}
-                >
-                  <div
-                    {...getRootProps()}
-                    style={{
-                      border: "2px dashed #d9d9d9",
-                      padding: 16,
-                      textAlign: "center",
-                      borderRadius: 8,
-                      cursor: "pointer",
-                      background: isDragActive ? "#81acd2ff" : "#fafafa",
-                    }}
+              <div className="contractual-upload-doc-container">
+                <div className="contractual-upload-body">
+                  <Form.Item
+                    label="Contractual File Name"
+                    colon={false}
+                    required
                   >
-                    <input {...getInputProps()} />
-                    <UploadOutlined style={{ fontSize: 32, color: "#1890ff" }} />
-                    <Text style={{ display: "block", marginTop: 8 }}>
-                      {isDragActive
-                        ? "Drop the files here..."
-                        : "Drag and drop files here, or click to select files"}
-                    </Text>
-                  </div>
+                    <Input
+                      placeholder="Enter file name"
+                      value={documentName}
+                      onChange={(e) => setDocumentName(e.target.value)}
+                      allowClear
+                    />
+                  </Form.Item>
 
-                  {files.length > 0 && (
-                    <div style={{ marginTop: "10px" }}>
-                      <ul style={{ paddingLeft: "20px" }}>
+                  <Form.Item
+                    label="Upload Files"
+                    name="files"
+                    rules={[
+                      {
+                        required: files.length === 0,
+                        message: "Please upload at least one file",
+                      },
+                    ]}
+                    colon={false}
+                  >
+                    <div {...getRootProps()} className="drop-zone">
+                      <input {...getInputProps()} />
+                      <UploadOutlined />
+                      <span>
+                        {isDragActive
+                          ? "Drop the files here..."
+                          : "Drag and drop files here, or click to select files"}
+                      </span>
+                    </div>
+
+                    {files.length > 0 && (
+                      <ul className="file-list">
                         {files.map((file, index) => (
                           <li key={index}>{file.name}</li>
                         ))}
                       </ul>
-                    </div>
-                  )}
-                </Form.Item>
+                    )}
+                  </Form.Item>
 
-                {contractualDocuments.length > 0 && (
-                  <div style={{ marginTop: "30px" }}>
-                    <Typography.Title level={5}>Uploaded Documents</Typography.Title>
+                  {contractualDocuments.length > 0 && (
                     <List
                       dataSource={contractualDocuments}
                       bordered
                       renderItem={(doc) => (
                         <List.Item
                           actions={[
-                            <Tooltip title="Download">
-                              <DownloadOutlined
-                                style={{ fontSize: 18, color: "green", cursor: "pointer" }}
-                                onClick={() => handleDownloadFile(doc.files[0])}
-                              />
-                            </Tooltip>,
-                            <Tooltip title="Remove">
-                              <CloseCircleOutlined
-                                style={{ fontSize: 18, color: "red", cursor: "pointer" }}
-                                onClick={() => handleRemoveSavedDocument(doc.id)}
-                              />
-                            </Tooltip>,
+                            <DownloadOutlined
+                              onClick={() =>
+                                handleDownloadFile(doc.files[0])
+                              }
+                            />,
+                            <CloseCircleOutlined
+                              onClick={() =>
+                                handleRemoveSavedDocument(doc.id)
+                              }
+                            />,
                           ]}
                         >
                           <List.Item.Meta
                             title={doc.documentName}
-                            description={`Uploaded at: ${new Date(doc.uploadedAt).toLocaleString()}`}
+                            description={new Date(
+                              doc.uploadedAt
+                            ).toLocaleString()}
                           />
                         </List.Item>
                       )}
                     />
-                  </div>
-                )}
+                  )}
+                </div>
 
-              </div>
-              <hr />
-              <div className="action-buttons" style={{ display: "flex", justifyContent: "end" }}>
-                {/* <Button   disabled={isUploadDisabled} onClick={handleCancel} className="bg-tertiary" style={{ width: "45%" }}>
-                  Clear
-                </Button> */}
-                <Button disabled={isUploadDisabled} type="primary" onClick={handleSave} className="bg-secondary" htmlType="submit" style={{ width: "45%" }}>
-                  Upload
-                </Button>
+                <div className="action-buttons">
+                  <Button
+                    disabled={isUploadDisabled}
+                    type="primary"
+                    className="bg-secondary"
+                    onClick={handleSave}
+                  >
+                    Upload
+                  </Button>
+                </div>
               </div>
             </div>
-          </div>
-        ) : (
-          <div className="image-container">
-            <ImageContainer imageUrl={["/images/auths/m5.jpg", "/images/auths/m5.jpg"]} />
-          </div>
-        )}
+          ) : (
+            <div className="image-container">
+              <ImageContainer imageUrl={["/images/auths/m5.jpg","/images/auths/m5.jpg","/images/auths/m5.jpg"]} />
+            </div>
+          )}
+        </div>
       </div>
+
 
       <Modal
         title={isEditMode ? "Confirm Update" : "Confirm Submission"}
@@ -1030,7 +1034,6 @@ export const RegisterNewProject: React.FC = () => {
             : "Are you sure you want to submit this form? Submitting will save all data and reset the form."}
         </p>
       </Modal>
-
 
       <Modal
         title="Add Mine Type"

@@ -1,11 +1,9 @@
-import { Table, Card, DatePicker, Typography, Row, Col } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { Dayjs } from 'dayjs';
-import React, { useState } from 'react';
-import '../styles/CAPEX-performance.css';
-import {
-  PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend
-} from 'recharts';
+import React, { useMemo, useState } from "react";
+import { Card, DatePicker, Row, Col, Table, Typography } from "antd";
+import type { ColumnsType } from "antd/es/table";
+import type { Dayjs } from "dayjs";
+import "../styles/CAPEX-performance.css";
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 
 const { Title, Text } = Typography;
 
@@ -27,63 +25,78 @@ interface MetricCard {
   subInfo?: string;
 }
 
+const formatCr = (n: number) =>
+  new Intl.NumberFormat("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
 const CAPEXPerformance: React.FC = () => {
   const [_selectedMonth, setSelectedMonth] = useState<Dayjs | null>(null);
 
-  const columns: ColumnsType<CapexData> = [
-    {
-      title: 'Activity',
-      dataIndex: 'activity',
-      key: 'activity',
-      className: 'capex-header',
-    },
-    {
-      title: 'Total Approved Budget',
-      dataIndex: 'totalApprovedBudget',
-      key: 'totalApprovedBudget',
-    },
-    {
-      title: 'Actual Expense till previous FY',
-      dataIndex: 'actualExpensePreviousFY',
-      key: 'actualExpensePreviousFY',
-    },
-    {
-      title: 'Remaining total budget at the end of previous FY',
-      dataIndex: 'remainingPreviousFY',
-      key: 'remainingPreviousFY',
-    },
-    {
-      title: 'Approved Budget for Current FY',
-      dataIndex: 'approvedCurrentFY',
-      key: 'approvedCurrentFY',
-    },
-    {
-      title: 'Approved budget current FY (YTD)',
-      dataIndex: 'approvedYTD',
-      key: 'approvedYTD',
-    },
-    {
-      title: 'Actual Expense for current FY (YTD)',
-      dataIndex: 'actualExpenseYTD',
-      key: 'actualExpenseYTD',
-    },
-    {
-      title: 'Remaining budget for current FY (YTD)',
-      dataIndex: 'remainingYTD',
-      key: 'remainingYTD',
-    },
-    {
-      title: '% budget utilization for current FY (YTD)',
-      dataIndex: 'budgetUtilizationYTD',
-      key: 'budgetUtilizationYTD',
-    },
-  ];
-
+  const columns: ColumnsType<CapexData> = useMemo(
+    () => [
+      {
+        title: "Activity",
+        dataIndex: "activity",
+        key: "activity",
+        fixed: "left",
+        width: 180,
+        render: (v: string) => <span className="capex-activity">{v}</span>,
+      },
+      {
+        title: "Total Approved Budget",
+        dataIndex: "totalApprovedBudget",
+        key: "totalApprovedBudget",
+        render: (v: number) => `${formatCr(v)}`,
+      },
+      {
+        title: "Actual Expense till previous FY",
+        dataIndex: "actualExpensePreviousFY",
+        key: "actualExpensePreviousFY",
+        render: (v: number) => `${formatCr(v)}`,
+      },
+      {
+        title: "Remaining total budget at the end of previous FY",
+        dataIndex: "remainingPreviousFY",
+        key: "remainingPreviousFY",
+        render: (v: number) => `${formatCr(v)}`,
+      },
+      {
+        title: "Approved Budget for Current FY",
+        dataIndex: "approvedCurrentFY",
+        key: "approvedCurrentFY",
+        render: (v: number) => `${formatCr(v)}`,
+      },
+      {
+        title: "Approved budget current FY (YTD)",
+        dataIndex: "approvedYTD",
+        key: "approvedYTD",
+        render: (v: number) => `${formatCr(v)}`,
+      },
+      {
+        title: "Actual Expense for current FY (YTD)",
+        dataIndex: "actualExpenseYTD",
+        key: "actualExpenseYTD",
+        render: (v: number) => `${formatCr(v)}`,
+      },
+      {
+        title: "Remaining budget for current FY (YTD)",
+        dataIndex: "remainingYTD",
+        key: "remainingYTD",
+        render: (v: number) => `${formatCr(v)}`,
+      },
+      {
+        title: "% budget utilization for current FY (YTD)",
+        dataIndex: "budgetUtilizationYTD",
+        key: "budgetUtilizationYTD",
+        render: (v: string) => <span className="capex-pill">{v}</span>,
+      },
+    ],
+    []
+  );
 
   const data: CapexData[] = [
     {
       key: 1,
-      activity: 'Project Cost',
+      activity: "Project Cost",
       totalApprovedBudget: 1744.75,
       actualExpensePreviousFY: 697.9,
       remainingPreviousFY: 1046.85,
@@ -91,11 +104,11 @@ const CAPEXPerformance: React.FC = () => {
       approvedYTD: 130.86,
       actualExpenseYTD: 130.86,
       remainingYTD: 305.33,
-      budgetUtilizationYTD: '30%',
+      budgetUtilizationYTD: "30%",
     },
     {
       key: 2,
-      activity: 'Land',
+      activity: "Land",
       totalApprovedBudget: 858.15,
       actualExpensePreviousFY: 343.26,
       remainingPreviousFY: 514.89,
@@ -103,117 +116,142 @@ const CAPEXPerformance: React.FC = () => {
       approvedYTD: 64.36,
       actualExpenseYTD: 64.36,
       remainingYTD: 150.18,
-      budgetUtilizationYTD: '30%',
+      budgetUtilizationYTD: "30%",
     },
   ];
 
   const metrics: MetricCard[] = [
-    { title: 'Total Project cost - 1745 Cr' },
-    { title: 'EBIDTA Percentage' },
-    { title: 'IRR (%)', subInfo: 'NPV (%)' },
-    { title: 'PAT (%)', subInfo: 'PAT / Ton' },
-    { title: 'ROE %', subInfo: 'ROCE%' },
+    { title: "Total Project cost - 1745 Cr" },
+    { title: "EBITDA Percentage" },
+    { title: "IRR (%)", subInfo: "NPV (%)" },
+    { title: "PAT (%)", subInfo: "PAT / Ton" },
+    { title: "ROE %", subInfo: "ROCE%" },
   ];
-  const COLORS = ['#3399ff', '#ffa07a'];
+
+  const COLORS = ["#1F7A63", "#34D399"];
 
   const overallData = [
-    { name: 'Budget utilized till date', value: 53 },
-    { name: 'Remaining', value: 48 },
+    { name: "Budget utilized till date", value: 53 },
+    { name: "Remaining", value: 48 },
   ];
 
   const currentFYData = [
-    { name: 'Approved budget current FY (YTD)', value: 50 },
-    { name: 'Remaining', value: 50 },
+    { name: "Approved budget current FY (YTD)", value: 50 },
+    { name: "Remaining", value: 50 },
   ];
-
 
   return (
     <div className="capex-container">
-      <div className="title-and-filter">
-        <Title level={3} className="capex-title"></Title>
+      <div className="capex-header-row">
+        <div className="capex-heading">
+          <Title level={5} className="capex-title">
+            CAPEX Performance
+          </Title>
+          <Text className="capex-subtitle">Budget utilization overview with FY breakdown and activity-wise details.</Text>
+        </div>
+
         <div className="capex-date-row">
-          <Text>Date:</Text>
-          <DatePicker
-            picker="month"
-            onChange={(date) => setSelectedMonth(date)}
-            className="capex-datepicker"
-          />
+          <Text className="capex-date-label">Date</Text>
+          <DatePicker picker="month" onChange={(date) => setSelectedMonth(date)} className="capex-datepicker" />
         </div>
       </div>
 
       <div className="capex-cards-flex">
         {metrics.map((metric, index) => (
-          <div className="capex-card-wrapper" key={index}>
-            <Card className="capex-card">
-              <Text>{metric.title}</Text>
-              {metric.subInfo && (
-                <>
-                  <br />
-                  <Text>{metric.subInfo}</Text>
-                </>
-              )}
-            </Card>
-          </div>
+          <Card className="capex-card" key={index}>
+            <Text className="capex-metric">{metric.title}</Text>
+            {metric.subInfo ? <Text className="capex-metric-sub">{metric.subInfo}</Text> : null}
+          </Card>
         ))}
       </div>
 
-      <div className="capex-pie-charts">
-        <Row gutter={[24, 24]}>
+      <div className="capex-charts">
+        <Row gutter={[16, 16]}>
           <Col xs={24} md={12}>
-            <Title level={4} className="capex-chart-title">Overall CAPEX Performance</Title>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={overallData}
-                  dataKey="value"
-                  nameKey="name"
-                  outerRadius={100}
-                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                >
-                  {overallData.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                   <Legend layout="vertical" align="right" verticalAlign="middle" />
-              </PieChart>
-            </ResponsiveContainer>
+            <Card className="capex-chart-card">
+              <div className="capex-chart-head">
+                <Title level={4} className="capex-chart-title">
+                  Overall CAPEX Performance
+                </Title>
+                <Text className="capex-chart-meta">Utilized vs remaining till date</Text>
+              </div>
+
+              <div className="capex-chart-wrap">
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={overallData}
+                      dataKey="value"
+                      nameKey="name"
+                      outerRadius={95}
+                      innerRadius={55}
+                      label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                    >
+                      {overallData.map((_entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend layout="vertical" align="right" verticalAlign="middle" />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
           </Col>
 
           <Col xs={24} md={12}>
-            <Title level={4} className="capex-chart-title">Current FY CAPEX - Performance</Title>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={currentFYData}
-                  dataKey="value"
-                  nameKey="name"
-                  outerRadius={100}
-                  label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
-                >
-                  {currentFYData.map((_entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                   <Legend layout="vertical" align="right" verticalAlign="middle" />
-              </PieChart>
-            </ResponsiveContainer>
+            <Card className="capex-chart-card">
+              <div className="capex-chart-head">
+                <Title level={4} className="capex-chart-title">
+                  Current FY CAPEX Performance
+                </Title>
+                <Text className="capex-chart-meta">YTD approved vs remaining</Text>
+              </div>
+
+              <div className="capex-chart-wrap">
+                <ResponsiveContainer width="100%" height={280}>
+                  <PieChart>
+                    <Pie
+                      data={currentFYData}
+                      dataKey="value"
+                      nameKey="name"
+                      outerRadius={95}
+                      innerRadius={55}
+                      label={({ percent }) => `${(percent * 100).toFixed(0)}%`}
+                    >
+                      {currentFYData.map((_entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend layout="vertical" align="right" verticalAlign="middle" />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </Card>
           </Col>
         </Row>
       </div>
 
-      <div className="capex-table-wrapper">
-        <Table
-          columns={columns}
-          dataSource={data}
-          bordered
-          pagination={false}
-          scroll={{ x: 2200 }}
-          className="capex-table"
-        />
-      </div>
+      <Card className="capex-table-card">
+        <div className="capex-table-head">
+          <Title level={4} className="capex-table-title">
+            Activity-wise CAPEX
+          </Title>
+          <Text className="capex-table-meta">All values in Cr</Text>
+        </div>
 
+        <div className="capex-table-scroll">
+          <Table
+            columns={columns}
+            dataSource={data}
+            bordered
+            pagination={false}
+            className="capex-table"
+            rowKey="key"
+          />
+        </div>
+      </Card>
 
     </div>
   );

@@ -160,7 +160,7 @@ const ModuleLibrary = () => {
 
     setFilteredModules(filtered);
     console.log(filtered);
-    
+
   }, [searchTerm, selectedOption, newLibraryMineTypeFilter, modulesData]);
 
   const handleModuleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -407,7 +407,8 @@ const ModuleLibrary = () => {
   return (
     <>
       <div className="page-heading-module-library">
-        <span>Module Library</span>
+            <p className="page-heading-title">Module Library</p>
+            <span className="pl-subtitle">Manage your org projects and ownership</span>
       </div>
 
       <div className="headings">
@@ -423,228 +424,215 @@ const ModuleLibrary = () => {
       </div>
 
       <Box className="main-section">
-        <div className="module-list-page">
-          <Box sx={{ flex: 3 }}>
-            <Box sx={{ display: "flex", justifyContent: "space-between", gap: "10px", padding: "10px" }}>
-              <Input
-                size="small"
-                placeholder="Search..."
-                onChange={handleModuleSearch}
-                prefix={<SearchOutlined />}
-                style={{ height: "26px", fontSize: "12px" }}
-              />
-              <Select
-                value={selectedOption || undefined}
-                onChange={setSelectedOption}
-                allowClear
-                size="small"
-                placeholder="Select Module Type"
-                style={{ width: "100%", height: "26px", fontSize: "12px" }}
-              >
-                <Option value="MDTS">MDTS Module</Option>
-                <Option value="PERSONAL">Personal Module</Option>
-                <Option value="ORG">Organizational Module</Option>
-              </Select>
+        <div className="module-list-page cont-height">
+          <Box className="panel-toolbar">
+            <Input
+              size="small"
+              placeholder="Search..."
+              onChange={handleModuleSearch}
+              prefix={<SearchOutlined />}
+              className="toolbar-input"
+            />
 
-              <Select
-                size="small"
-                placeholder="Mine Type"
-                value={newLibraryMineTypeFilter || undefined}
-                onChange={handleMineTypeChange}
-                allowClear
-                style={{ width: "100%", height: "26px" }}
-                disabled={libraryType == "project"}
-              >
-                {mineTypes?.map((type: any) => (
-                  <Option key={type.type} value={type.type}>
-                    {type.type}
-                  </Option>
-                ))}
-              </Select>
+            <Select
+              value={selectedOption || undefined}
+              onChange={setSelectedOption}
+              allowClear
+              size="small"
+              placeholder="Select Module Type"
+              className="toolbar-select"
+            >
+              <Option value="MDTS">MDTS Module</Option>
+              <Option value="PERSONAL">Personal Module</Option>
+              <Option value="ORG">Organizational Module</Option>
+            </Select>
 
-              <IconButton color="primary" style={{ padding: "0px" }}>
-                <FilterList />
-              </IconButton>
-            </Box>
+            <Select
+              size="small"
+              placeholder="Mine Type"
+              value={newLibraryMineTypeFilter || undefined}
+              onChange={handleMineTypeChange}
+              allowClear
+              className="toolbar-select"
+              disabled={libraryType == "project"}
+            >
+              {mineTypes?.map((type: any) => (
+                <Option key={type.type} value={type.type}>
+                  {type.type}
+                </Option>
+              ))}
+            </Select>
 
-            <hr style={{ margin: 0, marginBottom: "8px" }} />
-
-            <TableContainer component={Paper} style={{ marginTop: "5px" }}>
-              <Table>
-                <TableHead style={{ display: "block", background: "#258790", color: "white" }}>
-                  <TableRow style={{ display: "flex", width: "100%" }}>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 15%", padding: "5px 10px" }}>Code</TableCell>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 32%", padding: "5px 10px" }}>Name</TableCell>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 8%", textAlign: "center", padding: "5px 10px" }}>Type</TableCell>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 20%", textAlign: "center", padding: "5px 10px" }}>Created On</TableCell>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 15%", textAlign: "center", padding: "5px 10px" }}>Mine Type</TableCell>
-                    <TableCell style={{ color: "white", fontWeight: "bold", flex: "0 0 10%", textAlign: "center", padding: "5px 10px" }}>Actions</TableCell>
-                  </TableRow>
-                </TableHead>
-
-                <TableBody style={{ display: "block", overflowY: "auto", overflowX: "hidden", maxHeight: "calc(100vh - 245px)" }}>
-                  {modulesData.length > 0 ? (
-                    filteredModules.map((module, index) => (
-                      <TableRow
-                        key={index}
-                        draggable
-                        onDragStart={(e) => handleDragStart(e, module)}
-                        onClick={() => handleModuleClick(module)}
-                        style={{ display: "flex", width: "100%", cursor: canEditModule(module) ? "pointer" : "default" }}
-                      >
-                        <TableCell style={{ flex: "0 0 15%", padding: "8px" }}>{module.parentModuleCode}</TableCell>
-                        <TableCell style={{ flex: "0 0 32%", padding: "8px" }}>{module.moduleName}</TableCell>
-                        <TableCell style={{ flex: "0 0 8%", padding: "8px", textAlign: "center" }}>
-                          {renderModuleType(module.moduleType)}
-                        </TableCell>
-                        <TableCell style={{ flex: "0 0 20%", padding: "8px", textAlign: "center" }}>
-                          {dayjs(module.createdAt).format("DD MMM YYYY")}
-                        </TableCell>
-                        <TableCell style={{ flex: "0 0 15%", padding: "8px", textAlign: "center" }}>{module.mineType}</TableCell>
-                        <TableCell style={{ flex: "0 0 10%", padding: "8px 12px", display: "flex", alignItems: "center" }}>
-                          {module.moduleType == 'PERSONAL' ||  module.userGuiId == currentUser.guiId &&(
-                            <Button
-                              icon={<DeleteOutlined />}
-                              type="primary"
-                              danger
-                              size="small"
-                              style={{ marginRight: module.moduleType === "PERSONAL" ? 8 : 0 }}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setIsDeleteModuleModalVisible(true);
-                                setSelectedModuleId(module.id);
-                              }}
-                            />
-                          )}
-                          {module.moduleType === "PERSONAL" && (
-                            <Tooltip title="Convert to Organizational Module">
-                              <Button
-                                icon={<RetweetOutlined />}
-                                type="default"
-                                size="small"
-                                onClick={(e) => handleConvertToOrgClick(e, module)}
-                              />
-                            </Tooltip>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <div style={{ padding: "10px", fontSize: "12px", color: "grey", display: "flex", justifyContent: "center" }}>
-                      No Module available. Please add a Module to get started.
-                      <div style={{ marginLeft: "30px" }}>
-                        <Button type="default" size="small" style={{ backgroundColor: "#3C3D37", color: "#ddd" }} icon={<RobotOutlined />}>
-                          <Link style={{ color: "inherit", textDecoration: "none" }} to={"/modules"}>New</Link>
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {filteredModules.length === 0 && (
-                    <div style={{ textAlign: "center", marginTop: "20px", fontSize: "12px", color: "#999" }}>
-                      No Module found.
-                    </div>
-                  )}
-
-                </TableBody>
-              </Table>
-            </TableContainer>
-
-            {/* <TablePagination
-              component="div"
-              count={modulesData.length}
-              page={page}
-              rowsPerPage={rowsPerPage}
-              onPageChange={handleChangePage}
-              rowsPerPageOptions={[]}
-              sx={{ mt: 2 }}
-            /> */}
+            <IconButton color="primary" className="toolbar-icon-btn">
+              <FilterList />
+            </IconButton>
           </Box>
+
+          <div className="panel-divider" />
+
+          <TableContainer component={Paper} className="panel-table-wrap">
+            <Table>
+              <TableHead className="ml-table-head">
+                <TableRow className="ml-table-row-head">
+                  <TableCell className="ml-th ml-col-code">Code</TableCell>
+                  <TableCell className="ml-th ml-col-name">Name</TableCell>
+                  <TableCell className="ml-th ml-col-type">Type</TableCell>
+                  <TableCell className="ml-th ml-col-date">Created On</TableCell>
+                  <TableCell className="ml-th ml-col-mine">Mine Type</TableCell>
+                  <TableCell className="ml-th ml-col-actions">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+
+              <TableBody className="ml-table-body">
+                {modulesData.length > 0 ? (
+                  filteredModules.map((module, index) => (
+                    <TableRow
+                      key={index}
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, module)}
+                      onClick={() => handleModuleClick(module)}
+                      className={`ml-tr ${canEditModule(module) ? "clickable" : ""}`}
+                    >
+                      <TableCell className="ml-td ml-col-code">{module.parentModuleCode}</TableCell>
+                      <TableCell className="ml-td ml-col-name">{module.moduleName}</TableCell>
+                      <TableCell className="ml-td ml-col-type">{renderModuleType(module.moduleType)}</TableCell>
+                      <TableCell className="ml-td ml-col-date">{dayjs(module.createdAt).format("DD MMM YYYY")}</TableCell>
+                      <TableCell className="ml-td ml-col-mine">{module.mineType}</TableCell>
+
+                      <TableCell className="ml-td ml-col-actions ml-actions">
+                        {(module.moduleType === "PERSONAL" || module.userGuiId == currentUser.guiId) && (
+                          <Button
+                            icon={<DeleteOutlined />}
+                            type="primary"
+                            danger
+                            size="small"
+                            className="ml-action-btn"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setIsDeleteModuleModalVisible(true);
+                              setSelectedModuleId(module.id);
+                            }}
+                          />
+                        )}
+
+                        {module.moduleType === "PERSONAL" && (
+                          <Tooltip title="Convert to Organizational Module">
+                            <Button
+                              icon={<RetweetOutlined />}
+                              type="default"
+                              size="small"
+                              className="ml-action-btn"
+                              onClick={(e) => handleConvertToOrgClick(e, module)}
+                            />
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <div className="ml-empty">
+                    <div>No Module available. Please add a Module to get started.</div>
+                    <div className="ml-empty-cta">
+                      <Button type="default" size="small" className="ml-new-btn" icon={<RobotOutlined />}>
+                        <Link className="ml-link" to={"/modules"}>
+                          New
+                        </Link>
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {filteredModules.length === 0 && (
+                  <div className="ml-empty muted">No Module found.</div>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
         </div>
 
-        <div style={{ position: "relative" }} className="create-library-section">
-          <Box sx={{ display: "flex", justifyContent: "space-between", gap: "10px", padding: "10px" }}>
+        <div className="create-library-section cont-height">
+          <Box className="panel-toolbar">
             <Input
               size="small"
               placeholder="Search..."
               onChange={handleSearch}
               prefix={<SearchOutlined />}
-              style={{ height: "26px", fontSize: "12px" }}
+              className="toolbar-input"
             />
-            <IconButton color="primary" style={{ padding: "0px" }}>
+            <IconButton color="primary" className="toolbar-icon-btn">
               <FilterList />
             </IconButton>
           </Box>
-          <hr style={{ margin: 0, marginBottom: "8px" }} />
-          <div style={{ height: "calc(100vh - 245px)" }}>
+
+          <div className="panel-divider" />
+
+          <div className="panel-scroll">
             {selectedLibrary ? (
-              <div style={boxStyle} onDragOver={(e) => e.preventDefault()} onDrop={handleDrop}>
-                <strong>
+              <div className="drop-box" onDragOver={(e) => e.preventDefault()} onDrop={handleDrop}>
+                <strong className="drop-title">
                   {selectedLibrary.name} ({selectedLibrary.mineType})
                 </strong>
-                {selectedLibrary.items?.length == 0 ? (
-                  <p style={emptyTextStyle}>Drop modules here</p>
+
+                {selectedLibrary.items?.length === 0 ? (
+                  <p className="empty-text">Drop modules here</p>
                 ) : null}
-                {selectedLibrary?.items?.length > 0 && selectedLibrary.items.map((item, idx) => (
-                  <div key={idx} style={{ display: "flex", gap: "10px" }}>
-                    <span style={itemStyle}>
-                      {item.moduleName}
-                    </span>
-                    <span>
+
+                {selectedLibrary?.items?.length > 0 &&
+                  selectedLibrary.items.map((item, idx) => (
+                    <div key={idx} className="drop-item">
+                      <span className="drop-item-name">{item.moduleName}</span>
+
                       <DeleteOutlined
                         onClick={() => handleDeleteModule(idx)}
-                        style={deleteButtonStyle}
+                        className="delete-icon"
+                        title="Remove"
                       />
-                    </span>
-                  </div>
-                ))}
+                    </div>
+                  ))}
               </div>
             ) : (
-              <div style={{ ...boxStyle, textAlign: "center", padding: "20px" }}>
+              <div className="drop-box empty">
                 <p>Please select a group from the right side or create a new one.</p>
               </div>
             )}
           </div>
-          <div>
-            {selectedLibrary && (
-              <>
-                <hr />
-                <Button
-                  style={{ float: "right", height: "26px", marginTop: "5px", marginRight: "10px" }}
-                  type="primary"
-                  className="bg-secondary"
-                  onClick={handleSaveLibrary}
-                >
+
+          {selectedLibrary && (
+            <>
+              <div className="panel-divider" />
+              <div className="save-row">
+                <Button type="primary" className="btn-primary-sm" onClick={handleSaveLibrary}>
                   Save
                 </Button>
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </div>
 
-        <div className="library-details">
-          <Box sx={{ display: "flex", justifyContent: "space-between", gap: "10px", padding: "10px" }}>
+        <div className="library-details cont-height">
+          <Box className="panel-toolbar">
             <Input
               size="small"
               placeholder="Search..."
               onChange={handleSearch}
               prefix={<SearchOutlined />}
-              style={{ height: "26px", fontSize: "12px" }}
+              className="toolbar-input"
             />
-            <IconButton color="primary" style={{ padding: "0px" }}>
+            <IconButton color="primary" className="toolbar-icon-btn">
               <FilterList />
             </IconButton>
           </Box>
-          <hr style={{ margin: 0, marginBottom: "8px" }} />
-          <div style={{ padding: "0px 10px" }}>
 
-            <div style={{ display: "flex", gap: "8px", marginTop: "5px" }}>
+          <div className="panel-divider" />
+
+          <div className="panel-body">
+            <div className="group-create-row">
               {libraryType == "project" ? (
                 <Select
                   value={newLibraryName || undefined}
                   onChange={handleProjectChange}
                   placeholder="Select Project"
-                  style={{ width: "100%", height: "26px" }}
+                  className="toolbar-select"
                 >
                   {projects.map((project) => (
                     <Option key={project} value={project}>
@@ -659,6 +647,7 @@ const ModuleLibrary = () => {
                   type="text"
                   value={newLibraryName}
                   onChange={(e) => setNewLibraryName(e.target.value)}
+                  className="toolbar-input"
                 />
               )}
 
@@ -667,7 +656,7 @@ const ModuleLibrary = () => {
                 placeholder="Mine Type"
                 value={newLibraryMineType || undefined}
                 onChange={(value) => setNewLibraryMineType(value)}
-                style={{ width: "100%", height: "26px" }}
+                className="toolbar-select"
                 disabled={libraryType == "project"}
               >
                 {mineTypes.map((type: any) => (
@@ -677,42 +666,38 @@ const ModuleLibrary = () => {
                 ))}
               </Select>
 
-              <Button style={{ height: "26px" }} type="primary" className="bg-secondary" onClick={handleCreateLibrary}>
+              <Button type="primary" className="btn-primary-sm" onClick={handleCreateLibrary}>
                 Create
               </Button>
             </div>
-            <div style={{ marginTop: "24px", flexWrap: "wrap" }}>
+
+            <div className="library-list">
               {filteredLibraries.map((library) => (
                 <div
                   key={library.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "5px 10px",
-                    borderRadius: "5px",
-                    marginBottom: "5px",
-                    background: selectedLibrary && selectedLibrary.id == library.id ? "#d0ebff" : "#eee",
-                  }}
+                  className={`library-item ${selectedLibrary?.id == library.id ? "selected" : ""}`}
                 >
-                  <Typography.Text style={{ cursor: "pointer" }} onClick={() => setSelectedLibrary(library)}>
+                  <Typography.Text className="library-name" onClick={() => setSelectedLibrary(library)}>
                     {library.name} ({library.mineType})
                   </Typography.Text>
+
                   <DeleteOutlined
-                    onClick={() => { setIsDeleteModalVisible(true); setSelectedLibraryId(library.id) }}
-                    style={{ color: "red", cursor: "pointer", marginLeft: "10px" }}
+                    onClick={() => {
+                      setIsDeleteModalVisible(true);
+                      setSelectedLibraryId(library.id);
+                    }}
+                    className="library-delete"
+                    title="Delete group"
                   />
                 </div>
               ))}
+
               {filteredLibraries.length === 0 && (
-                <div style={{ textAlign: "center", marginTop: "20px", fontSize: "12px", color: "#999" }}>
-                  No libraries found.
-                </div>
+                <div className="ml-empty muted">No libraries found.</div>
               )}
             </div>
           </div>
         </div>
-
       </Box>
 
       <Modal
@@ -780,42 +765,4 @@ const ModuleLibrary = () => {
   );
 };
 
-const boxStyle: React.CSSProperties = {
-  padding: "10px",
-  width: "98.5%",
-  borderRadius: "8px",
-  margin: "4px",
-  paddingBottom: "50px",
-  border: "2px dashed #ddd"
-};
-
-const deleteButtonStyle: React.CSSProperties = {
-  marginTop: "4px",
-  backgroundColor: "#ee4d4d",
-  color: "#fff",
-  cursor: "pointer",
-  padding: "10px",
-  borderRadius: "5px"
-};
-
-const itemStyle: React.CSSProperties = {
-  padding: "6px",
-  margin: "5px 0",
-  width: "100%",
-  borderRadius: "5px",
-  background: "#ddd",
-  color: "#000",
-  cursor: "grab",
-  fontWeight: "400",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "space-between"
-};
-
-const emptyTextStyle: React.CSSProperties = {
-  fontSize: "12px",
-  color: "#888"
-};
-
 export default ModuleLibrary;
-

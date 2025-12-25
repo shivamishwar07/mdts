@@ -1,32 +1,42 @@
 .footer {
-    background-color: #2C2C34;
-    color: white;
-    padding: 2.5rem 2rem;
-    font-family: 'Segoe UI', sans-serif;
-    font-size: 0.95rem;
+    background: var(--bg-surface-dark);
+    color: var(--text-secondary-dark);
+    padding: 48px 24px;
+    font-family: var(--font-base);
+    border-top: 1px solid var(--border-dark);
 }
 
 .footer-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 32px;
     max-width: 1200px;
     margin: 0 auto;
 }
 
 .footer-title {
-    font-size: 1.1rem;
+    font-size: 14px;
     font-weight: 700;
-    margin-bottom: 1rem;
-    color: #f37921;
+    letter-spacing: .08em;
+    margin-bottom: 14px;
+    color: var(--color-primary-dark);
 }
 
 .footer-item {
-    margin-bottom: 0.5rem;
+    margin-bottom: 10px;
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    line-height: 1.4;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-secondary-dark);
+}
+
+.footer-description {
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: var(--text-muted-dark);
+    line-height: 1.5;
 }
 
 .footer-links {
@@ -36,53 +46,65 @@
 }
 
 .footer-links li {
-    margin-bottom: 0.5rem;
+    margin-bottom: 8px;
 }
 
 .footer-links a {
-    color: white;
+    color: var(--text-secondary-dark);
     text-decoration: none;
-    border-bottom: 1px dotted white;
-    transition: all 0.2s;
+    border-bottom: 1px dotted var(--text-muted-dark);
+    transition: color .15s ease, border-color .15s ease;
 }
 
 .footer-links a:hover {
-    color: #f37921;
-    border-bottom: 1px solid #f37921;
-}
-
-.footer-note {
-    text-align: center;
-    margin-top: 2rem;
-    font-size: 0.85rem;
-    color: #aaa;
+    color: var(--color-primary-dark);
+    border-bottom-color: var(--color-primary-dark);
 }
 
 .footer-input {
     width: 100%;
-    padding: 0.5rem 0.75rem;
-    margin-bottom: 0.75rem;
-    background-color: transparent;
-    border: 1px solid white;
-    border-radius: 4px;
-    color: white;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--bg-surface-dark);
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-md);
+    color: var(--text-primary-dark);
+    font-size: 14px;
 }
 
 .footer-input::placeholder {
-    color: #ccc;
+    color: var(--text-muted-dark);
+}
+
+.footer-input:focus {
+    outline: none;
+    box-shadow: var(--focus-ring);
+    border-color: var(--color-primary-dark);
 }
 
 .footer-button {
     width: 100%;
-    padding: 0.5rem 0;
-    background-color: #f37921;
-    color: #2C2C34;
+    height: 40px;
+    background: var(--color-primary-dark);
+    color: var(--bg-main-dark);
     font-weight: 600;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--radius-md);
     cursor: pointer;
+    transition: background-color .15s ease, transform .1s ease;
 }
 
 .footer-button:hover {
-    background-color: #ec8841;
+    background: var(--color-primary-hover-dark);
+}
+
+.footer-button:active {
+    transform: translateY(1px);
+}
+
+.footer-note {
+    text-align: center;
+    margin-top: 36px;
+    font-size: 12px;
+    color: var(--text-muted-dark);
 }

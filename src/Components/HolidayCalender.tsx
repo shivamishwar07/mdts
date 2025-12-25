@@ -267,224 +267,107 @@ export const HolidayCalender = () => {
       </div>
     );
   };
-
-
   return (
     <LocalizationProvider dateAdapter={AdapterDayjs}>
-      <Paper style={{ display: "flex" }} className="main-container-div" elevation={0}>
-        <Box className="left-part" style={{
-          width: showCalendar ? "75%" : "98.8%",
-          transition: "width 0.5s ease-in-out",
-          overflow: "hidden",
-        }}>
-          <Box className="card-header-items">
-            <div className="holiday-page-heading">
-              Holiday Calendar
+      <Paper elevation={0} className="holiday-main-container">
+        <Box className={`holiday-left ${showCalendar ? "holiday-left--with-calendar" : "holiday-left--full"}`}>
+          <Box className="holiday-header">
+            <div>
+              <p className="page-heading-title">Holiday Calendar</p>
+              <span className="pl-subtitle">Manage your org projects and ownership</span>
             </div>
 
-            <div style={{ display: "flex", gap: "10px" }}>
-              <Button
-                className="aad-btn bg-secondary"
-                onClick={addRow}
-                style={{ padding: "0px 10px" }}
-              >
+            <div className="holiday-header-actions">
+              <Button className="holiday-btn holiday-btn--primary" onClick={addRow}>
                 Add New Holiday
               </Button>
-              <Button
-                className="toggle-calendar-btn bg-tertiary"
-                onClick={toggleCalendar}
-                color="primary"
-              >
+
+              <Button className="holiday-btn holiday-btn--secondary" onClick={toggleCalendar}>
                 {showCalendar ? "Hide Calendar" : "Show Calendar"}
               </Button>
             </div>
-
           </Box>
 
-          <TableContainer className="table-items">
-            <Table stickyHeader>
-              <TableHead
-                className="bg-secondary"
-                sx={{ position: "sticky", top: 0, zIndex: 2, backgroundColor: "#257180" }}
-              >
-                <TableRow className="table-header">
+          <TableContainer className="holiday-table-container">
+            <Table stickyHeader className="holiday-table">
+              <TableHead className="holiday-table-head">
+                <TableRow className="holiday-table-head-row">
                   {tableHeaders.map((header) => (
-                    <TableCell
-                      key={header}
-                      className="table-cell"
-                      sx={{ backgroundColor: "#257180", color: "white", fontWeight: "bold", textTransform: "none" }}
-                    >
+                    <TableCell key={header} className="holiday-table-head-cell">
                       {header}
                     </TableCell>
                   ))}
                 </TableRow>
               </TableHead>
-              {/* <TableBody>
-                {rows.map((row: any, index: any) => (
-                  <TableRow key={index}>
-                    <TableCell sx={{ textAlign: "center", padding: "5px" }}>
-                      <DatePicker
-                        value={row.from}
-                        onChange={(date) => handleInputChange(index, "from", date as any)}
-                        disabled={!row.editing}
-                        disabledDate={(current: any) =>
-                          current
-                            ? current.isBefore(dayjs().startOf("day")) || (row.to && current.isAfter(dayjs(row.to)))
-                            : false
-                        }
-                      />
-                    </TableCell>
 
-                    <TableCell sx={{ textAlign: "center", padding: "5px" }}>
-                      <DatePicker
-                        value={row.to}
-                        onChange={(date) => handleInputChange(index, "to", date as any)}
-                        disabled={!row.editing}
-                        style={{ width: "100%" }}
-                        disabledDate={(current: any) =>
-                          current
-                            ? current.isBefore(dayjs().startOf("day")) || (row.from && current.isBefore(dayjs(row.from)))
-                            : false
-                        }
-                      />
-                    </TableCell>
-
-                    <TableCell sx={{ textAlign: "center", padding: "5px" }}>
-                      <Input
-                        value={row.holiday}
-                        onChange={(e) => handleInputChange(index, "holiday", e.target.value as any)}
-                        placeholder="Enter holiday name"
-                        disabled={!row.editing}
-                      />
-                    </TableCell>
-
-                    <TableCell sx={{ textAlign: "center", padding: "5px" }}>
-                      {row.editing ? (
-                        <Select
-                          mode="multiple"
-                          value={row.module}
-                          onChange={(value: any) => handleInputChange(index, "module", value)}
-                          style={{ width: "180px" }}
-                        >
-                          <Select.Option key="all" value="all">
-                            Select All
-                          </Select.Option>
-                          {moduleOptions.map((module) => (
-                            <Select.Option key={module} value={module}>
-                              {module}
-                            </Select.Option>
-                          ))}
-                        </Select>
-                      ) : (
-                        <Box>
-                          {Array.isArray(row.module) ? (
-                            row.module.map((module: any) => (
-                              <Typography key={module} variant="body2">
-                                {module}
-                              </Typography>
-                            ))
-                          ) : (
-                            <Typography variant="body2">{row.module}</Typography>
-                          )}
-                        </Box>
-                      )}
-                    </TableCell>
-
-                    <TableCell sx={{ textAlign: "center", padding: "5px" }}>
-                      <Box sx={{ display: "flex", gap: "5px", flexWrap: "wrap", flexDirection: "column", justifyContent: "center" }}>
-                        {Object.entries(row.impact)?.map(([module, impact]) => (
-                          <Box key={module} sx={{ display: "flex", alignItems: "center", gap: 1, justifyContent: "center" }}>
-                            {row.editing ? (
-                              <TextField
-                                value={impact}
-                                onChange={(e) => handleImpactChange(index, module, e.target.value)}
-                                size="small"
-                                sx={{ width: "60px" }}
-                              />
-                            ) : (
-                              <Typography variant="body2">{impact !== undefined ? `${impact}%` : "N/A"}</Typography>
-                            )}
-                          </Box>
-                        ))}
-                      </Box>
-                    </TableCell>
-
-                    <TableCell sx={{ textAlign: "center", display: "flex", gap: "10px", justifyContent: "center", borderBottom: "0px" }}>
-                      {row.editing ? (
-                        <>
-                          <Tooltip title="Delete">
-                            <Button type="primary" danger shape="circle" icon={<DeleteOutlined />} onClick={() => showDeleteModal(index)} />
-                          </Tooltip>
-                          <Tooltip title="Save">
-                            <Button type="primary" shape="circle" icon={<SaveOutlined />} onClick={() => saveChanges(row, index)} />
-                          </Tooltip>
-                        </>
-                      ) : (
-                        <Tooltip title="Edit">
-                          <Button type="primary" shape="circle" icon={<EditOutlined />} onClick={() => toggleEdit(index)} />
-                        </Tooltip>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody> */}
-              <TableBody>
-                {rows.length === 0 || rows.every((row: any) =>
-                  !row.editing && !row.from && !row.to && !row.holiday && (!row.module || row.module.length === 0)
-                ) ? (
-                  <TableRow>
-                    <TableCell colSpan={tableHeaders.length} style={{ textAlign: "center", padding: "30px" }}>
-                      <Typography variant="body1" color="textSecondary">
+              <TableBody className="holiday-table-body">
+                {rows.length === 0 ||
+                  rows.every(
+                    (row: any) =>
+                      !row.editing &&
+                      !row.from &&
+                      !row.to &&
+                      !row.holiday &&
+                      (!row.module || row.module.length === 0)
+                  ) ? (
+                  <TableRow className="holiday-table-row">
+                    <TableCell colSpan={tableHeaders.length} className="holiday-empty-cell">
+                      <Typography variant="body1" className="holiday-empty-text">
                         No holiday data available.
                       </Typography>
                     </TableCell>
                   </TableRow>
                 ) : (
                   rows.map((row: any, index: any) => (
-                    <TableRow key={index}>
-                      <TableCell sx={{ textAlign: "center", padding: "5px" }}>
+                    <TableRow key={index} className="holiday-table-row">
+                      <TableCell className="holiday-table-cell">
                         <DatePicker
                           value={row.from}
                           onChange={(date) => handleInputChange(index, "from", date as any)}
                           disabled={!row.editing}
                           disabledDate={(current: any) =>
                             current
-                              ? current.isBefore(dayjs().startOf("day")) || (row.to && current.isAfter(dayjs(row.to)))
+                              ? current.isBefore(dayjs().startOf("day")) ||
+                              (row.to && current.isAfter(dayjs(row.to)))
                               : false
                           }
+                          className="holiday-date-picker"
                         />
                       </TableCell>
 
-                      <TableCell sx={{ textAlign: "center", padding: "5px" }}>
+                      <TableCell className="holiday-table-cell">
                         <DatePicker
                           value={row.to}
                           onChange={(date) => handleInputChange(index, "to", date as any)}
                           disabled={!row.editing}
-                          style={{ width: "100%" }}
                           disabledDate={(current: any) =>
                             current
-                              ? current.isBefore(dayjs().startOf("day")) || (row.from && current.isBefore(dayjs(row.from)))
+                              ? current.isBefore(dayjs().startOf("day")) ||
+                              (row.from && current.isBefore(dayjs(row.from)))
                               : false
                           }
+                          className="holiday-date-picker holiday-date-picker--full"
                         />
                       </TableCell>
 
-                      <TableCell sx={{ textAlign: "center", padding: "5px" }}>
+                      <TableCell className="holiday-table-cell">
                         <Input
                           value={row.holiday}
                           onChange={(e) => handleInputChange(index, "holiday", e.target.value as any)}
                           placeholder="Enter holiday name"
                           disabled={!row.editing}
+                          className="holiday-input"
                         />
                       </TableCell>
 
-                      <TableCell sx={{ textAlign: "center", padding: "5px" }}>
+                      <TableCell className="holiday-table-cell">
                         {row.editing ? (
                           <Select
                             mode="multiple"
                             value={row.module}
                             onChange={(value: any) => handleInputChange(index, "module", value)}
-                            style={{ width: "180px" }}
+                            className="holiday-select"
+                            popupMatchSelectWidth={false}
                           >
                             <Select.Option key="all" value="all">
                               Select All
@@ -496,52 +379,76 @@ export const HolidayCalender = () => {
                             ))}
                           </Select>
                         ) : (
-                          <Box>
+                          <Box className="holiday-modules-readonly">
                             {Array.isArray(row.module) ? (
                               row.module.map((module: any) => (
-                                <Typography key={module} variant="body2">
+                                <Typography key={module} variant="body2" className="holiday-module-text">
                                   {module}
                                 </Typography>
                               ))
                             ) : (
-                              <Typography variant="body2">{row.module}</Typography>
+                              <Typography variant="body2" className="holiday-module-text">
+                                {row.module}
+                              </Typography>
                             )}
                           </Box>
                         )}
                       </TableCell>
 
-                      <TableCell sx={{ textAlign: "center", padding: "5px" }}>
-                        <Box sx={{ display: "flex", gap: "5px", flexWrap: "wrap", flexDirection: "column", justifyContent: "center" }}>
+                      <TableCell className="holiday-table-cell">
+                        <Box className="holiday-impact">
                           {Object.entries(row.impact)?.map(([module, impact]) => (
-                            <Box key={module} sx={{ display: "flex", alignItems: "center", gap: 1, justifyContent: "center" }}>
+                            <Box key={module} className="holiday-impact-row">
                               {row.editing ? (
                                 <TextField
                                   value={impact}
                                   onChange={(e) => handleImpactChange(index, module, e.target.value)}
                                   size="small"
-                                  sx={{ width: "60px" }}
+                                  className="holiday-impact-input"
                                 />
                               ) : (
-                                <Typography variant="body2">{impact !== undefined ? `${impact}%` : "N/A"}</Typography>
+                                <Typography variant="body2" className="holiday-impact-text">
+                                  {impact !== undefined ? `${impact}%` : "N/A"}
+                                </Typography>
                               )}
                             </Box>
                           ))}
                         </Box>
                       </TableCell>
 
-                      <TableCell sx={{ textAlign: "center", display: "flex", gap: "10px", justifyContent: "center", borderBottom: "0px" }}>
+                      <TableCell className="holiday-actions-cell">
                         {row.editing ? (
                           <>
                             <Tooltip title="Delete">
-                              <Button type="primary" danger shape="circle" icon={<DeleteOutlined />} onClick={() => showDeleteModal(index)} />
+                              <Button
+                                type="primary"
+                                danger
+                                shape="circle"
+                                icon={<DeleteOutlined />}
+                                onClick={() => showDeleteModal(index)}
+                                className="holiday-icon-btn holiday-icon-btn--danger"
+                              />
                             </Tooltip>
+
                             <Tooltip title="Save">
-                              <Button type="primary" shape="circle" icon={<SaveOutlined />} onClick={() => saveChanges(row, index)} />
+                              <Button
+                                type="primary"
+                                shape="circle"
+                                icon={<SaveOutlined />}
+                                onClick={() => saveChanges(row, index)}
+                                className="holiday-icon-btn holiday-icon-btn--primary"
+                              />
                             </Tooltip>
                           </>
                         ) : (
                           <Tooltip title="Edit">
-                            <Button type="primary" shape="circle" icon={<EditOutlined />} onClick={() => toggleEdit(index)} />
+                            <Button
+                              type="primary"
+                              shape="circle"
+                              icon={<EditOutlined />}
+                              onClick={() => toggleEdit(index)}
+                              className="holiday-icon-btn holiday-icon-btn--muted"
+                            />
                           </Tooltip>
                         )}
                       </TableCell>
@@ -554,39 +461,33 @@ export const HolidayCalender = () => {
         </Box>
 
         {showCalendar && (
-          <Box
-            className="right-part"
-            style={{
-              width: "35%",
-              padding: "10px",
-              borderRadius: "5px",
-              display: "grid",
-              gridTemplateColumns: "repeat(1, 1fr)",
-              gap: "10px",
-            }}
-          >
-            {Array.from({ length: 12 }).map((_, monthIndex) => {
-              const monthDate = dayjs().month(monthIndex).startOf("month").toDate();
+          <Box className="holiday-right right-part">
+            <div className="holiday-calendar-grid">
+              {Array.from({ length: 12 }).map((_, monthIndex) => {
+                const monthDate = dayjs().month(monthIndex).startOf("month").toDate();
 
-              return (
-                <Calendar
-                  key={monthIndex}
-                  value={monthDate}
-                  activeStartDate={monthDate}
-                  onActiveStartDateChange={({ activeStartDate }) =>
-                    handleUpperCalendarNavigation
-                      ? handleUpperCalendarNavigation(activeStartDate)
-                      : handleLowerCalendarNavigation(activeStartDate)
-                  }
-                  view="month"
-                  tileContent={calendarTileContent}
-                  onClickDay={handleCalendarDateClick}
-                  tileDisabled={({ date }) => dayjs(date).isBefore(dayjs().startOf("day"))}
-                />
-              );
-            })}
+                return (
+                  <Calendar
+                    key={monthIndex}
+                    value={monthDate}
+                    activeStartDate={monthDate}
+                    onActiveStartDateChange={({ activeStartDate }) =>
+                      handleUpperCalendarNavigation
+                        ? handleUpperCalendarNavigation(activeStartDate)
+                        : handleLowerCalendarNavigation(activeStartDate)
+                    }
+                    view="month"
+                    tileContent={calendarTileContent}
+                    onClickDay={handleCalendarDateClick}
+                    tileDisabled={({ date }) => dayjs(date).isBefore(dayjs().startOf("day"))}
+                    className="holiday-calendar"
+                  />
+                );
+              })}
+            </div>
           </Box>
         )}
+
         <Modal
           title="Confirm Deletion"
           visible={isDeleteModalVisible}
@@ -597,12 +498,12 @@ export const HolidayCalender = () => {
           cancelText="Cancel"
           className="modal-container"
         >
-          <div style={{ padding: "0px 10px"}}>
-          <p>Are you sure you want to delete this row?</p>
+          <div className="holiday-modal-body">
+            <p className="holiday-modal-text">Are you sure you want to delete this row?</p>
           </div>
         </Modal>
-
       </Paper>
     </LocalizationProvider>
   );
+
 };

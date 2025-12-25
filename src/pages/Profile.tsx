@@ -1,22 +1,20 @@
 import { useEffect, useState } from "react";
 import "../styles/profile.css";
-import { Form, Input, Button, Row, Col, Select, Modal } from "antd";
+import { Form, Input, Button, Row, Col, Select, Modal, Tooltip } from "antd";
 import ManageUser from "../Components/ManageUser";
-import { CameraOutlined } from "@ant-design/icons";
+import { CameraOutlined, InfoCircleOutlined } from "@ant-design/icons";
 import { db } from "../Utils/dataStorege.ts";
-import { getCurrentUser, getCurrentUserId } from '../Utils/moduleStorage';
+import { getCurrentUser, getCurrentUserId } from "../Utils/moduleStorage";
 import { userStore } from "../Utils/UserStore.ts";
-const { Option } = Select;
-import { Tooltip } from "antd";
-import { InfoCircleOutlined } from "@ant-design/icons";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
-import { v4 as uuidv4 } from 'uuid';
-import 'react-phone-input-2/lib/style.css';
-import PhoneInput from 'react-phone-input-2';
+import { v4 as uuidv4 } from "uuid";
+import "react-phone-input-2/lib/style.css";
+import PhoneInput from "react-phone-input-2";
 import { hasPermission } from "../Utils/auth.ts";
-const Profile = () => {
+const { Option } = Select;
 
+const Profile = () => {
     const [formData, setFormData] = useState<any>({
         id: null as number | null,
         name: null as string | null,
@@ -49,8 +47,9 @@ const Profile = () => {
                 activityName: string | null;
                 responsibilities: string[];
             }[];
-        }[]
+        }[],
     });
+
     const [selectedTab, setSelectedTab] = useState("Profile Information");
     const [image, setImage] = useState<string | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -64,9 +63,7 @@ const Profile = () => {
     useEffect(() => {
         if (formData.id) {
             const storedImage = formData.profilePhoto;
-            if (storedImage) {
-                setImage(storedImage);
-            }
+            if (storedImage) setImage(storedImage);
         }
     }, [formData.id]);
 
@@ -95,12 +92,11 @@ const Profile = () => {
                 zipCode: userData.zipCode || "",
                 role: userData.role || "",
                 isTempPassword: userData.isTempPassword,
-                Password: userData.Password || ''
+                Password: userData.Password || "",
             });
             form.resetFields();
         }
-
-    }
+    };
 
     const isProfileCompleted = () => {
         return (
@@ -237,7 +233,7 @@ const Profile = () => {
                 profilePhoto: existingUser?.profilePhoto || "",
                 isTempPassword: false,
                 orgId,
-                userType: 'MDTS'
+                userType: "MDTS",
             };
 
             await db.updateUsers(currentUser.id, updatedUser);
@@ -258,7 +254,7 @@ const Profile = () => {
                     zipCode: formData.zipCode,
                     address: formData.address,
                     guiId: orgId,
-                    userGuiIds: [currentUser.guiId]
+                    userGuiIds: [currentUser.guiId],
                 };
                 await db.addCompany(newCompany);
             } else if (existingCompany) {
@@ -272,7 +268,7 @@ const Profile = () => {
                     country: formData.country,
                     zipCode: formData.zipCode,
                     address: formData.address,
-                    userGuiIds: Array.from(new Set([...(existingCompany.userGuiIds || []), currentUser.guiId]))
+                    userGuiIds: Array.from(new Set([...(existingCompany.userGuiIds || []), currentUser.guiId])),
                 };
 
                 await db.updateCompany(existingCompany.id, updatedCompany);
@@ -283,296 +279,6 @@ const Profile = () => {
         } catch (error) {
             console.error("Error saving profile:", error);
             notify.error("Something went wrong. Please try again.");
-        }
-    };
-
-    const renderContent = () => {
-        switch (selectedTab) {
-            case "Profile Information":
-                return (
-                    <div style={{ marginTop: "10px" }} className="card">
-                        <div className="card-body">
-                            <div className="profile-cover" style={{ backgroundColor: '#258790' }}>
-                                <div className="profile-item">
-                                    <div className="profile-image-container">
-                                        <img src={image || "https://via.placeholder.com/100"} alt={getInitials()} className="profile-image" />
-                                        <div className="overlay">
-                                            <label htmlFor="file-input" className="upload-icon">
-                                                <CameraOutlined className="upload-icon" />
-                                            </label>
-                                            <input
-                                                type="file"
-                                                id="file-input"
-                                                accept="image/*"
-                                                onChange={handleImageChange}
-                                                style={{ display: 'none' }}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            {!formData.isTempPassword && (
-                                <div className="change-password-container">
-                                    <a onClick={showModal}>Change Password</a>
-                                </div>
-                            )}
-                            <div className="company-registration-form">
-                                <Form
-                                    className={`employee-professional-form ${isProfileCompleted()
-                                        ? "registration-height-without-warning"
-                                        : "registration-height-with-warning"
-                                        }`}
-                                    layout="horizontal"
-                                    labelCol={{ span: 6 }}
-                                    wrapperCol={{ span: 18 }}
-                                    labelAlign="left"
-                                >
-                                    <Row gutter={[16, 16]} className="form-row">
-                                        <Col span={12}>
-                                            <Form.Item
-                                                label="Company Name"
-                                                colon={false}
-                                                rules={[{ required: true, message: "Please enter company name" }]}
-                                            >
-                                                <Input
-                                                    name="company"
-                                                    value={formData.company}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter Company"
-                                                    disabled={formData.role != 'Admin'}
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={12}>
-                                            <Form.Item
-                                                label="Company Type"
-                                                colon={false}
-                                                rules={[{ required: true, message: "Please select company type" }]}
-                                            >
-                                                <Select
-                                                    value={formData.companyType}
-                                                    onChange={(value) => handleSelectChange(value, "companyType")}
-                                                    placeholder="Select Company Type"
-                                                    style={{ width: "100%" }}
-                                                >
-                                                    <Option value="Mining">Mining</Option>
-                                                    <Option value="Construction">Construction</Option>
-                                                    <Option value="Equipment Supplier">Equipment Supplier</Option>
-                                                </Select>
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
-
-                                    <Row gutter={[16, 16]} className="form-row">
-                                        <Col span={12}>
-                                            <Form.Item
-                                                label="Industry Type"
-                                                colon={false}
-                                                rules={[{ required: true, message: "Please select industry type" }]}
-                                            >
-                                                <Select
-                                                    value={formData.industryType}
-                                                    onChange={(value) => handleSelectChange(value, "industryType")}
-                                                    placeholder="Select Industry Type"
-                                                    style={{ width: "100%" }}
-                                                >
-                                                    <Option value="Coal">Coal</Option>
-                                                    <Option value="Iron">Iron</Option>
-                                                    <Option value="Gold">Gold</Option>
-                                                </Select>
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={12}>
-                                            <Form.Item
-                                                label="Designation"
-                                                colon={false}
-                                                rules={[{ required: true, message: "Please select designation" }]}
-                                            >
-                                                <Select
-                                                    value={formData.designation}
-                                                    onChange={(value) => handleSelectChange(value, "designation")}
-                                                    placeholder="Select Designation"
-                                                    style={{ width: "100%" }}
-                                                >
-                                                    <Option value="Mining Engineer">Mining Engineer</Option>
-                                                    <Option value="Geologist">Geologist</Option>
-                                                    <Option value="Operations Manager">Operations Manager</Option>
-                                                </Select>
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
-
-                                    <Row gutter={[16, 16]} className="form-row">
-                                        <Col span={12}>
-                                            <Form.Item
-                                                label="Full Name"
-                                                colon={false}
-                                                rules={[{ required: true, message: "Please enter name" }]}
-                                            >
-                                                <Input
-                                                    name="name"
-                                                    value={formData.name}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter Name"
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={12}>
-                                            <Form.Item
-                                                label="Email"
-                                                colon={false}
-                                                rules={[{ required: true, message: "Please enter email", type: "email" }]}
-                                            >
-                                                <Input
-                                                    name="email"
-                                                    value={formData.email}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter Email"
-                                                    disabled
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
-                                    <Row gutter={[16, 16]} className="form-row">
-                                        <Col span={12}>
-                                            <Form.Item
-                                                label="Mobile No"
-                                                colon={false}
-                                                validateStatus={!formData.mobile ? 'error' : ''}
-                                                help={!formData.mobile ? "Please enter mobile number" : ""}
-                                            >
-                                                <PhoneInput
-                                                    country="in"
-                                                    value={formData.mobile}
-                                                    onChange={(phone) => setFormData({ ...formData, mobile: `+${phone}` })}
-                                                    inputProps={{
-                                                        name: 'mobile',
-                                                        required: true
-                                                    }}
-                                                    specialLabel={''}
-                                                    inputStyle={{ width: '100%' }}
-                                                />
-                                            </Form.Item>
-                                        </Col>
-
-                                        <Col span={12}>
-                                            <Form.Item label="WhatsApp No" colon={false}>
-                                                <PhoneInput
-                                                    country="in"
-                                                    value={formData.whatsapp}
-                                                    onChange={(phone) => setFormData({ ...formData, whatsapp: `+${phone}` })}
-                                                    inputProps={{
-                                                        name: 'whatsapp'
-                                                    }}
-                                                    specialLabel={''}
-                                                    inputStyle={{ width: '100%' }}
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
-                                    <Row gutter={[16, 16]} className="form-row">
-                                        <Col span={12}>
-                                            <Form.Item
-                                                label="Role"
-                                                colon={false}
-                                                rules={[{ required: true, message: "Please select role" }]}
-                                            >
-                                                <Select
-                                                    value={formData.role}
-                                                    onChange={(value) => handleSelectChange(value, "role")}
-                                                    disabled
-                                                    placeholder="Select Role"
-                                                    style={{ width: "100%" }}
-                                                >
-                                                    <Option value="admin">Admin</Option>
-                                                    <Option value="manager">Manager</Option>
-                                                    <Option value="worker">Worker</Option>
-                                                </Select>
-                                            </Form.Item>
-                                        </Col>
-
-                                        <Col span={12}>
-                                            <Form.Item label="City" colon={false}>
-                                                <Input
-                                                    name="city"
-                                                    value={formData.city}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter City"
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
-
-                                    <Row gutter={[16, 16]} className="form-row">
-                                        <Col span={12}>
-                                            <Form.Item label="Address" colon={false}>
-                                                <Input.TextArea
-                                                    name="address"
-                                                    value={formData.address}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter Address"
-                                                    rows={3}
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
-
-                                    <Row gutter={[16, 16]} className="form-row">
-                                        <Col span={12}>
-                                            <Form.Item label="State" colon={false}>
-                                                <Input
-                                                    name="state"
-                                                    value={formData.state}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter State"
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={12}>
-                                            <Form.Item label="Country" colon={false}>
-                                                <Input
-                                                    name="country"
-                                                    value={formData.country}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter Country"
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                        <Col span={12}>
-                                            <Form.Item label="Zip Code" colon={false}>
-                                                <Input
-                                                    name="zipCode"
-                                                    type="number"
-                                                    value={formData.zipCode}
-                                                    onChange={handleInputChange}
-                                                    placeholder="Enter Zip Code"
-                                                />
-                                            </Form.Item>
-                                        </Col>
-                                    </Row>
-                                </Form>
-                            </div>
-
-
-                            <hr />
-                            <div className="button-group">
-                                <Button
-                                    className="bg-secondary save-btn"
-                                    onClick={handleSave}
-                                    style={{ float: "right" }}
-                                >
-                                    {formData.isTempPassword ? 'Save' : 'Update'}
-                                </Button>
-                            </div>
-                        </div>
-                    </div>
-                );
-            case "Team Members":
-                return <div className=""><ManageUser options={{ isAddMember: true, isToolbar: true, title: "Team Members" }} /></div>;
-            case "Projects":
-                return <div className="card">Projects Section</div>;
-            default:
-                return null;
         }
     };
 
@@ -600,49 +306,325 @@ const Profile = () => {
         };
     };
 
+    const renderContent = () => {
+        switch (selectedTab) {
+            case "Profile Information":
+                return (
+                    <div className="profile-card">
+                        <div className="card-body">
+                            <div className="profile-cover">
+                                <div className="profile-item">
+                                    <div className="profile-image-container">
+                                        <img
+                                            src={image || "https://via.placeholder.com/100"}
+                                            alt={getInitials()}
+                                            className="profile-image"
+                                        />
+                                        <div className="overlay">
+                                            <label htmlFor="file-input" className="upload-icon">
+                                                <CameraOutlined className="upload-icon" />
+                                            </label>
+                                            <input
+                                                type="file"
+                                                id="file-input"
+                                                accept="image/*"
+                                                onChange={handleImageChange}
+                                                className="profile-file-input"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {!formData.isTempPassword && (
+                                <div className="change-password-container">
+                                    <a onClick={showModal}>Change Password</a>
+                                </div>
+                            )}
+
+                            <div className="company-registration-form">
+                                <Form
+                                    className={`employee-professional-form ${isProfileCompleted() ? "registration-height-without-warning" : "registration-height-with-warning"
+                                        }`}
+                                    layout="horizontal"
+                                    labelCol={{ span: 6 }}
+                                    wrapperCol={{ span: 18 }}
+                                    labelAlign="left"
+                                >
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Company Name"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please enter company name" }]}
+                                            >
+                                                <Input
+                                                    name="company"
+                                                    value={formData.company}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter Company"
+                                                    disabled={formData.role != "Admin"}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Company Type"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please select company type" }]}
+                                            >
+                                                <Select
+                                                    value={formData.companyType}
+                                                    onChange={(value) => handleSelectChange(value, "companyType")}
+                                                    placeholder="Select Company Type"
+                                                    className="profile-full-width"
+                                                >
+                                                    <Option value="Mining">Mining</Option>
+                                                    <Option value="Construction">Construction</Option>
+                                                    <Option value="Equipment Supplier">Equipment Supplier</Option>
+                                                </Select>
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Industry Type"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please select industry type" }]}
+                                            >
+                                                <Select
+                                                    value={formData.industryType}
+                                                    onChange={(value) => handleSelectChange(value, "industryType")}
+                                                    placeholder="Select Industry Type"
+                                                    className="profile-full-width"
+                                                >
+                                                    <Option value="Coal">Coal</Option>
+                                                    <Option value="Iron">Iron</Option>
+                                                    <Option value="Gold">Gold</Option>
+                                                </Select>
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Designation"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please select designation" }]}
+                                            >
+                                                <Select
+                                                    value={formData.designation}
+                                                    onChange={(value) => handleSelectChange(value, "designation")}
+                                                    placeholder="Select Designation"
+                                                    className="profile-full-width"
+                                                >
+                                                    <Option value="Mining Engineer">Mining Engineer</Option>
+                                                    <Option value="Geologist">Geologist</Option>
+                                                    <Option value="Operations Manager">Operations Manager</Option>
+                                                </Select>
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Full Name"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please enter name" }]}
+                                            >
+                                                <Input name="name" value={formData.name} onChange={handleInputChange} placeholder="Enter Name" />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Email"
+                                                colon={false}
+                                                rules={[{ required: true, message: "Please enter email", type: "email" }]}
+                                            >
+                                                <Input name="email" value={formData.email} onChange={handleInputChange} placeholder="Enter Email" disabled />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item
+                                                label="Mobile No"
+                                                colon={false}
+                                                validateStatus={!formData.mobile ? "error" : ""}
+                                                help={!formData.mobile ? "Please enter mobile number" : ""}
+                                            >
+                                                <PhoneInput
+                                                    country="in"
+                                                    value={formData.mobile}
+                                                    onChange={(phone) => setFormData({ ...formData, mobile: `+${phone}` })}
+                                                    inputProps={{ name: "mobile", required: true }}
+                                                    specialLabel=""
+                                                    inputClass="custom-phone-input"
+                                                    buttonClass="custom-phone-button"
+                                                    containerClass="custom-phone-container"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+
+                                        <Col span={12}>
+                                            <Form.Item label="WhatsApp No" colon={false}>
+                                                <PhoneInput
+                                                    country="in"
+                                                    value={formData.whatsapp}
+                                                    onChange={(phone) => setFormData({ ...formData, whatsapp: `+${phone}` })}
+                                                    inputProps={{ name: "whatsapp" }}
+                                                    specialLabel=""
+                                                    inputClass="custom-phone-input"
+                                                    buttonClass="custom-phone-button"
+                                                    containerClass="custom-phone-container"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item label="Role" colon={false} rules={[{ required: true, message: "Please select role" }]}>
+                                                <Select
+                                                    value={formData.role}
+                                                    onChange={(value) => handleSelectChange(value, "role")}
+                                                    disabled
+                                                    placeholder="Select Role"
+                                                    className="profile-full-width"
+                                                >
+                                                    <Option value="admin">Admin</Option>
+                                                    <Option value="manager">Manager</Option>
+                                                    <Option value="worker">Worker</Option>
+                                                </Select>
+                                            </Form.Item>
+                                        </Col>
+
+                                        <Col span={12}>
+                                            <Form.Item label="City" colon={false}>
+                                                <Input name="city" value={formData.city} onChange={handleInputChange} placeholder="Enter City" />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item label="Address" colon={false}>
+                                                <Input.TextArea
+                                                    name="address"
+                                                    value={formData.address}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter Address"
+                                                    rows={3}
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+
+                                    <Row gutter={[16, 16]} className="form-row">
+                                        <Col span={12}>
+                                            <Form.Item label="State" colon={false}>
+                                                <Input name="state" value={formData.state} onChange={handleInputChange} placeholder="Enter State" />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item label="Country" colon={false}>
+                                                <Input
+                                                    name="country"
+                                                    value={formData.country}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter Country"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                        <Col span={12}>
+                                            <Form.Item label="Zip Code" colon={false}>
+                                                <Input
+                                                    name="zipCode"
+                                                    type="number"
+                                                    value={formData.zipCode}
+                                                    onChange={handleInputChange}
+                                                    placeholder="Enter Zip Code"
+                                                />
+                                            </Form.Item>
+                                        </Col>
+                                    </Row>
+                                </Form>
+                            </div>
+
+                            <hr />
+
+                            <div className="button-group">
+                                <Button className="profile-save-btn" onClick={handleSave}>
+                                    {formData.isTempPassword ? "Save" : "Update"}
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
+                );
+
+            case "Team Members":
+                return <div className="profile-manage-user"><ManageUser options={{ isAddMember: true, isToolbar: true, title: "Team Members" }} /></div>;
+
+            case "Projects":
+                return <div className="card">Projects Section</div>;
+
+            default:
+                return null;
+        }
+    };
+
     return (
         <>
             <div className="main-profile">
                 <div className="sidebar-menu">
                     <div className="basic-info">
-                        <div>
+                        <div className="basic-info-left">
                             <img
                                 src={image || "../public/images/logos/user-profile.png"}
                                 alt="Logo"
                                 className="profile-image"
                             />
                         </div>
+
                         <div className="details">
-                            <div style={{ fontSize: "18px" }}>{formData?.name || ""}</div>
-                            <div style={{ color: "grey", fontSize: "12px" }}>{formData?.company || ""}</div>
+                            <div className="profile-sidebar-name">{formData?.name || ""}</div>
+                            <div className="profile-sidebar-company">{formData?.company || ""}</div>
                         </div>
                     </div>
-                    {['Profile Information', 'Team Members'].map((tab) => {
-                        if (tab === 'Team Members' && !hasPermission(formData?.role, "VIEW_TEAM_MEMBERS")) {
-                            return null;
-                        }
 
-                        return (
-                            <div
-                                key={tab}
-                                className={`items ${selectedTab === tab ? 'active-tab' : ''}`}
-                                onClick={() => setSelectedTab(tab)}
-                            >
-                                {tab}
-                            </div>
-                        );
-                    })}
+                    <div className="sidebar-tabs">
+                        {["Profile Information", "Team Members"].map((tab) => {
+                            if (tab === "Team Members" && !hasPermission(formData?.role, "VIEW_TEAM_MEMBERS")) return null;
+
+                            return (
+                                <button
+                                    key={tab}
+                                    type="button"
+                                    className={`items ${selectedTab === tab ? "active-tab" : ""}`}
+                                    onClick={() => setSelectedTab(tab)}
+                                >
+                                    {tab}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
-                <div style={{ marginBottom: "0px" }} className="items-details">
-                    {!isProfileCompleted() && selectedTab != 'Team Members' && (
-                        <div style={{ marginTop: "10px" }} className={`card-header progress-warning create-doc-heading ${isProfileCompleted() ? 'bg-secondary' : ""}`}>
-                            <p style={{ margin: "0px", padding: "0px" }}>{isProfileCompleted() ? "Manage Profile" : "Please complete registration"}</p>
+                <div className="items-details">
+                    {!isProfileCompleted() && selectedTab !== "Team Members" && (
+                        <div className="profile-warning-header card-header progress-warning create-doc-heading">
+                            <p className="profile-warning-text">
+                                {isProfileCompleted() ? "Manage Profile" : "Please complete registration"}
+                            </p>
                         </div>
                     )}
-                    {renderContent()}
+
+                    <div className="profile-content">{renderContent()}</div>
                 </div>
             </div>
+
 
             <div className="modal-container">
                 <Modal
@@ -657,69 +639,56 @@ const Profile = () => {
                         form={form}
                         layout="horizontal"
                         onFinish={handlePasswordUpdate}
-                        style={{ padding: "10px 10px 0px 10px" }}
                         colon={false}
+                        className="profile-modal-form"
                     >
                         {!formData?.isTempPassword && (
                             <Form.Item
                                 label="Old Password"
                                 name="oldPassword"
-                                labelCol={{ span: 8, style: { textAlign: "left" } }}
+                                labelCol={{ span: 8, className: "profile-label-left" }}
                                 wrapperCol={{ span: 16 }}
                                 rules={[{ required: true, message: "Please enter your old password!" }]}
                             >
                                 <Input.Password placeholder="Enter old password" />
                             </Form.Item>
                         )}
-                        {formData.isTempPassword}
+
                         <Form.Item
                             label={
-                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                    New Password
+                                <div className="profile-password-label">
+                                    <span>New Password</span>
                                     <Tooltip
+                                        placement="right"
+                                        overlayClassName="profile-password-tooltip"
                                         title={
                                             (() => {
                                                 const status = getPasswordValidationStatus(password);
-                                                const getStyle = (pass: any) => ({
-                                                    color: pass ? "green" : "red",
-                                                    fontWeight: "bold",
-                                                });
-
                                                 return (
-                                                    <div style={{ lineHeight: 1.6 }}>
-                                                        <div style={getStyle(status.length)}>• At least 8 characters</div>
-                                                        <div style={getStyle(status.uppercase)}>• One uppercase letter</div>
-                                                        <div style={getStyle(status.lowercase)}>• One lowercase letter</div>
-                                                        <div style={getStyle(status.number)}>• One number</div>
-                                                        <div style={getStyle(status.specialChar)}>• One special character</div>
+                                                    <div className="profile-password-rules">
+                                                        <div className={status.length ? "rule-ok" : "rule-bad"}>• At least 8 characters</div>
+                                                        <div className={status.uppercase ? "rule-ok" : "rule-bad"}>• One uppercase letter</div>
+                                                        <div className={status.lowercase ? "rule-ok" : "rule-bad"}>• One lowercase letter</div>
+                                                        <div className={status.number ? "rule-ok" : "rule-bad"}>• One number</div>
+                                                        <div className={status.specialChar ? "rule-ok" : "rule-bad"}>• One special character</div>
                                                     </div>
                                                 );
                                             })()
                                         }
-                                        placement="right"
-                                        overlayInnerStyle={{
-                                            backgroundColor: "#f9f9f9",
-                                            color: "#333",
-                                            padding: "10px",
-                                            borderRadius: 6,
-                                            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-                                        }}
                                     >
-                                        <InfoCircleOutlined style={{ color: "#888", cursor: "pointer" }} />
+                                        <InfoCircleOutlined className="profile-info-icon" />
                                     </Tooltip>
-
                                 </div>
                             }
                             name="newPassword"
-                            labelCol={{ span: 8, style: { textAlign: "left" } }}
+                            labelCol={{ span: 8, className: "profile-label-left" }}
                             wrapperCol={{ span: 16 }}
                             rules={[
                                 { required: true, message: "Please enter a new password!" },
                                 {
                                     pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/,
-                                    message:
-                                        "Password must contain uppercase, lowercase, number, special char, and be at least 8 characters."
-                                }
+                                    message: "Password must contain uppercase, lowercase, number, special char, and be at least 8 characters.",
+                                },
                             ]}
                         >
                             <Input.Password placeholder="Enter new password" onChange={(e) => setPassword(e.target.value)} />
@@ -739,16 +708,14 @@ const Profile = () => {
                         <Form.Item
                             label="Confirm New Password"
                             name="confirmNewPassword"
-                            labelCol={{ span: 8, style: { textAlign: "left" } }}
+                            labelCol={{ span: 8, className: "profile-label-left" }}
                             wrapperCol={{ span: 16 }}
                             dependencies={["newPassword"]}
                             rules={[
                                 { required: true, message: "Please confirm your new password!" },
                                 ({ getFieldValue }) => ({
                                     validator(_, value) {
-                                        if (!value || getFieldValue("newPassword") === value) {
-                                            return Promise.resolve();
-                                        }
+                                        if (!value || getFieldValue("newPassword") === value) return Promise.resolve();
                                         return Promise.reject(new Error("Passwords do not match!"));
                                     },
                                 }),
@@ -757,8 +724,8 @@ const Profile = () => {
                             <Input.Password placeholder="Confirm new password" />
                         </Form.Item>
 
-                        <Form.Item style={{ display: "flex", justifyContent: "end" }}>
-                            <Button type="primary" className="bg-secondary" htmlType="submit">
+                        <Form.Item className="profile-modal-actions">
+                            <Button type="primary" className="profile-modal-save-btn" htmlType="submit">
                                 Save
                             </Button>
                         </Form.Item>
