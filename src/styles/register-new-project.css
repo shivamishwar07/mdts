@@ -110,6 +110,10 @@
     min-height: calc(100vh - 315px);
 }
 
+.form-container-height {
+    height: calc(100vh - 355px);
+}
+
 .saparation-line {
     height: 1px;
     background: var(--border);

@@ -121,3 +121,6 @@ hr {
 .text-replanned {
     color: var(--info);
 }
+.ant-modal-body{
+    padding: 10px !important;
+}

@@ -855,7 +855,7 @@ export const RegisterNewProject: React.FC = () => {
                 </div>
 
                 <div className="form-container">
-                  <form>
+                  <form className="form-container-height">
                     <div className="form-group">{renderStepForm()}</div>
                   </form>
                 </div>

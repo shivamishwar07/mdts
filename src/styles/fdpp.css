@@ -12,8 +12,17 @@
 .edpp-main-cont .ant-card-head-title {
     font-weight: 800;
     color: var(--text-primary);
+    padding-bottom: 10px;
 }
 
+.ant-card-head{
+    min-height: 0 !important;
+    padding: 0 !important;
+} 
+
+.ant-card-body{
+    padding: 15px 0 0 0 !important;
+}
 .edpp-main-cont .ant-form-item {
     margin-bottom: 12px !important;
 }

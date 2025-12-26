@@ -425,3 +425,13 @@
     flex-direction: row;
   }
 }
+
+.holiday-date-picker--selected-from .ant-picker {
+  border-color: #1890ff !important;
+  box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.15) !important;
+}
+
+.holiday-date-picker--selected-to .ant-picker {
+  border-color: #52c41a !important;
+  box-shadow: 0 0 0 2px rgba(82, 196, 26, 0.15) !important;
+}

@@ -593,7 +593,7 @@ const ActivityBudget: React.FC = () => {
       title: "Module Code",
       dataIndex: "SrNo",
       key: "SrNo",
-      width: 100,
+      width: 130,
     },
     {
       title: "Activity Code",

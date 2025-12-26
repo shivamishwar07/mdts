@@ -19,7 +19,6 @@ interface NavItem {
 
 const initialNavLinks: any[] = [
     { label: "Dashboard", action: "/dashboard", requiredPermission: "VIEW_NAVBAR_MENUS" },
-    { label: "Documents", action: "/document", requiredPermission: "VIEW_NAVBAR_MENUS" },
     { label: "Knowledge Center", action: "/knowledge-center", requiredPermission: "VIEW_NAVBAR_MENUS" },
     {
         label: "Data Master",
@@ -40,6 +39,7 @@ const initialNavLinks: any[] = [
             { label: "Status Update", action: "/create/status-update", requiredPermission: "UPDATE_STATUS" },
             { label: "Non-working Days", action: "/create/non-working-days", requiredPermission: "SET_GLOBAL_HOLIDAY" },
             { label: "DPR Cost Builder", action: "/create/dpr-cost-builder", isNull: true, requiredPermission: "DPR_COST_BUILDER" },
+            { label: "Documents", action: "/document", requiredPermission: "VIEW_NAVBAR_MENUS"},
             { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true, requiredPermission: "CASH_FLOW_BUILDER" },
             { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true, requiredPermission: "DELAY_COST_CALCULATOR" },
             { label: "Activity Budget", action: "/budgets", requiredPermission: "VIEW_NAVBAR_MENUS" },
