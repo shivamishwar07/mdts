@@ -34,12 +34,19 @@ export const RegisterNewProject: React.FC = () => {
   const [newMineType, setNewMineType] = useState<string>("");
   const [shorthandCode, setShorthandCode] = useState<string>("");
   const [options, setOptions] = useState<string[]>([]);
+  // const steps = [
+  //   { id: 1, title: "Project Parameters" },
+  //   { id: 2, title: "Locations" },
+  //   { id: 3, title: "Contractual Details" },
+  //   { id: 4, title: "Initial Status" },
+  // ];
   const steps = [
     { id: 1, title: "Project Parameters" },
     { id: 2, title: "Locations" },
     { id: 3, title: "Contractual Details" },
-    // { id: 4, title: "Initial Status" },
+    { id: 4, title: "Financial Parameters" },
   ];
+
   const [formStepsData, setFormStepsData] = useState<any[]>(() => {
     const savedData = localStorage.getItem("projectFormData");
     return savedData ? JSON.parse(savedData) : [];
@@ -61,6 +68,7 @@ export const RegisterNewProject: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [currentUser, setCurrentUser] = useState<any>(null);
+
   useEffect(() => {
     setFormData({});
     clearFormData();
@@ -84,7 +92,10 @@ export const RegisterNewProject: React.FC = () => {
         project.projectParameters,
         project.locations,
         project.contractualDetails,
+        project.financialParameters || {},
       ]);
+      console.log(project);
+
       setFormData(project.projectParameters);
     }
   };
@@ -98,6 +109,7 @@ export const RegisterNewProject: React.FC = () => {
             project.projectParameters || {},
             project.locations || {},
             project.contractualDetails || {},
+            project.financialParameters || {},
           ];
           console.log(stepsData);
 
@@ -201,6 +213,7 @@ export const RegisterNewProject: React.FC = () => {
       projectParameters: finalData[0] || {},
       locations: finalData[1] || {},
       contractualDetails: finalData[2] || {},
+      financialParameters: finalData[3] || {},
       initialStatus: { library: "", items: [] },
       documents: contractualDocuments,
       userGuiId: loggedInUser?.guiId,
@@ -306,6 +319,14 @@ export const RegisterNewProject: React.FC = () => {
       cbdpaDate: null,
       vestingOrderDate: null,
       pbgAmount: "",
+      totalProjectCost: "",
+      ebitdaPercentage: "",
+      irrPercentage: "",
+      npvPercentage: "",
+      patPercentage: "",
+      patPerTon: "",
+      roePercentage: "",
+      rocePercentage: "",
       ...(Array.isArray(allLibrariesName) ? allLibrariesName : []).reduce(
         (acc: any, moduleName: any) => {
           if (typeof moduleName === "string") {
@@ -668,8 +689,9 @@ export const RegisterNewProject: React.FC = () => {
                     <DatePicker
                       style={{ width: "100%" }}
                       value={toDayjs(formData[key])}
-                      onChange={(date) => handleChange(key, date)}
+                      onChange={(date) => handleChange(key, date ? date.toISOString() : null)}
                     />
+
                   </Form.Item>
                 </Col>
               ))}
@@ -689,62 +711,128 @@ export const RegisterNewProject: React.FC = () => {
             </Row>
           </Form>
         );
+      // case 4:
+      //   return (
+      //     <div>
+      //       <Form className="select-module-group" layout="horizontal">
+      //         <Row gutter={[16, 16]}>
+      //           <Col span={24}>
+      //             <Form.Item
+      //               colon={false}
+      //               label="Select Group"
+      //               labelAlign="left"
+      //               labelCol={{ span: 6 }}
+      //               wrapperCol={{ span: 18 }}
+      //               style={{ fontSize: "18px", fontWeight: "400" }}
+
+      //             >
+      //               <Select
+      //                 value={selectedLibrary}
+      //                 onChange={(value) => {
+      //                   setSelectedLibrary(value);
+      //                   const filterdLibrary = allLibrariesName.filter((item: any) => item.name == value);
+      //                   setSelectedItems(filterdLibrary[0].items)
+      //                 }}
+      //                 allowClear={true}
+      //               >
+      //                 {allLibrariesName.map((lib: any) => (
+      //                   <Select.Option key={lib.name} value={lib.name}>
+      //                     {lib.name}
+      //                   </Select.Option>
+      //                 ))}
+      //               </Select>
+      //             </Form.Item>
+      //           </Col>
+      //         </Row>
+      //       </Form>
+      //       <Table
+      //         columns={columns}
+      //         dataSource={selectedItems}
+      //         pagination={false}
+      //         rowKey="moduleName"
+      //         className="project-timeline-table"
+      //       />
+      //     </div>
+      //   );
+      case 4:
       case 4:
         return (
-          <div>
-            <Form className="select-module-group" layout="horizontal">
-              <Row gutter={[16, 16]}>
-                <Col span={24}>
+          <Form style={{ marginTop: "15px" }} layout="horizontal">
+            <Row gutter={[16, 16]}>
+              {[
+                { label: "Total Project cost", key: "totalProjectCost" },
+                { label: "EBITDA Percentage", key: "ebitdaPercentage" },
+                { label: "IRR (%)", key: "irrPercentage" },
+                { label: "NPV (%)", key: "npvPercentage" },
+                { label: "PAT (%)", key: "patPercentage" },
+                { label: "PAT / Ton", key: "patPerTon" },
+                { label: "ROE %", key: "roePercentage" },
+                { label: "ROCE%", key: "rocePercentage" },
+              ].map(({ label, key }) => (
+                <Col span={24} key={key}>
                   <Form.Item
                     colon={false}
-                    label="Select Group"
+                    label={label}
                     labelAlign="left"
                     labelCol={{ span: 6 }}
                     wrapperCol={{ span: 18 }}
-                    style={{ fontSize: "18px", fontWeight: "400" }}
-
+                    validateStatus={errors[key] ? "error" : ""}
+                    help={errors[key] ? `${label} is required` : ""}
                   >
-                    <Select
-                      value={selectedLibrary}
-                      onChange={(value) => {
-                        setSelectedLibrary(value);
-                        const filterdLibrary = allLibrariesName.filter((item: any) => item.name == value);
-                        setSelectedItems(filterdLibrary[0].items)
-                      }}
-                      allowClear={true}
-                    >
-                      {allLibrariesName.map((lib: any) => (
-                        <Select.Option key={lib.name} value={lib.name}>
-                          {lib.name}
-                        </Select.Option>
-                      ))}
-                    </Select>
+                    <Input
+                      value={formData[key] || ""}
+                      onChange={(e) => handleChange(key, e.target.value)}
+                    />
                   </Form.Item>
                 </Col>
-              </Row>
-            </Form>
-            <Table
-              columns={columns}
-              dataSource={selectedItems}
-              pagination={false}
-              rowKey="moduleName"
-              className="project-timeline-table"
-            />
-          </div>
+              ))}
+            </Row>
+          </Form>
         );
+
       default:
         return null;
     }
   };
 
+  // const toDayjs = (val: any) => {
+  //   if (!val) return null;
+  //   if (dayjs.isDayjs(val)) return val;
+  //   if (val instanceof Date) return dayjs(val);
+
+  //   if (typeof val === "number") {
+  //     return dayjs(val > 1e12 ? val : val * 1000);
+  //   }
+
+  //   if (typeof val === "string") {
+  //     let d = dayjs(val);
+  //     if (d.isValid()) return d;
+
+  //     const candidates = ["YYYY-MM-DD", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY/MM/DD"];
+  //     for (const fmt of candidates) {
+  //       d = dayjs(val, fmt, true);
+  //       if (d.isValid()) return d;
+  //     }
+
+  //     const n = Number(val);
+  //     if (!Number.isNaN(n)) return dayjs(n > 1e12 ? n : n * 1000);
+  //   }
+
+  //   return null;
+  // };
+
   const toDayjs = (val: any) => {
     if (!val) return null;
-    if (dayjs.isDayjs(val)) return val;
+
+    // ✅ true Dayjs instance (has methods)
+    if (dayjs.isDayjs(val) && typeof val.isValid === "function") return val;
+
+    // ✅ cloned dayjs object from IndexedDB (prototype lost)
+    if (val?.$d) return dayjs(val.$d);
+
     if (val instanceof Date) return dayjs(val);
 
-    if (typeof val === "number") {
-      return dayjs(val > 1e12 ? val : val * 1000);
-    }
+    if (typeof val === "number") return dayjs(val > 1e12 ? val : val * 1000);
 
     if (typeof val === "string") {
       let d = dayjs(val);
@@ -842,10 +930,10 @@ export const RegisterNewProject: React.FC = () => {
                       <li
                         key={step.id}
                         className={`step ${currentStep > index + 1
-                            ? "completed"
-                            : currentStep === index + 1
-                              ? "active"
-                              : ""
+                          ? "completed"
+                          : currentStep === index + 1
+                            ? "active"
+                            : ""
                           }`}
                       >
                         <span className="step-title">{step.title}</span>
@@ -1007,7 +1095,7 @@ export const RegisterNewProject: React.FC = () => {
             </div>
           ) : (
             <div className="image-container">
-              <ImageContainer imageUrl={["/images/auths/m5.jpg","/images/auths/m5.jpg","/images/auths/m5.jpg"]} />
+              <ImageContainer imageUrl={["/images/auths/m5.jpg", "/images/auths/m5.jpg", "/images/auths/m5.jpg"]} />
             </div>
           )}
         </div>

@@ -304,7 +304,7 @@ const Projects = () => {
             case "timeline":
                 return <TimelinePerformance />;
             case "capex":
-                return <CAPEXPerformance />;
+                return <CAPEXPerformance code={projectDetails.id} />;
             case "documents":
                 return <ProjectDocs code={projectDetails.id} />;
             case "csr":

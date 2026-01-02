@@ -124,7 +124,6 @@
 }
 
 .company-registration-form {
-    height: calc(100vh - 300px);
     overflow-y: auto;
     margin: 20px 0 20px 10px;
     padding-right: 8px;
@@ -137,7 +136,8 @@
 }
 
 .registration-height-without-warning {
-    height: calc(100vh - 240px);
+    height: calc(100vh - 345px);
+    overflow: scroll;
 }
 
 .employee-professional-form {
@@ -372,6 +372,11 @@
 
 .custom-phone-button {
     left: 10px !important;
+}
+
+.registration-height-with-warning{
+    height: calc(100vh - 405px);
+    overflow: scroll;
 }
 
 [data-theme="dark"] .basic-info,
