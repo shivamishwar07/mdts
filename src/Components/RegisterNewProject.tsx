@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, Table, Tooltip, Typography, List } from "antd";
+import { Select, Input, Form, Row, Col, Button, DatePicker, Modal, Typography, List } from "antd";
 import "../styles/register-new-project.css";
 import { CloseCircleOutlined, DownloadOutlined, ExclamationCircleOutlined, PlusOutlined, UploadOutlined } from "@ant-design/icons";
-const { Option } = Select;
+// const { Option } = Select;
 import { getCurrentUser } from "../Utils/moduleStorage";
 import { db } from "../Utils/dataStorege.ts";
 import { v4 as uuidv4 } from 'uuid';
@@ -29,7 +29,7 @@ export const RegisterNewProject: React.FC = () => {
   const [mineTypeOptions, setMineTypeOptions] = useState<string[]>([]);
   const [allLibrariesName, setAllLibrariesName] = useState<any>([]);
   const initialLibrary = allLibrariesName[0]?.name;
-  const [selectedLibrary, setSelectedLibrary] = useState<any>(initialLibrary);
+  const [_selectedLibrary, setSelectedLibrary] = useState<any>(initialLibrary);
   const [mineTypePopupOpen, setMineTypePopupOpen] = useState<boolean>(false);
   const [newMineType, setNewMineType] = useState<string>("");
   const [shorthandCode, setShorthandCode] = useState<string>("");
@@ -53,7 +53,7 @@ export const RegisterNewProject: React.FC = () => {
   });
   const [documentName, setDocumentName] = useState<string>("");
   const [files, setFiles] = useState<File[]>([]);
-  const [selectedItems, setSelectedItems] = useState(
+  const [_selectedItems, setSelectedItems] = useState(
     allLibrariesName.find((lib: any) => lib.name === initialLibrary)?.items || []
   );
   const [contractualDocuments, setContractualDocuments] = useState<DocumentData[]>([]);
@@ -341,49 +341,49 @@ export const RegisterNewProject: React.FC = () => {
     setErrors({});
   };
 
-  const handleStatusChange = (index: number, value: string) => {
-    setSelectedItems((prevItems: any) =>
-      prevItems.map((item: any, i: any) => {
-        if (i < index) return item;
-        if (i === index) return { ...item, status: value === "Yes" ? "Completed" : "Pending" };
-        return { ...item, status: "Pending" };
-      })
-    );
-  };
+  // const handleStatusChange = (index: number, value: string) => {
+  //   setSelectedItems((prevItems: any) =>
+  //     prevItems.map((item: any, i: any) => {
+  //       if (i < index) return item;
+  //       if (i === index) return { ...item, status: value === "Yes" ? "Completed" : "Pending" };
+  //       return { ...item, status: "Pending" };
+  //     })
+  //   );
+  // };
 
-  const columns: any = [
-    {
-      title: "Module",
-      dataIndex: "moduleName",
-      key: "moduleName",
-      width: "60%",
-      align: "left",
-    },
-    {
-      title: "Action",
-      dataIndex: "action",
-      key: "action",
-      width: "20%",
-      align: "center",
-      render: (_: any, record: any, index: number) => {
-        const isDisabled = index > 0 && selectedItems[index - 1].status !== "Completed";
+  // const columns: any = [
+  //   {
+  //     title: "Module",
+  //     dataIndex: "moduleName",
+  //     key: "moduleName",
+  //     width: "60%",
+  //     align: "left",
+  //   },
+  //   {
+  //     title: "Action",
+  //     dataIndex: "action",
+  //     key: "action",
+  //     width: "20%",
+  //     align: "center",
+  //     render: (_: any, record: any, index: number) => {
+  //       const isDisabled = index > 0 && selectedItems[index - 1].status !== "Completed";
 
-        return (
-          <Tooltip title={isDisabled ? "Complete the previous module first" : "Mark as Completed"}>
-            <Select
-              value={record.status === "Completed" ? "Yes" : "No"}
-              style={{ width: "100%" }}
-              onChange={(value) => handleStatusChange(index, value)}
-              disabled={isDisabled}
-            >
-              <Option value="No">No</Option>
-              <Option value="Yes">Yes</Option>
-            </Select>
-          </Tooltip>
-        );
-      },
-    },
-  ];
+  //       return (
+  //         <Tooltip title={isDisabled ? "Complete the previous module first" : "Mark as Completed"}>
+  //           <Select
+  //             value={record.status === "Completed" ? "Yes" : "No"}
+  //             style={{ width: "100%" }}
+  //             onChange={(value) => handleStatusChange(index, value)}
+  //             disabled={isDisabled}
+  //           >
+  //             <Option value="No">No</Option>
+  //             <Option value="Yes">Yes</Option>
+  //           </Select>
+  //         </Tooltip>
+  //       );
+  //     },
+  //   },
+  // ];
 
   const generateShorthand = (input: string): string => {
     return input
@@ -754,7 +754,7 @@ export const RegisterNewProject: React.FC = () => {
       //       />
       //     </div>
       //   );
-      case 4:
+      // case 4:
       case 4:
         return (
           <Form style={{ marginTop: "15px" }} layout="horizontal">
