@@ -65,6 +65,21 @@ export interface RevisionEntry {
   date: string;
 }
 
+export type ShareVisibility = "private" | "public" | "restricted";
+
+export interface KnowledgePost {
+  id?: number;
+  guid: string;
+  title?: string;
+  content: string;
+  visibility: ShareVisibility;
+  sharedWith?: Array<{ userId?: string; email?: string; name?: string }>;
+  attachments?: Array<{ docId: string; name: string; path: string; mime?: string }>;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: { userId: string; name: string; email: string };
+}
+
 export interface CommercialActivity {
   id?: number;
   projectId: string;
@@ -118,6 +133,7 @@ export class DataStorage extends Dexie {
   activityCosts!: Table<ActivityCost, number>;
   commercialActivities!: Table<CommercialActivity, number>;
   activityBudgetDocs!: Table<ActivityBudgetDocument, number>;
+  knowledgePosts!: Table<KnowledgePost, number>;
   constructor() {
     super("MTDS");
     this.version(1).stores({
@@ -163,6 +179,11 @@ export class DataStorage extends Dexie {
       activityBudgetDocs: "++id, projectId, activityCode",
     });
 
+    this.version(7).stores({
+      knowledgePosts: "++id, guid, visibility, createdAt, createdBy.email",
+    });
+
+    
     this.mineTypes = this.table("mineTypes");
     this.modules = this.table("modules");
     this.moduleLibrary = this.table("moduleLibrary");
@@ -178,6 +199,7 @@ export class DataStorage extends Dexie {
     this.activityCosts = this.table("activityCosts");
     this.commercialActivities = this.table("commercialActivities");
     this.activityBudgetDocs = this.table("activityBudgetDocs");
+    this.knowledgePosts = this.table("knowledgePosts");
   }
 
   async addModule(module: any): Promise<number> {
@@ -723,6 +745,23 @@ export class DataStorage extends Dexie {
     await this.diskStorage.where("path").equals(path).delete();
   }
 
+    async addKnowledgePost(post: Omit<KnowledgePost, "id">) {
+    return this.knowledgePosts.add(post);
+  }
+
+  async getKnowledgePosts() {
+    return this.knowledgePosts.orderBy("createdAt").reverse().toArray();
+  }
+
+  async deleteKnowledgePost(id: number) {
+    const p = await this.knowledgePosts.get(id);
+    if (p?.attachments?.length) {
+      for (const a of p.attachments) {
+        if (a.path) await this.deleteDiskEntry(a.path);
+      }
+    }
+    await this.knowledgePosts.delete(id);
+  }
 
 }
 
