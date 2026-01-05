@@ -1,16 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
-import {
-  Table,
-  Select,
-  InputNumber,
-  Typography,
-  Space,
-  Spin,
-  Button,
-} from "antd";
+import { Table, Select, InputNumber, Typography, Space, Spin, Button } from "antd";
 import dayjs from "dayjs";
 import { db } from "../Utils/dataStorege";
-import type { ActivityCost } from "../Utils/dataStorege";
+import type { ActivityCost as ActivityCostType } from "../Utils/dataStorege";
 import "../styles/activitycost.css";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify";
@@ -27,11 +19,8 @@ interface ActivityRow {
   plannedFinish: string;
   activityCode: string;
   activityName: string;
-
   projectCost?: number | null;
   opportunityCost?: number | null;
-
-  // layout flags
   moduleName?: string;
   isModule?: boolean;
   children?: ActivityRow[];
@@ -45,9 +34,7 @@ interface ModulePanel {
 
 const ActivityCost: React.FC = () => {
   const [projects, setProjects] = useState<any[]>([]);
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
-    null
-  );
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [modulesPanels, setModulesPanels] = useState<ModulePanel[]>([]);
   const [loading, setLoading] = useState(false);
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
@@ -65,7 +52,6 @@ const ActivityCost: React.FC = () => {
     })();
   }, []);
 
-  // keep all modules expanded (like ProjectTimeline)
   useEffect(() => {
     setExpandedKeys(modulesPanels.map((p) => p.moduleKey));
   }, [modulesPanels]);
@@ -91,48 +77,37 @@ const ActivityCost: React.FC = () => {
     setLoading(false);
   };
 
-  const buildPanelsFromModules = async (
-    projectId: string,
-    modules: any[]
-  ) => {
+  const buildPanelsFromModules = async (projectId: string, modules: any[]) => {
     const costs = await db.getActivityCostsForProject(projectId);
-    const map = new Map<string, ActivityCost>();
+    const map = new Map<string, ActivityCostType>();
     costs.forEach((c) => map.set(String(c.activityCode), c));
 
     const panels: ModulePanel[] = [];
 
     modules.forEach((module: any, moduleIndex: number) => {
-      const moduleName =
-        module.moduleName || module.keyActivity || `Module ${moduleIndex + 1}`;
+      const moduleName = module.moduleName || module.keyActivity || `Module ${moduleIndex + 1}`;
       const parentCode = module.parentModuleCode || module.Code || "";
 
-      const rows: ActivityRow[] = (module.activities || []).map(
-        (activity: any, actIndex: number) => {
-          const code =
-            activity.code || activity.guicode || `act-${moduleIndex}-${actIndex}`;
-          const actName = activity.activityName || activity.keyActivity || "";
-          const c = map.get(String(code));
+      const rows: ActivityRow[] = (module.activities || []).map((activity: any, actIndex: number) => {
+        const code = activity.code || activity.guicode || `act-${moduleIndex}-${actIndex}`;
+        const actName = activity.activityName || activity.keyActivity || "";
+        const c = map.get(String(code));
 
-          return {
-            key: `activity-${moduleIndex}-${actIndex}`,
-            SrNo: parentCode || "",
-            Code: activity.code || "",
-            keyActivity: actName,
-            plannedStart: activity.start
-              ? dayjs(activity.start).format("DD-MM-YYYY")
-              : "-",
-            plannedFinish: activity.end
-              ? dayjs(activity.end).format("DD-MM-YYYY")
-              : "-",
-            activityCode: code,
-            activityName: actName,
-            projectCost: c?.projectCost ?? null,
-            opportunityCost: c?.opportunityCost ?? null,
-            moduleName,
-            isModule: false,
-          };
-        }
-      );
+        return {
+          key: `activity-${moduleIndex}-${actIndex}`,
+          SrNo: parentCode || "",
+          Code: activity.code || "",
+          keyActivity: actName,
+          plannedStart: activity.start ? dayjs(activity.start).format("DD-MM-YYYY") : "-",
+          plannedFinish: activity.end ? dayjs(activity.end).format("DD-MM-YYYY") : "-",
+          activityCode: code,
+          activityName: actName,
+          projectCost: c?.projectCost ?? null,
+          opportunityCost: c?.opportunityCost ?? null,
+          moduleName,
+          isModule: false,
+        };
+      });
 
       panels.push({
         moduleKey: `module-${moduleIndex}`,
@@ -153,9 +128,7 @@ const ActivityCost: React.FC = () => {
     setModulesPanels((prev) =>
       prev.map((p) => ({
         ...p,
-        rows: p.rows.map((r) =>
-          r.key === rowKey ? { ...r, projectCost: val } : r
-        ),
+        rows: p.rows.map((r) => (r.key === rowKey ? { ...r, projectCost: val } : r)),
       }))
     );
   };
@@ -164,23 +137,15 @@ const ActivityCost: React.FC = () => {
     setModulesPanels((prev) =>
       prev.map((p) => ({
         ...p,
-        rows: p.rows.map((r) =>
-          r.key === rowKey ? { ...r, opportunityCost: val } : r
-        ),
+        rows: p.rows.map((r) => (r.key === rowKey ? { ...r, opportunityCost: val } : r)),
       }))
     );
   };
 
-  // keep save on focusout, but NO toaster here
   const handleProjectCostBlur = async (row: ActivityRow, moduleName: string) => {
     if (!selectedProjectId) return;
 
-    if (
-      row.projectCost === null ||
-      row.projectCost === undefined ||
-      Number.isNaN(row.projectCost)
-    ) {
-      // if both costs empty -> delete record
+    if (row.projectCost === null || row.projectCost === undefined || Number.isNaN(row.projectCost)) {
       if (row.opportunityCost == null || Number.isNaN(row.opportunityCost)) {
         await db.deleteActivityCost(String(selectedProjectId), row.activityCode);
         await loadModulesForProject(String(selectedProjectId));
@@ -195,16 +160,11 @@ const ActivityCost: React.FC = () => {
       moduleName,
       projectCost: Number(row.projectCost),
       opportunityCost:
-        row.opportunityCost != null && !Number.isNaN(row.opportunityCost)
-          ? Number(row.opportunityCost)
-          : undefined,
+        row.opportunityCost != null && !Number.isNaN(row.opportunityCost) ? Number(row.opportunityCost) : undefined,
     });
   };
 
-  const handleOpportunityCostBlur = async (
-    row: ActivityRow,
-    moduleName: string
-  ) => {
+  const handleOpportunityCostBlur = async (row: ActivityRow, moduleName: string) => {
     if (!selectedProjectId) return;
 
     if (
@@ -225,9 +185,7 @@ const ActivityCost: React.FC = () => {
       activityName: row.activityName,
       moduleName,
       projectCost:
-        row.projectCost != null && !Number.isNaN(row.projectCost)
-          ? Number(row.projectCost)
-          : undefined,
+        row.projectCost != null && !Number.isNaN(row.projectCost) ? Number(row.projectCost) : undefined,
       opportunityCost: Number(row.opportunityCost),
     });
   };
@@ -237,7 +195,6 @@ const ActivityCost: React.FC = () => {
     return cleaned ? Number(cleaned) : NaN;
   };
 
-  // Build table data: parent (module) + children (activities)
   const tableData: any[] = useMemo(
     () =>
       modulesPanels.map((panel) => ({
@@ -263,53 +220,51 @@ const ActivityCost: React.FC = () => {
       title: "Sr No / Module Code",
       dataIndex: "SrNo",
       key: "SrNo",
-      width: "10%",
-      render: (text: any, record: ActivityRow) =>
-        record.isModule ? <b>{text}</b> : text,
+      align: "center" as const,
+      width: 140,
+      render: (text: any, record: ActivityRow) => (record.isModule ? <b>{text}</b> : text),
     },
     {
       title: "Activity Code",
       dataIndex: "Code",
       key: "Code",
-      width: "10%",
-      render: (text: any, record: ActivityRow) =>
-        record.isModule ? "" : text,
+      align: "center" as const,
+      width: 140,
+      render: (text: any, record: ActivityRow) => (record.isModule ? "" : text),
     },
     {
       title: "Activity / Module",
       dataIndex: "keyActivity",
       key: "keyActivity",
-      width: "20%",
+      width: 280,
       render: (text: any, record: ActivityRow) =>
-        record.isModule ? (
-          <span className="module-title-cell">{text}</span>
-        ) : (
-          text
-        ),
+        record.isModule ? <span className="activity-module-title">{text}</span> : text,
     },
     {
       title: "Planned Start",
       dataIndex: "plannedStart",
       key: "plannedStart",
-      width: "10%",
-      render: (text: any, record: ActivityRow) =>
-        record.isModule ? "" : text,
+      align: "center" as const,
+      width: 140,
+      render: (text: any, record: ActivityRow) => (record.isModule ? "" : text),
     },
     {
       title: "Planned Finish",
       dataIndex: "plannedFinish",
       key: "plannedFinish",
-      width: "10%",
-      render: (text: any, record: ActivityRow) =>
-        record.isModule ? "" : text,
+      align: "center" as const,
+      width: 140,
+      render: (text: any, record: ActivityRow) => (record.isModule ? "" : text),
     },
     {
       title: "Project Cost (₹)",
       key: "projectCost",
-      width: "15%",
+      align: "right" as const,
+      width: 170,
       render: (_: any, row: ActivityRow) =>
         row.isModule ? null : (
           <InputNumber<number>
+            className="activity-cost-input"
             style={{ width: "100%" }}
             min={0}
             precision={0}
@@ -323,10 +278,12 @@ const ActivityCost: React.FC = () => {
     {
       title: "Opportunity Cost (₹)",
       key: "opportunityCost",
-      width: "15%",
+      align: "right" as const,
+      width: 190,
       render: (_: any, row: ActivityRow) =>
         row.isModule ? null : (
           <InputNumber<number>
+            className="activity-cost-input"
             style={{ width: "100%" }}
             min={0}
             precision={0}
@@ -339,7 +296,6 @@ const ActivityCost: React.FC = () => {
     },
   ];
 
-  // Bottom-right Save button: explicitly save everything & show toaster
   const handleSaveAll = async () => {
     if (!selectedProjectId) return;
     setSavingAll(true);
@@ -351,16 +307,11 @@ const ActivityCost: React.FC = () => {
         panel.rows.forEach((row) => {
           const bothEmpty =
             (row.projectCost == null || Number.isNaN(row.projectCost)) &&
-            (row.opportunityCost == null ||
-              Number.isNaN(row.opportunityCost));
+            (row.opportunityCost == null || Number.isNaN(row.opportunityCost));
 
           if (bothEmpty) {
-            // delete
-            ops.push(
-              db.deleteActivityCost(String(selectedProjectId), row.activityCode)
-            );
+            ops.push(db.deleteActivityCost(String(selectedProjectId), row.activityCode));
           } else {
-            // upsert
             ops.push(
               db.upsertActivityCost({
                 projectId: String(selectedProjectId),
@@ -368,12 +319,9 @@ const ActivityCost: React.FC = () => {
                 activityName: row.activityName,
                 moduleName: row.moduleName || "",
                 projectCost:
-                  row.projectCost != null && !Number.isNaN(row.projectCost)
-                    ? Number(row.projectCost)
-                    : undefined,
+                  row.projectCost != null && !Number.isNaN(row.projectCost) ? Number(row.projectCost) : undefined,
                 opportunityCost:
-                  row.opportunityCost != null &&
-                    !Number.isNaN(row.opportunityCost)
+                  row.opportunityCost != null && !Number.isNaN(row.opportunityCost)
                     ? Number(row.opportunityCost)
                     : undefined,
               })
@@ -394,85 +342,79 @@ const ActivityCost: React.FC = () => {
   };
 
   return (
-    <div className="activity-main-container">
-      <div className="activity-heading">
-        <Text className="activity-title">Activity Cost</Text>
-        <Space>
-          <Text>Select Project:</Text>
-          <Select
-            style={{ minWidth: 260 }}
-            value={selectedProjectId ?? undefined}
-            onChange={handleProjectChange}
-            showSearch
-            optionFilterProp="children"
-          >
-            {projects.map((p) => (
-              <Option key={p.id} value={String(p.id)}>
-                {p.projectParameters?.projectName ||
-                  p.name ||
-                  `Project ${p.id}`}
-              </Option>
-            ))}
-          </Select>
-        </Space>
+    <>
+      <div className="activity-cost-heading">
+        <div className="activity-cost-heading-inner">
+          <div>
+            <p className="page-heading-title">Activity Cost Builder</p>
+            <span className="pl-subtitle">Manage project activity costs module-wise</span>
+          </div>
+
+          <Space size={10} align="center">
+            <Text className="activity-cost-label">Select Project:</Text>
+            <Select
+              className="activity-cost-project-select"
+              value={selectedProjectId ?? undefined}
+              onChange={handleProjectChange}
+              showSearch
+              optionFilterProp="children"
+            >
+              {projects.map((p) => (
+                <Option key={p.id} value={String(p.id)}>
+                  {p.projectParameters?.projectName || p.name || `Project ${p.id}`}
+                </Option>
+              ))}
+            </Select>
+          </Space>
+        </div>
       </div>
 
-      {loading && modulesPanels.length === 0 ? (
-        <div style={{ textAlign: "center", marginTop: 40 }}>
-          <Spin />
+      <div className="activity-cost-main">
+        <div className="activity-cost-content">
+          {loading && modulesPanels.length === 0 ? (
+            <div className="activity-cost-loading">
+              <Spin />
+            </div>
+          ) : (
+            <div className="activity-cost-table-shell">
+              <Table
+                columns={columns as any}
+                dataSource={tableData}
+                rowKey="key"
+                pagination={false}
+                bordered
+                loading={loading}
+                expandable={{
+                  expandedRowKeys: expandedKeys,
+                  onExpand: (expanded, record: any) => {
+                    if (expanded) setExpandedKeys((prev) => [...prev, record.key]);
+                    else setExpandedKeys((prev) => prev.filter((k) => k !== record.key));
+                  },
+                  rowExpandable: (record: any) => Array.isArray(record.children) && record.children.length > 0,
+                  expandIconColumnIndex: 0,
+                }}
+                rowClassName={(record: any) => (record.isModule ? "activity-module-header-row" : "activity-row")}
+                scroll={{ x: "max-content", y: "calc(100vh - 300px)" }}
+                className="activity-cost-table"
+              />
+            </div>
+          )}
         </div>
-      ) : (
-        <>
-          <div className="activity-table-wrapper">
-            <Table
-              columns={columns}
-              dataSource={tableData}
-              rowKey="key"
-              pagination={false}
-              bordered
-              loading={loading}
-              size="small"
-              expandable={{
-                expandedRowKeys: expandedKeys,
-                onExpand: (expanded, record: any) => {
-                  if (expanded) {
-                    setExpandedKeys((prev) => [...prev, record.key]);
-                  } else {
-                    setExpandedKeys((prev) =>
-                      prev.filter((k) => k !== record.key)
-                    );
-                  }
-                },
-                rowExpandable: (record: any) =>
-                  Array.isArray(record.children) &&
-                  record.children.length > 0,
-                expandIconColumnIndex: 0,
-              }}
-              rowClassName={(record: any) =>
-                record.isModule ? "module-header-row" : "activity-row"
-              }
-              scroll={{ x: true, y: "calc(100vh - 260px)" }}
-            />
-          </div>
-
-          <div
-            style={{
-              position: "absolute",
-              bottom: "25px",
-              right: "10px"
-            }}
+        <div className="save-btn">
+          <Button
+            type="primary"
+            className="save-button"
+            onClick={handleSaveAll}
+            loading={savingAll}
+            disabled={!selectedProjectId}
           >
-            <Button type="primary" className="save-button"
-              onClick={handleSaveAll}
-              loading={savingAll}
-            >
-              Save
-            </Button>
-          </div>
-        </>
-      )}
-       <ToastContainer />
-    </div>
+            Save
+          </Button>
+        </div>
+      </div>
+
+      <ToastContainer />
+    </>
   );
 };
 

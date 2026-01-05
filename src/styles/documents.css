@@ -32,7 +32,6 @@
 }
 
 .document-table-container>div:first-child {
-    padding: 12px 14px;
     border-bottom: 1px solid var(--border);
     background: var(--bg-surface);
 }

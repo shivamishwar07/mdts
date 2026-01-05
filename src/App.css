@@ -25,3 +25,21 @@
   padding: 20px;
   border-radius: 10px;
 }
+
+.save-button {
+  font-weight: 800;
+  font-size:14px;
+  background:var(--color-primary);
+  color:var(--text-inverse);
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  border-radius:var(--radius-md);
+  border:1px solid transparent;
+  font-weight:800;
+  transition:background-color .16s ease,box-shadow .16s ease,transform .16s ease;
+}
+
+.save-button:hover {
+  background:var(--color-primary-hover) !important;
+}

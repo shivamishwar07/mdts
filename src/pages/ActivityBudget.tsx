@@ -1141,7 +1141,7 @@ const ActivityBudget: React.FC = () => {
       <div className="budget-footer">
         <Button
           type="primary"
-          className="budget-save-button"
+          className="save-button"
           onClick={handleSaveAll}
           disabled={!selectedProjectId}
         >
