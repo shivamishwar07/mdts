@@ -14,7 +14,7 @@ const DelayCostCalculator = () => {
   }, []);
 
   const baseColumns: ColumnsType<any> = [
-    { title: "Sr No", dataIndex: "Code", key: "Code", align: "center", width: 100 },
+    { title: "Sr No", dataIndex: "Code", key: "Code", align: "center", width: 130 },
     { title: "Key Activity", dataIndex: "keyActivity", key: "keyActivity", width: 240 },
     { title: "Pre-Requisite", dataIndex: "preRequisite", key: "preRequisite", align: "center", width: 120 },
     { title: "Planned Start", dataIndex: "plannedStart", key: "plannedStart", align: "center", width: 120 },
@@ -29,9 +29,9 @@ const DelayCostCalculator = () => {
       width: 100,
       sorter: (a, b) => a.delay - b.delay,
       render: (value: number) => {
-        let color = "#52c41a"; // green
-        if (value > 30) color = "#ff4d4f"; // red
-        else if (value > 10) color = "#faad14"; // orange
+        let color = "#52c41a";
+        if (value > 30) color = "#ff4d4f";
+        else if (value > 10) color = "#faad14";
 
         return <span style={{ color, fontWeight: value > 0 ? 600 : 400 }}>{value}</span>;
       }

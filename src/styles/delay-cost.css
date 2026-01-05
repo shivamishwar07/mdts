@@ -26,6 +26,13 @@
   border: 1px solid var(--dc-border);
   border-radius: var(--dc-radius-md);
   overflow: hidden;
+
+}
+
+.save-btn{
+  display: flex;
+  justify-content: end;
+  padding: 5px 8px 8px;
 }
 
 .delay-cost-heading {
@@ -51,7 +58,6 @@
 }
 
 .delay-cost-content {
-  padding: 8px;
   height: calc(100vh - 190px);
 }
 

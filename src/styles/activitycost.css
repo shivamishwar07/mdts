@@ -1,17 +1,177 @@
-.activity-main-container {
-    border: 2px solid #ddd;
-    margin: 10px;
-    border-radius: 5px;
-    height: calc(100vh - 95px);
-    overflow-y: auto;
+.activity-cost-main {
+  background: var(--bg-main);
+  color: var(--text-secondary);
+  font-family: var(--font-base);
+
+  --ac-surface: var(--bg-surface);
+  --ac-muted: var(--bg-muted);
+  --ac-border: var(--border);
+
+  --ac-text: var(--text-primary);
+  --ac-text-2: var(--text-secondary);
+  --ac-text-muted: var(--text-muted);
+
+  --ac-accent: var(--color-primary);
+  --ac-accent-hover: var(--color-primary-hover);
+
+  --ac-shadow: var(--shadow-sm);
+  --ac-shadow-md: var(--shadow-md);
+
+  --ac-radius-sm: var(--radius-sm);
+  --ac-radius-md: var(--radius-md);
+  --ac-radius-lg: var(--radius-lg);
+
+  width: 99%;
+  margin: 8px;
+  border: 1px solid var(--ac-border);
+  border-radius: var(--ac-radius-md);
+  overflow: hidden;
 }
-.activity-title{
-    font-size: 18px;
-    font-weight: bold;
-    color: grey;
+
+.activity-cost-heading {
+  border: 1px solid var(--border);
+  background: var(--bg-surface);
+  padding: 10px 12px;
+  margin: 8px;
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
 }
-.activity-heading {
-    display: flex;
-    justify-content: space-between;
-    padding: 10px;
+
+.activity-cost-heading-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.activity-cost-label {
+  color: var(--text-muted);
+}
+
+.activity-cost-project-select {
+  min-width: 260px;
+}
+
+.activity-cost-content {
+  height: calc(100vh - 240px);
+}
+
+.activity-cost-loading {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.activity-cost-table-shell {
+  border: 1px solid var(--ac-border);
+  border-radius: var(--ac-radius-md);
+  overflow: hidden;
+  background: var(--ac-surface);
+  box-shadow: var(--ac-shadow);
+}
+
+.activity-cost-table-shell .activity-cost-table.ant-table-wrapper .ant-table {
+  background: var(--ac-surface) !important;
+}
+
+.activity-cost-table-shell .activity-cost-table .ant-table-thead > tr > th {
+  background: var(--ac-muted) !important;
+  color: var(--ac-text) !important;
+  font-weight: 900 !important;
+  font-size: 13px;
+  text-align: center;
+  padding: 12px 14px !important;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--ac-border) !important;
+  position: sticky !important;
+  top: 0;
+  z-index: 2;
+  box-shadow: inset 0 -2px 0 0 rgba(31, 122, 99, 0.35);
+}
+
+.activity-cost-table-shell .activity-cost-table .ant-table-tbody > tr > td {
+  padding: 12px 14px !important;
+  text-align: center;
+  color: var(--ac-text-2) !important;
+  border-bottom: 1px solid var(--ac-border) !important;
+  background: var(--ac-surface) !important;
+}
+
+.activity-cost-table-shell .activity-cost-table .ant-table-tbody > tr:hover > td {
+  background: rgba(209, 250, 229, 0.45) !important;
+}
+
+.activity-module-header-row > td {
+  background: rgba(31, 122, 99, 0.06) !important;
+  font-weight: 900 !important;
+  color: var(--ac-text) !important;
+}
+
+.activity-module-title {
+  font-weight: 900;
+  color: var(--ac-text) !important;
+}
+
+.activity-cost-input .ant-input-number-input {
+  text-align: right;
+  font-weight: 700;
+}
+
+.activity-cost-input.ant-input-number {
+  border-radius: 10px;
+}
+
+.activity-cost-input.ant-input-number:hover,
+.activity-cost-input.ant-input-number:focus,
+.activity-cost-input.ant-input-number-focused {
+  border-color: var(--ac-accent) !important;
+  box-shadow: 0 0 0 2px rgba(31, 122, 99, 0.15) !important;
+}
+
+[data-theme="dark"] .activity-cost-main {
+  --ac-surface: var(--bg-surface-dark);
+  --ac-muted: rgba(148, 163, 184, 0.1);
+  --ac-border: var(--border-dark);
+
+  --ac-text: var(--text-primary-dark);
+  --ac-text-2: var(--text-secondary-dark);
+  --ac-text-muted: var(--text-muted-dark);
+}
+
+[data-theme="dark"] .activity-cost-heading {
+  background: var(--bg-surface-dark);
+  border-color: var(--border-dark);
+}
+
+[data-theme="dark"] .activity-cost-table-shell {
+  background: var(--ac-surface);
+  border-color: var(--ac-border);
+}
+
+[data-theme="dark"] .activity-cost-table-shell .activity-cost-table .ant-table-thead > tr > th {
+  background: rgba(148, 163, 184, 0.1) !important;
+  color: var(--ac-text) !important;
+  border-bottom-color: var(--ac-border) !important;
+  box-shadow: inset 0 -2px 0 0 rgba(52, 211, 153, 0.35);
+}
+
+[data-theme="dark"] .activity-cost-table-shell .activity-cost-table .ant-table-tbody > tr > td {
+  background: var(--ac-surface) !important;
+  border-bottom-color: var(--ac-border) !important;
+  color: var(--ac-text-2) !important;
+}
+
+[data-theme="dark"] .activity-cost-table-shell .activity-cost-table .ant-table-tbody > tr:hover > td {
+  background: rgba(52, 211, 153, 0.08) !important;
+}
+
+[data-theme="dark"] .activity-module-header-row > td {
+  background: rgba(52, 211, 153, 0.08) !important;
+  color: var(--ac-text) !important;
+}
+
+[data-theme="dark"] .activity-cost-input.ant-input-number:hover,
+[data-theme="dark"] .activity-cost-input.ant-input-number:focus,
+[data-theme="dark"] .activity-cost-input.ant-input-number-focused {
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.12) !important;
 }

@@ -1755,7 +1755,7 @@ const Module = () => {
                                 return (
                                     <>
                                         <Row gutter={8}>
-                                            <Col hidden={type !== "DELAY"} flex="150px" style={{ marginTop: "15px" }}>Project Cost</Col>
+                                            <Col hidden={type !== "DELAY"} flex="150px" style={{ marginTop: "5px" }}>Project Cost</Col>
                                             <Col flex="auto">
                                                 <Form.Item name="projectCost" preserve hidden={type !== "DELAY"}>
                                                     <Input type="number" min={0} placeholder="Enter Project Cost" />
@@ -1763,8 +1763,8 @@ const Module = () => {
                                             </Col>
                                         </Row>
 
-                                        <Row gutter={8}>
-                                            <Col hidden={type !== "DELAY"} flex="150px" style={{ marginTop: "15px" }}>Opportunity Cost</Col>
+                                        <Row style={{ marginTop: "15px" }} gutter={8}>
+                                            <Col hidden={type !== "DELAY"} flex="150px" style={{ marginTop: "5px" }}>Opportunity Cost</Col>
                                             <Col flex="auto">
                                                 <Form.Item name="opCost" preserve hidden={type !== "DELAY"}>
                                                     <Input type="number" min={0} placeholder="Enter Opportunity Cost" />
@@ -1773,7 +1773,7 @@ const Module = () => {
                                         </Row>
 
                                         <Row gutter={8}>
-                                            <Col flex="150px" hidden={type == "DELAY"} style={{ marginTop: "15px" }}>DPR Cost</Col>
+                                            <Col flex="150px" hidden={type == "DELAY"} style={{ marginTop: "5px" }}>DPR Cost</Col>
                                             <Col flex="auto">
                                                 <Form.Item name="dprCost" preserve hidden={type !== "DPR"}>
                                                     <Input type="number" min={0} placeholder="Enter DPR Cost" />
@@ -1969,7 +1969,7 @@ const Module = () => {
                         form={documentForm}
                         layout="vertical"
                         name="documentForm"
-                        style={{ padding: "0px 10px", display: 'flex', flexDirection: 'column', gap: '10px' }}
+                        className="configure-required-docs-form"
                     >
                         <Form.List name="documents">
                             {(fields, { add, remove }) => (
