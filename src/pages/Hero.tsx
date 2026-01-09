@@ -1,18 +1,18 @@
 import { useEffect, useState } from "react";
 import "../styles/hero.css";
+
 const Hero = () => {
     const [currentIndex, setCurrentIndex] = useState(1);
-    const images = [
-        '/images/carousels/m1.jpg',
-        '/images/carousels/m3.jpg',
-    ];
+
+    const images = ["/images/carousels/m1.jpg", "/images/carousels/m3.jpg"];
 
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
         }, 8000);
         return () => clearInterval(interval);
-    }, []);
+    }, [images.length]);
+
     return (
         <>
             <div className="carousel">
@@ -25,17 +25,24 @@ const Hero = () => {
                             >
                                 <img src={image} alt={`carousel-${index}`} className="carousel-image" />
                                 <div className="gradient-overlay"></div>
+
                                 {index === 0 && (
                                     <div className="animated-text-container" key={currentIndex}>
-                                        <h4 className="small-title">Finding Treasures Beneath Every Rock<span></span></h4>
-                                        <h1 className="main-heading">Golden Horizons In</h1>
+                                        <h4 className="small-title">
+                                            Plan • Execute • Govern — All in One View<span></span>
+                                        </h4>
+
+                                        <h1 className="main-heading">Real-Time Control For</h1>
+
                                         <div className="third-line">
-                                            <button className="carousel-button px-5">Explore</button>
-                                            <h1 className="minus-heading">Mines</h1>
+                                            <button className="carousel-button px-5">Request Demo</button>
+
+                                            <h1 className="minus-heading">Mine Projects</h1>
+
                                             <p className="least-text">
-                                                Attardi, G., Esuli, A., & Simi, M. (2004). Best bets, thousands of queries in search of a client.
-                                                In Proceedings of the 13th international conference on World Wide Web, alternate track papers & posters.
-                                                New York: ACM Press.
+                                                Unify development planning, field execution, and compliance with
+                                                decision-ready dashboards. Track geospatial progress, crews, equipment,
+                                                milestones, and costs—so risks surface early and delivery stays on target.
                                             </p>
                                         </div>
                                     </div>
@@ -43,14 +50,19 @@ const Hero = () => {
 
                                 {index === 1 && (
                                     <div className="animated-text-container left-aligned" key={currentIndex}>
-                                        <h4 className="small-title">Unearthing Wealth in the Depths<span></span></h4>
-                                        <h1 className="main-heading">Dig Deeper Into</h1>
+                                        <h4 className="small-title">
+                                            Visibility That Drives On-Time Delivery<span></span>
+                                        </h4>
+
+                                        <h1 className="main-heading">From Exploration To</h1>
+
                                         <div className="third-line">
-                                            <h1 className="minus-heading">Mines</h1>
+                                            <h1 className="minus-heading">Sustaining Ops</h1>
+
                                             <p className="least-text">
-                                                Attardi, G., Esuli, A., & Simi, M. (2004). Best bets, thousands of queries in search of a client.
-                                                In Proceedings of the 13th international conference on World Wide Web, alternate track papers & posters.
-                                                New York: ACM Press.
+                                                Monitor activities and dependencies in real time, get smart alerts for
+                                                slippages and cost drift, and keep audit-ready governance trails—so every
+                                                stakeholder acts with clarity and accountability.
                                             </p>
                                         </div>
                                     </div>
@@ -61,7 +73,7 @@ const Hero = () => {
                 </div>
             </div>
         </>
-    )
-}
+    );
+};
 
-export default Hero
+export default Hero;

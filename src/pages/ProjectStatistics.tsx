@@ -272,8 +272,7 @@ export default function ProjectStatistics() {
                 actualStart: actualStart ? actualStart.valueOf() : null,
                 plannedFinish: plannedFinish ? plannedFinish.valueOf() : null,
                 actualFinish: actualFinish ? actualFinish.valueOf() : null,
-                delay:
-                    plannedStart && actualStart ? Math.max(0, actualStart.diff(plannedStart, "day")) : null,
+                delay: plannedStart && actualStart ? Math.max(0, actualStart.diff(plannedStart, "day")) : null,
             };
         });
     }, [selectedModules, dataSource]);
@@ -338,6 +337,24 @@ export default function ProjectStatistics() {
         return [];
     }, [graphRows, selectedGraph]);
 
+    const axisDomain = useMemo(() => {
+        if (flatScatter.length === 0) return null;
+
+        const xs = flatScatter.map((d) => d.x);
+        const ys = flatScatter.map((d) => d.y);
+
+        const xMin = Math.min(...xs);
+        const xMax = Math.max(...xs);
+
+        const yMin = selectedGraph === GRAPH_TYPES.DELAY ? 0 : Math.min(...ys);
+        const yMax = Math.max(...ys);
+
+        const hideOriginYLabel =
+            selectedGraph !== GRAPH_TYPES.DELAY && dayjs(xMin).isSame(dayjs(yMin), "day");
+
+        return { xMin, xMax, yMin, yMax, hideOriginYLabel };
+    }, [flatScatter, selectedGraph]);
+
     return (
         <div className="project-statistics">
             <div className="top-heading-stats">
@@ -401,7 +418,7 @@ export default function ProjectStatistics() {
                                 type="number"
                                 dataKey="x"
                                 scale="linear"
-                                domain={["auto", "auto"]}
+                                domain={axisDomain ? [axisDomain.xMin, axisDomain.xMax] : ["auto", "auto"]}
                                 tickFormatter={(tick) => dayjs(tick).format("DD MMM YY")}
                                 label={{
                                     value: selectedGraph.includes("Finish") ? "Planned Finish Date" : "Planned Start Date",
@@ -412,12 +429,24 @@ export default function ProjectStatistics() {
                             <YAxis
                                 type="number"
                                 dataKey="y"
-                                domain={selectedGraph === GRAPH_TYPES.DELAY ? [0, "auto"] : ["auto", "auto"]}
-                                tickFormatter={
+                                domain={
                                     selectedGraph === GRAPH_TYPES.DELAY
-                                        ? (tick) => `${tick}d`
-                                        : (tick) => dayjs(tick).format("DD-MMM-YY")
+                                        ? [0, "auto"]
+                                        : axisDomain
+                                            ? [axisDomain.yMin, axisDomain.yMax]
+                                            : ["auto", "auto"]
                                 }
+                                tickFormatter={(tick) => {
+                                    if (
+                                        axisDomain?.hideOriginYLabel &&
+                                        dayjs(tick).isSame(dayjs(axisDomain.yMin), "day")
+                                    ) {
+                                        return "";
+                                    }
+                                    return selectedGraph === GRAPH_TYPES.DELAY
+                                        ? `${tick}d`
+                                        : dayjs(tick).format("DD-MMM-YY");
+                                }}
                                 label={{
                                     value: selectedGraph === GRAPH_TYPES.DELAY ? "Delay (Days)" : "Actual Date",
                                     angle: -90,

@@ -323,7 +323,6 @@
     justify-content: center;
 }
 
-/* Keep same button class name used in component */
 .btn {
     border: 1px solid var(--border);
     background: var(--bg-surface);
@@ -864,110 +863,124 @@
     line-height: var(--lh-small);
 }
 
-/* Dark mode support if you use [data-theme="dark"] globally */
-[data-theme="dark"] .kc-header,
-[data-theme="dark"] .kc-card,
-[data-theme="dark"] .ks-topbar,
-[data-theme="dark"] .ks-post.ant-card,
-[data-theme="dark"] .news-card,
-[data-theme="dark"] .ks-attachments,
-[data-theme="dark"] .ks-attachment-block,
-[data-theme="dark"] .ks-preview-iframe {
-    background: var(--bg-surface-dark);
-    border-color: var(--border-dark);
-    color: var(--text-primary-dark);
+.ks-engagement {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.06);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
 }
 
-[data-theme="dark"] .kc-tabs {
-    background: var(--bg-muted-dark);
-    border-color: var(--border-dark);
+.ks-eng-left,
+.ks-eng-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
 }
 
-[data-theme="dark"] .kc-tab {
-    color: var(--text-secondary-dark);
+.ks-eng-btn {
+    border-radius: 10px;
 }
 
-[data-theme="dark"] .kc-tab:hover {
-    background: rgba(148, 163, 184, .10);
-    border-color: var(--border-dark);
-    color: var(--text-primary-dark);
+.ks-eng-btn.active {
+    font-weight: 600;
 }
 
-[data-theme="dark"] .kc-tab.active {
-    background: var(--color-primary-dark);
-    border-color: var(--color-primary-dark);
-    color: #06121b;
+.ks-eng-count {
+    margin-left: 6px;
+    opacity: 0.7;
 }
 
-[data-theme="dark"] .topic-btn {
-    background: var(--bg-surface-dark);
-    border-color: var(--border-dark);
+.ks-comments {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 14px;
+    background: rgba(0, 0, 0, 0.02);
 }
 
-[data-theme="dark"] .topic-btn:hover {
-    background: rgba(148, 163, 184, .10);
+.ks-comment {
+    padding: 10px 10px;
+    border-radius: 12px;
+    background: #fff;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    margin-bottom: 10px;
 }
 
-[data-theme="dark"] .topic-btn.active {
-    background: rgba(52, 211, 153, .12);
-    border-color: rgba(52, 211, 153, .35);
+.ks-comment.resolved {
+    opacity: 0.75;
 }
 
-[data-theme="dark"] .news-title a,
-[data-theme="dark"] .page-heading-title,
-[data-theme="dark"] .ks-title,
-[data-theme="dark"] .ks-post-title {
-    color: var(--text-primary-dark) !important;
+.ks-comment-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
 }
 
-[data-theme="dark"] .pl-subtitle,
-[data-theme="dark"] .topic-sub,
-[data-theme="dark"] .news-meta,
-[data-theme="dark"] .ks-subtitle,
-[data-theme="dark"] .ks-post-meta,
-[data-theme="dark"] .muted,
-[data-theme="dark"] .ks-preview-empty {
-    color: var(--text-muted-dark);
+.ks-comment-author {
+    font-weight: 600;
 }
 
-[data-theme="dark"] .news-desc,
-[data-theme="dark"] .result-count,
-[data-theme="dark"] .ks-post-content,
-[data-theme="dark"] .ks-file-name,
-[data-theme="dark"] .ks-sharedwith {
-    color: var(--text-secondary-dark);
+.ks-comment-time {
+    opacity: 0.7;
 }
 
-[data-theme="dark"] .sort-anim,
-[data-theme="dark"] .btn,
-[data-theme="dark"] .ks-ghost-btn.ant-btn,
-[data-theme="dark"] .ks-icon-btn.ant-btn {
-    background: var(--bg-surface-dark);
-    border-color: var(--border-dark);
-    color: var(--text-primary-dark);
+.ks-comment-compose {
+    margin-top: 12px;
+    display: grid;
+    gap: 10px;
 }
 
-[data-theme="dark"] .btn:hover,
-[data-theme="dark"] .ks-ghost-btn.ant-btn:hover {
-    background: rgba(148, 163, 184, .10);
+.ks-comment-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
 }
 
-[data-theme="dark"] .ks-dropzone {
-    background: var(--bg-surface-dark);
-    border-color: rgba(148, 163, 184, .18);
+.ks-tag-resolved {
+    border-radius: 999px;
 }
 
-[data-theme="dark"] .ks-dropzone:hover {
-    background: rgba(148, 163, 184, .10);
-    border-color: rgba(52, 211, 153, .35);
+.ks-delete-modal .ant-modal-body {
+    padding-top: 12px;
 }
 
-[data-theme="dark"] .ks-dropzone.active {
-    background: rgba(52, 211, 153, .12);
-    border-color: rgba(52, 211, 153, .35);
+.ks-delete-summary {
+    display: grid;
+    gap: 10px;
 }
 
-[data-theme="dark"] .ks-dropzone-icon {
-    background: rgba(148, 163, 184, .10);
-    color: var(--color-primary-dark);
+.ks-delete-title {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.ks-delete-meta {
+    opacity: 0.85;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+.ks-delete-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.ks-delete-pill {
+    background: rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+}
+
+.ks-comment-head-right {
+    display: flex;
+    gap: 10px;
 }

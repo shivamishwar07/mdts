@@ -20,6 +20,7 @@ import {
   EditOutlined,
   SearchOutlined,
 } from "@ant-design/icons";
+import { Alert, Divider } from "antd";
 import { useDropzone, Accept } from "react-dropzone";
 import { v4 as uuidv4 } from "uuid";
 import "../styles/knowledgecenter.css";
@@ -248,6 +249,34 @@ export default function KnowledgeCenter() {
   const [topicKey, setTopicKey] = useState<string>(NEWS_TOPICS[0].key);
   const [pageSize] = useState(6);
   const [visibleCount, setVisibleCount] = useState(pageSize);
+  const [openCommentsPostId, setOpenCommentsPostId] = useState<number | null>(null);
+  const [commentDraft, setCommentDraft] = useState<Record<number, string>>({});
+  const [commentsByPost, setCommentsByPost] = useState<Record<number, any[]>>({});
+  const [likedByMe, setLikedByMe] = useState<Record<number, boolean>>({});
+
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingCommentText, setEditingCommentText] = useState<string>("");
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deletingPost, setDeletingPost] = useState<any | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const canEditComment = (c: any) => {
+    const myEmail = getCurrentUserEmail();
+    const owner = String(c?.createdBy?.email || "").toLowerCase();
+    return !!myEmail && !!owner && myEmail === owner;
+  };
+
+  const openNotes = async (postId: number) => {
+    if (openCommentsPostId === postId) {
+      setOpenCommentsPostId(null);
+      setEditingCommentId(null);
+      setEditingCommentText("");
+      return;
+    }
+    setOpenCommentsPostId(postId);
+    const cmts = await db.getCommentsForPost(postId);
+    setCommentsByPost((prev) => ({ ...prev, [postId]: cmts }));
+  };
+
 
   const selectedTopic = useMemo(
     () => NEWS_TOPICS.find((t) => t.key === topicKey) ?? NEWS_TOPICS[0],
@@ -318,6 +347,7 @@ export default function KnowledgeCenter() {
     const ps = await db.getKnowledgePosts();
     setPosts(ps || []);
   };
+
 
   const onDrop = (acceptedFiles: File[]) => setFiles((prev) => [...prev, ...acceptedFiles]);
 
@@ -400,16 +430,6 @@ export default function KnowledgeCenter() {
   const removeNewFile = (idx: number) => setFiles((prev) => prev.filter((_, i) => i !== idx));
   const removeExistingAttachment = (att: any) =>
     setExistingAttachments((prev) => prev.filter((x) => x.path !== att.path));
-
-  const handleDeletePost = async (id: number) => {
-    try {
-      await db.deleteKnowledgePost(id);
-      notification.success({ message: "Post deleted" });
-      await reloadPosts();
-    } catch {
-      notification.error({ message: "Failed to delete post" });
-    }
-  };
 
   const handleSavePost = async () => {
     const c = content.trim();
@@ -508,6 +528,33 @@ export default function KnowledgeCenter() {
       return t.includes(q) || c.includes(q) || a.includes(q);
     });
   }, [visiblePosts, postQuery]);
+
+  const openDeleteModal = (p: any) => {
+    setDeletingPost(p);
+    setDeleteOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    if (deleteBusy) return;
+    setDeleteOpen(false);
+    setDeletingPost(null);
+  };
+
+  const confirmDeletePost = async () => {
+    if (!deletingPost?.id) return;
+
+    setDeleteBusy(true);
+    try {
+      await db.deleteKnowledgePost(Number(deletingPost.id));
+      notification.success({ message: "Post deleted" });
+      closeDeleteModal();
+      await reloadPosts();
+    } catch (e: any) {
+      notification.error({ message: e?.message || "Failed to delete post" });
+    } finally {
+      setDeleteBusy(false);
+    }
+  };
 
   return (
     <div className="kc-root light">
@@ -670,85 +717,374 @@ export default function KnowledgeCenter() {
                     <div className="ks-empty-sub">Try clearing search or create a new post.</div>
                   </div>
                 ) : (
-                  filteredPosts.map((p: any) => (
-                    <Card key={p.id} className="ks-post" bordered>
-                      <div className="ks-post-head">
-                        <div className="ks-post-head-left">
-                          <div className="ks-post-title">{p.title || "Untitled Post"}</div>
-                          <div className="ks-post-meta">
-                            <span className="ks-post-author">
-                              {p.createdBy?.name || p.createdBy?.email || "Unknown"}
-                            </span>
-                            <span className="ks-dot">•</span>
-                            <span>{isoToPrettyTime(p.createdAt)}</span>
-                          </div>
-                        </div>
+                  filteredPosts.map((p: any) => {
+                    const postId = p.id as number;
+                    const isNotesOpen = openCommentsPostId === postId;
+                    const notes = commentsByPost[postId] || [];
+                    const myLiked = !!likedByMe[postId];
 
-                        <div className="ks-post-head-right">
-                          {vTag((p.visibility as ShareVisibility) || "private")}
-
-                          {canEditOrDelete(p) && (
-                            <Space className="ks-post-actions">
-                              <Button className="ks-icon-btn" size="small" icon={<EditOutlined />} onClick={() => openEdit(p)} />
-                              <Button className="ks-icon-btn" size="small" danger icon={<DeleteOutlined />} onClick={() => handleDeletePost(p.id)} />
-                            </Space>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="ks-post-body">
-                        <div className="ks-post-content">{p.content}</div>
-
-                        {Array.isArray(p.attachments) && p.attachments.length > 0 && (
-                          <div className="ks-attachments">
-                            <div className="ks-attachments-head">Attachments</div>
-                            <List
-                              className="ks-attachments-list"
-                              size="small"
-                              dataSource={p.attachments}
-                              renderItem={(att: any) => (
-                                <List.Item
-                                  className="ks-attachment-item"
-                                  actions={[
-                                    <Button
-                                      key="preview"
-                                      className="ks-ghost-btn"
-                                      size="small"
-                                      icon={<EyeOutlined />}
-                                      onClick={() => previewAttachment(att)}
-                                    >
-                                      Preview
-                                    </Button>,
-                                  ]}
-                                >
-                                  <div className="ks-attachment-row">
-                                    <div className="ks-file-pill">
-                                      <span className="ks-file-dot" />
-                                      <Text className="ks-file-name">{att.name}</Text>
-                                    </div>
-                                  </div>
-                                </List.Item>
-                              )}
-                            />
-                          </div>
-                        )}
-
-                        {p.visibility === "restricted" &&
-                          Array.isArray(p.sharedWith) &&
-                          p.sharedWith.length > 0 && (
-                            <div className="ks-sharedwith">
-                              <span className="ks-sharedwith-label">Shared with:</span>
-                              <span className="ks-sharedwith-value">
-                                {p.sharedWith.map((x: any) => x.name || x.email).filter(Boolean).join(", ")}
+                    return (
+                      <Card key={postId} className="ks-post" bordered>
+                        <div className="ks-post-head">
+                          <div className="ks-post-head-left">
+                            <div className="ks-post-title">{p.title || "Untitled Post"}</div>
+                            <div className="ks-post-meta">
+                              <span className="ks-post-author">
+                                {p.createdBy?.name || p.createdBy?.email || "Unknown"}
                               </span>
+                              <span className="ks-dot">•</span>
+                              <span>{isoToPrettyTime(p.createdAt)}</span>
+
+                              {(p.lastActivityAt || p.updatedAt) && (
+                                <>
+                                  <span className="ks-dot">•</span>
+                                  <span className="ks-muted">
+                                    Last activity: {isoToPrettyTime(p.lastActivityAt || p.updatedAt)}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="ks-post-head-right">
+                            {vTag((p.visibility as ShareVisibility) || "private")}
+
+                            {canEditOrDelete(p) && (
+                              <Space className="ks-post-actions">
+                                <Button
+                                  className="ks-icon-btn"
+                                  size="small"
+                                  icon={<EditOutlined />}
+                                  onClick={() => openEdit(p)}
+                                />
+                                <Button
+                                  className="ks-icon-btn"
+                                  size="small"
+                                  danger
+                                  icon={<DeleteOutlined />}
+                                  onClick={() => openDeleteModal(p)}
+                                />
+                              </Space>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="ks-post-body">
+                          <div className="ks-post-content">{p.content}</div>
+
+                          {Array.isArray(p.attachments) && p.attachments.length > 0 && (
+                            <div className="ks-attachments">
+                              <div className="ks-attachments-head">Attachments</div>
+                              <List
+                                className="ks-attachments-list"
+                                size="small"
+                                dataSource={p.attachments}
+                                renderItem={(att: any) => (
+                                  <List.Item
+                                    className="ks-attachment-item"
+                                    actions={[
+                                      <Button
+                                        key="preview"
+                                        className="ks-ghost-btn"
+                                        size="small"
+                                        icon={<EyeOutlined />}
+                                        onClick={() => previewAttachment(att)}
+                                      >
+                                        Preview
+                                      </Button>,
+                                    ]}
+                                  >
+                                    <div className="ks-attachment-row">
+                                      <div className="ks-file-pill">
+                                        <span className="ks-file-dot" />
+                                        <Text className="ks-file-name">{att.name}</Text>
+                                      </div>
+                                    </div>
+                                  </List.Item>
+                                )}
+                              />
                             </div>
                           )}
-                      </div>
-                    </Card>
-                  ))
+
+                          {p.visibility === "restricted" &&
+                            Array.isArray(p.sharedWith) &&
+                            p.sharedWith.length > 0 && (
+                              <div className="ks-sharedwith">
+                                <span className="ks-sharedwith-label">Shared with:</span>
+                                <span className="ks-sharedwith-value">
+                                  {p.sharedWith
+                                    .map((x: any) => x.name || x.email)
+                                    .filter(Boolean)
+                                    .join(", ")}
+                                </span>
+                              </div>
+                            )}
+
+                          <div className="ks-engagement">
+                            <div className="ks-eng-left">
+                              <Button
+                                size="small"
+                                className={`ks-eng-btn ${myLiked ? "active" : ""}`}
+                                onClick={async () => {
+                                  const u = getCurrentUser();
+                                  if (!u?.id) {
+                                    notification.error({ message: "User info missing in localStorage" });
+                                    return;
+                                  }
+                                  try {
+                                    const res = await db.toggleLike(postId, {
+                                      id: String(u.id),
+                                      email: u.email,
+                                      name: u.name,
+                                    });
+                                    setLikedByMe((prev) => ({ ...prev, [postId]: res.liked }));
+                                    await reloadPosts();
+                                  } catch (e: any) {
+                                    notification.error({ message: e?.message || "Failed" });
+                                  }
+                                }}
+                              >
+                                Helpful <span className="ks-eng-count">{p.likeCount || 0}</span>
+                              </Button>
+
+                              <Button
+                                size="small"
+                                className="ks-eng-btn"
+                                onClick={async () => {
+                                  try {
+                                    await openNotes(postId);
+                                  } catch {
+                                    notification.error({ message: "Failed to open notes" });
+                                  }
+                                }}
+                              >
+                                Notes <span className="ks-eng-count">{p.commentCount || 0}</span>
+                              </Button>
+                            </div>
+
+                            <div className="ks-eng-right">
+                              {isNotesOpen && (
+                                <Button size="small" className="ks-eng-btn" onClick={() => openNotes(postId)}>
+                                  Close
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Notes panel */}
+                          {isNotesOpen && (
+                            <div className="ks-comments">
+                              <div className="ks-comments-list">
+                                {notes.length === 0 ? (
+                                  <div className="ks-comments-empty">No notes yet.</div>
+                                ) : (
+                                  notes.map((c: any) => {
+                                    const isOwner = canEditComment(c);
+                                    const isEditing = editingCommentId === c.id;
+
+                                    return (
+                                      <div key={c.id} className={`ks-comment ${c.resolved ? "resolved" : ""}`}>
+                                        <div className="ks-comment-head">
+                                          <div className="ks-comment-head-left">
+                                            <span className="ks-comment-author">
+                                              {c.createdBy?.name || c.createdBy?.email || "Unknown"}
+                                            </span>
+                                            <span className="ks-dot">•</span>
+                                            <span className="ks-comment-time">
+                                              {isoToPrettyTime(c.updatedAt || c.createdAt)}
+                                            </span>
+
+                                            {c.resolved && (
+                                              <>
+                                                <span className="ks-dot">•</span>
+                                                <Tag className="ks-tag ks-tag-resolved">Resolved</Tag>
+                                              </>
+                                            )}
+                                          </div>
+
+                                          <div className="ks-comment-head-right">
+                                            {isOwner && (
+                                              <Button
+                                                size="small"
+                                                className="ks-ghost-btn"
+                                                onClick={async () => {
+                                                  try {
+                                                    const myEmail = getCurrentUserEmail();
+                                                    await db.updateKnowledgeComment(
+                                                      c.id,
+                                                      { resolved: !c.resolved },
+                                                      myEmail
+                                                    );
+                                                    const cmts = await db.getCommentsForPost(postId);
+                                                    setCommentsByPost((prev) => ({ ...prev, [postId]: cmts }));
+                                                    await reloadPosts();
+                                                  } catch (e: any) {
+                                                    notification.error({ message: e?.message || "Failed" });
+                                                  }
+                                                }}
+                                              >
+                                                {c.resolved ? "Mark Unresolved" : "Mark Resolved"}
+                                              </Button>
+                                            )}
+
+                                            {isOwner && (
+                                              <Space>
+                                                <Button
+                                                  size="small"
+                                                  className="ks-icon-btn"
+                                                  icon={<EditOutlined />}
+                                                  onClick={() => {
+                                                    setEditingCommentId(c.id);
+                                                    setEditingCommentText(String(c.content || ""));
+                                                  }}
+                                                />
+                                                <Button
+                                                  size="small"
+                                                  danger
+                                                  className="ks-icon-btn"
+                                                  icon={<DeleteOutlined />}
+                                                  onClick={async () => {
+                                                    try {
+                                                      const myEmail = getCurrentUserEmail();
+                                                      await db.deleteKnowledgeComment(c.id, myEmail);
+                                                      const cmts = await db.getCommentsForPost(postId);
+                                                      setCommentsByPost((prev) => ({ ...prev, [postId]: cmts }));
+                                                      await reloadPosts();
+                                                    } catch (e: any) {
+                                                      notification.error({ message: e?.message || "Failed" });
+                                                    }
+                                                  }}
+                                                />
+                                              </Space>
+                                            )}
+                                          </div>
+                                        </div>
+
+                                        <div className="ks-comment-body">
+                                          {isEditing ? (
+                                            <>
+                                              <Input.TextArea
+                                                rows={3}
+                                                value={editingCommentText}
+                                                onChange={(e) => setEditingCommentText(e.target.value)}
+                                              />
+                                              <div className="ks-comment-actions">
+                                                <Button
+                                                  type="primary"
+                                                  size="small"
+                                                  onClick={async () => {
+                                                    const val = editingCommentText.trim();
+                                                    if (!val) {
+                                                      notification.warning({ message: "Note cannot be empty" });
+                                                      return;
+                                                    }
+                                                    try {
+                                                      const myEmail = getCurrentUserEmail();
+                                                      await db.updateKnowledgeComment(
+                                                        c.id,
+                                                        { content: val },
+                                                        myEmail
+                                                      );
+                                                      setEditingCommentId(null);
+                                                      setEditingCommentText("");
+                                                      const cmts = await db.getCommentsForPost(postId);
+                                                      setCommentsByPost((prev) => ({ ...prev, [postId]: cmts }));
+                                                      await reloadPosts();
+                                                    } catch (e: any) {
+                                                      notification.error({ message: e?.message || "Failed" });
+                                                    }
+                                                  }}
+                                                >
+                                                  Save
+                                                </Button>
+                                                <Button
+                                                  size="small"
+                                                  onClick={() => {
+                                                    setEditingCommentId(null);
+                                                    setEditingCommentText("");
+                                                  }}
+                                                >
+                                                  Cancel
+                                                </Button>
+                                              </div>
+                                            </>
+                                          ) : (
+                                            <div className="ks-comment-text">{c.content}</div>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+
+                              <div className="ks-comment-compose">
+                                <Input.TextArea
+                                  rows={2}
+                                  value={commentDraft[postId] || ""}
+                                  placeholder="Add a note…"
+                                  onChange={(e) =>
+                                    setCommentDraft((prev) => ({ ...prev, [postId]: e.target.value }))
+                                  }
+                                />
+
+                                <div className="ks-comment-actions">
+                                  <Button
+                                    type="primary"
+                                    onClick={async () => {
+                                      const text = (commentDraft[postId] || "").trim();
+                                      if (!text) {
+                                        notification.warning({ message: "Note cannot be empty" });
+                                        return;
+                                      }
+
+                                      const u = getCurrentUser();
+                                      if (!u?.id) {
+                                        notification.error({ message: "User info missing in localStorage" });
+                                        return;
+                                      }
+
+                                      try {
+                                        await db.addKnowledgeComment({
+                                          guid: uuidv4(),
+                                          postId,
+                                          content: text,
+                                          resolved: false,
+                                          createdAt: new Date().toISOString(),
+                                          updatedAt: new Date().toISOString(),
+                                          createdBy: {
+                                            userId: String(u.id),
+                                            email: u.email,
+                                            name: u.name,
+                                          },
+                                          parentCommentId: null,
+                                        });
+
+                                        setCommentDraft((prev) => ({ ...prev, [postId]: "" }));
+                                        const cmts = await db.getCommentsForPost(postId);
+                                        setCommentsByPost((prev) => ({ ...prev, [postId]: cmts }));
+                                        await reloadPosts();
+                                      } catch (e: any) {
+                                        notification.error({ message: e?.message || "Failed to add note" });
+                                      }
+                                    }}
+                                  >
+                                    Add Note
+                                  </Button>
+
+                                  <Button onClick={() => openNotes(postId)}>Close</Button>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </Card>
+                    );
+                  })
                 )}
               </div>
             </div>
+
           )}
         </section>
       </main>
@@ -913,6 +1249,59 @@ export default function KnowledgeCenter() {
           )}
         </div>
       </Modal>
+
+      <Modal
+        open={deleteOpen}
+        onCancel={closeDeleteModal}
+        title="Delete post"
+        okText="Delete"
+        okType="danger"
+        confirmLoading={deleteBusy}
+        onOk={confirmDeletePost}
+        cancelText="Cancel"
+        width={640}
+        className="ks-modal ks-delete-modal"
+      >
+        <Alert
+          type="warning"
+          showIcon
+          message="This action is permanent"
+          description="Deleting a post will remove it from the feed along with its notes, reactions, and attachments. This cannot be undone."
+        />
+
+        <Divider style={{ margin: "14px 0" }} />
+
+        <div className="ks-delete-summary">
+          <div className="ks-delete-title">
+            {deletingPost?.title || "Untitled Post"}
+          </div>
+
+          <div className="ks-delete-meta">
+            <span>
+              Author:{" "}
+              <b>{deletingPost?.createdBy?.name || deletingPost?.createdBy?.email || "Unknown"}</b>
+            </span>
+            <span className="ks-dot">•</span>
+            <span>
+              Created: <b>{isoToPrettyTime(deletingPost?.createdAt)}</b>
+            </span>
+          </div>
+
+          <div className="ks-delete-stats">
+            <div className="ks-delete-pill">
+              Notes: <b>{Number(deletingPost?.commentCount || 0)}</b>
+            </div>
+            <div className="ks-delete-pill">
+              Helpful: <b>{Number(deletingPost?.likeCount || 0)}</b>
+            </div>
+            <div className="ks-delete-pill">
+              Attachments:{" "}
+              <b>{Array.isArray(deletingPost?.attachments) ? deletingPost.attachments.length : 0}</b>
+            </div>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   );
 }

@@ -1,5 +1,48 @@
 import Dexie, { Table } from "dexie";
 import { message } from "antd";
+
+export interface KnowledgeReaction {
+  id?: number;
+  postId: number;
+  type: "like";
+  createdAt: string;
+  userId: string;
+  email: string;
+  name?: string;
+}
+
+export interface KnowledgeComment {
+  id?: number;
+  postId: number;
+  guid: string;
+  content: string;
+
+  resolved?: boolean;
+
+  createdAt: string;
+  updatedAt: string;
+
+  createdBy: { userId: string; name?: string; email: string };
+
+  parentCommentId?: number | null;
+}
+export interface KnowledgePost {
+  id?: number;
+  guid: string;
+  title?: string;
+  content: string;
+  visibility: ShareVisibility;
+  sharedWith?: Array<{ userId?: string; email?: string; name?: string }>;
+  attachments?: Array<{ docId: string; name: string; path: string; mime?: string }>;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: { userId: string; name: string; email: string };
+
+  likeCount?: number;
+  commentCount?: number;
+  lastActivityAt?: string;
+}
+
 export interface MineType {
   id?: number;
   type: string;
@@ -134,6 +177,9 @@ export class DataStorage extends Dexie {
   commercialActivities!: Table<CommercialActivity, number>;
   activityBudgetDocs!: Table<ActivityBudgetDocument, number>;
   knowledgePosts!: Table<KnowledgePost, number>;
+  knowledgeComments!: Table<KnowledgeComment, number>;
+  knowledgeReactions!: Table<KnowledgeReaction & { id?: number; postId: number }, number>;
+
   constructor() {
     super("MTDS");
     this.version(1).stores({
@@ -183,7 +229,11 @@ export class DataStorage extends Dexie {
       knowledgePosts: "++id, guid, visibility, createdAt, createdBy.email",
     });
 
-    
+    this.version(8).stores({
+      knowledgeComments: "++id, postId, createdAt, createdBy.email, resolved, updatedAt",
+      knowledgeReactions: "++id, postId, createdAt, email, type",
+    });
+
     this.mineTypes = this.table("mineTypes");
     this.modules = this.table("modules");
     this.moduleLibrary = this.table("moduleLibrary");
@@ -200,6 +250,8 @@ export class DataStorage extends Dexie {
     this.commercialActivities = this.table("commercialActivities");
     this.activityBudgetDocs = this.table("activityBudgetDocs");
     this.knowledgePosts = this.table("knowledgePosts");
+    this.knowledgeComments = this.table("knowledgeComments");
+    this.knowledgeReactions = this.table("knowledgeReactions");
   }
 
   async addModule(module: any): Promise<number> {
@@ -745,23 +797,168 @@ export class DataStorage extends Dexie {
     await this.diskStorage.where("path").equals(path).delete();
   }
 
-    async addKnowledgePost(post: Omit<KnowledgePost, "id">) {
+  async addKnowledgePost(post: Omit<KnowledgePost, "id">) {
     return this.knowledgePosts.add(post);
   }
 
   async getKnowledgePosts() {
-    return this.knowledgePosts.orderBy("createdAt").reverse().toArray();
+    const all = await this.knowledgePosts.toArray();
+    return all.sort((a: any, b: any) => {
+      const ad = (a.lastActivityAt || a.createdAt || "");
+      const bd = (b.lastActivityAt || b.createdAt || "");
+      return bd.localeCompare(ad);
+    });
   }
 
   async deleteKnowledgePost(id: number) {
     const p = await this.knowledgePosts.get(id);
+
     if (p?.attachments?.length) {
       for (const a of p.attachments) {
         if (a.path) await this.deleteDiskEntry(a.path);
       }
     }
+
+    await this.knowledgeComments.where("postId").equals(id).delete();
+    await this.knowledgeReactions.where("postId").equals(id).delete();
+
     await this.knowledgePosts.delete(id);
   }
+
+
+  async addKnowledgeComment(data: Omit<KnowledgeComment, "id">) {
+    const id = await this.knowledgeComments.add({ ...data, resolved: !!data.resolved });
+
+    const post = await this.knowledgePosts.get(data.postId);
+    const now = new Date().toISOString();
+
+    if (post?.id) {
+      await this.knowledgePosts.update(post.id, {
+        commentCount: (post.commentCount || 0) + 1,
+        lastActivityAt: now,
+      });
+    }
+
+    return id;
+  }
+
+  async getCommentsForPost(postId: number) {
+    // unresolved first, then latest updated
+    const list = await this.knowledgeComments.where("postId").equals(postId).toArray();
+    return list.sort((a: any, b: any) => {
+      const ar = !!a.resolved;
+      const br = !!b.resolved;
+      if (ar !== br) return ar ? 1 : -1; // unresolved first
+      return (b.updatedAt || b.createdAt || "").localeCompare(a.updatedAt || a.createdAt || "");
+    });
+  }
+
+  async updateKnowledgeComment(
+    commentId: number,
+    patch: Partial<Pick<KnowledgeComment, "content" | "resolved">>,
+    actorEmail: string
+  ) {
+    const c = await this.knowledgeComments.get(commentId);
+    if (!c) throw new Error("Comment not found");
+
+    const owner = String(c.createdBy?.email || "").toLowerCase();
+    const actor = String(actorEmail || "").toLowerCase();
+    if (!owner || owner !== actor) throw new Error("Not allowed");
+
+    const now = new Date().toISOString();
+    await this.knowledgeComments.update(commentId, {
+      ...patch,
+      updatedAt: now,
+    });
+
+    // Touch post activity
+    const post = await this.knowledgePosts.get(c.postId);
+    if (post?.id) await this.knowledgePosts.update(post.id, { lastActivityAt: now });
+
+    return true;
+  }
+
+  async deleteKnowledgeComment(commentId: number, actorEmail: string) {
+    const c = await this.knowledgeComments.get(commentId);
+    if (!c) return;
+
+    const owner = String(c.createdBy?.email || "").toLowerCase();
+    const actor = String(actorEmail || "").toLowerCase();
+    if (!owner || owner !== actor) throw new Error("Not allowed");
+
+    await this.knowledgeComments.delete(commentId);
+
+    // Update post counters + activity
+    const post = await this.knowledgePosts.get(c.postId);
+    const now = new Date().toISOString();
+
+    if (post?.id) {
+      await this.knowledgePosts.update(post.id, {
+        commentCount: Math.max(0, (post.commentCount || 0) - 1),
+        lastActivityAt: now,
+      });
+    }
+  }
+
+
+  async hasLiked(postId: number, email: string) {
+    const e = String(email || "").toLowerCase();
+    const r = await this.knowledgeReactions
+      .where("postId")
+      .equals(postId)
+      .filter((x: any) => String(x?.email || "").toLowerCase() === e && x.type === "like")
+      .first();
+
+    return !!r;
+  }
+
+  async toggleLike(
+    postId: number,
+    user: { id: string; email: string; name?: string }
+  ) {
+    const email = String(user.email || "").toLowerCase();
+    const now = new Date().toISOString();
+
+    const existing = await this.knowledgeReactions
+      .where("postId")
+      .equals(postId)
+      .filter((r: any) => String(r?.email || "").toLowerCase() === email && r.type === "like")
+      .first();
+
+    const post = await this.knowledgePosts.get(postId);
+
+    if (existing?.id) {
+      await this.knowledgeReactions.delete(existing.id);
+
+      if (post?.id) {
+        await this.knowledgePosts.update(post.id, {
+          likeCount: Math.max(0, (post.likeCount || 0) - 1),
+          lastActivityAt: now,
+        } as any);
+      }
+
+      return { liked: false };
+    }
+
+    await this.knowledgeReactions.add({
+      postId,
+      type: "like",
+      createdAt: now,
+      userId: String(user.id),
+      email: String(user.email || "").toLowerCase(),
+      name: user.name,
+    });
+
+    if (post?.id) {
+      await this.knowledgePosts.update(post.id, {
+        likeCount: (post.likeCount || 0) + 1,
+        lastActivityAt: now,
+      } as any);
+    }
+
+    return { liked: true };
+  }
+
 
 }
 

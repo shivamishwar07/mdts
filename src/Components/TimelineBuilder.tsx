@@ -2950,7 +2950,6 @@ const TimeBuilder = () => {
         </div>
       </div>
 
-
       <Modal
         title="Confirm Discard Changes"
         visible={isCancelEditModalVisible}

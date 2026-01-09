@@ -47,6 +47,8 @@ type ProjectDetails = {
   initialStatus?: {
     library?: unknown;
     items?: Array<{
+      moduleName?: string;
+      parentModuleCode?: string;
       activities?: Array<{
         code?: string;
         activityName?: unknown;
@@ -145,6 +147,8 @@ export default function EDPP({ code }: EDPPProps) {
         const match = list.find((item: any) => item?.id === code);
         if (!alive) return;
         setProjectDetails(match || {});
+        console.log(projectDetails);
+
       } catch {
         if (!alive) return;
         setProjectDetails({});
@@ -186,10 +190,11 @@ export default function EDPP({ code }: EDPPProps) {
     return Array.isArray(docs) ? docs : [];
   }, [projectDetails]);
 
-  const activities = useMemo(() => {
-    const list = projectDetails?.initialStatus?.items?.[0]?.activities;
-    return Array.isArray(list) ? list : [];
+  const initialModules = useMemo(() => {
+    const items = projectDetails?.initialStatus?.items;
+    return Array.isArray(items) ? items : [];
   }, [projectDetails]);
+
 
   const handleDeleteDocument = (docId: string) => {
     Modal.confirm({
@@ -307,22 +312,40 @@ export default function EDPP({ code }: EDPPProps) {
                 </Title>
               ) : null}
 
-              {activities.length === 0 ? (
+              {initialModules.length === 0 ? (
                 <div className="edpp-empty">
                   <Empty description="No activities available" />
                 </div>
               ) : (
-                <Timeline>
-                  {activities.map((activity) => (
-                    <Timeline.Item key={String(activity.code || activity.activityName || Math.random())}>
-                      <strong>{formatValue(activity.activityName)}</strong>
-                      <span className="edpp-subtle">
-                        {" "}
-                        • Duration: {formatValue(activity.duration)} days
-                      </span>
-                    </Timeline.Item>
-                  ))}
-                </Timeline>
+                initialModules.map((mod, idx) => {
+                  const acts = Array.isArray(mod?.activities) ? mod.activities : [];
+                  const moduleTitle = mod?.moduleName || mod?.parentModuleCode || `Module ${idx + 1}`;
+
+                  return (
+                    <Card
+                      key={`${moduleTitle}-${idx}`}
+                      type="inner"
+                      title={moduleTitle}
+                      style={{ marginBottom: 12 }}
+                    >
+                      {acts.length === 0 ? (
+                        <Empty description="No activities in this module" />
+                      ) : (
+                        <Timeline>
+                          {acts.map((activity) => (
+                            <Timeline.Item key={String(activity.code || activity.activityName || Math.random())}>
+                              <strong>{formatValue(activity.activityName)}</strong>
+                              <span className="edpp-subtle">
+                                {" "}
+                                • Code: {formatValue(activity.code)} • Duration: {formatValue(activity.duration)} days
+                              </span>
+                            </Timeline.Item>
+                          ))}
+                        </Timeline>
+                      )}
+                    </Card>
+                  );
+                })
               )}
             </Card>
           </>
