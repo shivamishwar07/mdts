@@ -4,31 +4,62 @@ import { useNavigate } from "react-router-dom";
 import { db } from "../Utils/dataStorege.ts";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
-import { v4 as uuidv4 } from 'uuid';
-import { Form, Input, Button, Select, Row, Col, Modal } from "antd"; // Added Modal
-import PhoneInput from 'react-phone-input-2';
-import 'react-phone-input-2/lib/style.css';
-import { GoogleOutlined, AppleOutlined } from '@ant-design/icons';
+import { v4 as uuidv4 } from "uuid";
+import { Form, Input, Button, Select, Row, Col, Modal } from "antd";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
+import { GoogleOutlined, AppleOutlined, EyeInvisibleOutlined, EyeOutlined } from "@ant-design/icons";
+
 const { Option } = Select;
 
 const TermsAndConditionsContent: React.FC = () => (
     <div>
         <h3>Terms & Conditions for Mining Management Tracking System</h3>
-        <p>Welcome to our Mining Management Tracking System. By signing in or signing up, you agree to comply with and be bound by the following terms and conditions of use. Please review them carefully.</p>
+        <p>
+            Welcome to our Mining Management Tracking System. By signing in or signing
+            up, you agree to comply with and be bound by the following terms and
+            conditions of use. Please review them carefully.
+        </p>
 
         <h4>1. System Usage</h4>
-        <p>The system is provided solely for the purpose of managing, tracking, and optimizing mining operations, including resource allocation, activity logging, and compliance reporting. Any unauthorized use or misuse of the platform is strictly prohibited.</p>
+        <p>
+            The system is provided solely for the purpose of managing, tracking, and
+            optimizing mining operations, including resource allocation, activity
+            logging, and compliance reporting. Any unauthorized use or misuse of the
+            platform is strictly prohibited.
+        </p>
 
         <h4>2. Data Privacy</h4>
-        <p>All operational data, including location, personnel, and production metrics, submitted to the system will be kept confidential and used only for internal management, system improvement, and regulatory compliance as required by law. We employ industry-standard security measures to protect your data.</p>
+        <p>
+            All operational data, including location, personnel, and production
+            metrics, submitted to the system will be kept confidential and used only
+            for internal management, system improvement, and regulatory compliance as
+            required by law. We employ industry-standard security measures to protect
+            your data.
+        </p>
 
         <h4>3. User Responsibility</h4>
-        <p>You are responsible for maintaining the confidentiality of your account password and for all activities that occur under your account. You agree to immediately notify us of any unauthorized use of your password or account or any other breach of security.</p>
+        <p>
+            You are responsible for maintaining the confidentiality of your account
+            password and for all activities that occur under your account. You agree
+            to immediately notify us of any unauthorized use of your password or
+            account or any other breach of security.
+        </p>
 
         <h4>4. Limitation of Liability</h4>
-        <p>The company is not liable for any direct, indirect, incidental, special, consequential, or exemplary damages, including but not limited to damages for loss of profits, goodwill, data, or other intangible losses resulting from the use or the inability to use the system.</p>
+        <p>
+            The company is not liable for any direct, indirect, incidental, special,
+            consequential, or exemplary damages, including but not limited to damages
+            for loss of profits, goodwill, data, or other intangible losses resulting
+            from the use or the inability to use the system.
+        </p>
 
-        <p><strong>This is a brief summary. The full terms can be requested from the support team.</strong></p>
+        <p>
+            <strong>
+                This is a brief summary. The full terms can be requested from the
+                support team.
+            </strong>
+        </p>
     </div>
 );
 
@@ -36,65 +67,98 @@ const SignInSignUp: React.FC = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isSignUp, setIsSignUp] = useState(false);
-    const [showPassword, _setShowPassword] = useState(false);
-    const [termsAccepted, setTermsAccepted] = useState(false); // New state for checkbox
-    const [showTermsModal, setShowTermsModal] = useState(false); // New state for modal
-
+    const [showPassword, setShowPassword] = useState(false);
+    const [termsAccepted, setTermsAccepted] = useState(false);
+    const [showTermsModal, setShowTermsModal] = useState(false);
     const navigate = useNavigate();
     const [currentStep, setCurrentStep] = useState(0);
     const [form] = Form.useForm();
-    
-    // ... (Your existing stepFieldNames and other functions like handleNext, handlePrev, handleFinish, steps, isProfileCompleted, validateEmail remain unchanged)
 
     const stepFieldNames = [
         ["company", "industry", "website", "gstin", "cin", "incorpDate", "employeeCount"],
         ["country", "state", "city", "address1", "zip"],
-        ["name", "designation", "email", "mobile", "password", "confirmPassword"]
+        ["name", "designation", "email", "mobile", "password", "confirmPassword"],
     ];
 
     const handleNext = async () => {
         try {
             await form.validateFields(stepFieldNames[currentStep]);
-            setCurrentStep(prev => prev + 1);
-        } catch (err) {
+            setCurrentStep((prev) => prev + 1);
+        } catch (_err) {
             notify.error("Please fill in all required fields correctly.");
         }
     };
 
-    const handlePrev = () => setCurrentStep(prev => prev - 1);
+    const handlePrev = () => setCurrentStep((prev) => prev - 1);
 
     const handleFinish = async (values: any) => {
-        let orgId = uuidv4();
-        const newUser = {
-            id: Date.now(),
-            guiId: uuidv4(),
-            name: values.name,
-            company: values.company,
-            designation: values.designation,
-            mobile: values.mobile,
-            email: values.email,
-            whatsapp: values.mobile.startsWith('+') ? values.mobile : `+${values.mobile}`,
-            address: `${values.address1 ?? ''} ${values.address2 ?? ''}`.trim(),
-            city: values.city,
-            state: values.state,
-            country: values.country,
-            zipCode: values.zip,
-            password: values.password,
-            Password: values.password,
-            isTempPassword: false,
-            role: "admin",
-            userType: "IND",
-            orgId: orgId,
-            companyType: values.industry || "",
-            industryType: values.industry || "",
-            companyLogo: "",
-            registeredOn: new Date().toISOString(),
-            ...values,
-        };
-        await db.addUsers(newUser);
-        localStorage.setItem("user", JSON.stringify(newUser));
-        notify.success("Registration successful!");
-        setTimeout(() => navigate("/profile"), 1000);
+        try {
+            const orgId = uuidv4();
+            const nowIso = new Date().toISOString();
+
+            const companyPayload = {
+                id: Date.now(),
+                guiId: orgId,
+                name: values.company,
+                company: values.company,
+                industry: values.industry || "",
+                industryType: values.industry || "",
+                companyType: values.industry || "",
+                website: values.website,
+                gstin: values.gstin,
+                cin: values.cin || "",
+                incorpDate: values.incorpDate || "",
+                employeeCount: values.employeeCount || "",
+                address1: values.address1 || "",
+                address2: values.address2 || "",
+                address: `${values.address1 ?? ""} ${values.address2 ?? ""}`.trim(),
+                city: values.city,
+                state: values.state,
+                country: values.country,
+                zipCode: values.zip,
+                registeredOn: nowIso,
+                companyLogo: "",
+            };
+
+            const existingCompany = await db.getCompanyByGuiId(orgId);
+            if (!existingCompany) {
+                await db.addCompany(companyPayload);
+            }
+
+            const newUser = {
+                id: Date.now() + 1,
+                guiId: uuidv4(),
+                name: values.name,
+                company: values.company,
+                designation: values.designation,
+                mobile: values.mobile,
+                email: values.email,
+                whatsapp: values.mobile?.startsWith("+") ? values.mobile : `+${values.mobile}`,
+                address: `${values.address1 ?? ""} ${values.address2 ?? ""}`.trim(),
+                city: values.city,
+                state: values.state,
+                country: values.country,
+                zipCode: values.zip,
+                password: values.password,
+                Password: values.password,
+                isTempPassword: false,
+                role: "admin",
+                userType: "IND",
+                orgId,
+                companyType: values.industry || "",
+                industryType: values.industry || "",
+                companyLogo: "",
+                registeredOn: nowIso,
+                ...values,
+            };
+
+            await db.addUsers(newUser);
+            localStorage.setItem("user", JSON.stringify(newUser));
+            notify.success("Registration successful!");
+            setTimeout(() => navigate("/profile"), 1000);
+        } catch (e: any) {
+            notify.error(e?.message || "Registration failed. Please try again.");
+        }
     };
 
     const steps = [
@@ -104,29 +168,29 @@ const SignInSignUp: React.FC = () => {
                 <Row gutter={16}>
                     <Col span={12}>
                         <Form.Item name="company" label="Company Name" rules={[{ required: true }]}>
-                            <Input />
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
                     <Col span={12}>
                         <Form.Item name="industry" label="Industry Type">
-                            <Input />
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
 
                     <Col span={12}>
                         <Form.Item name="website" label="Company Website" rules={[{ required: true }]}>
-                            <Input />
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
                     <Col span={12}>
                         <Form.Item name="gstin" label="PAN / GSTIN" rules={[{ required: true }]}>
-                            <Input />
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
 
                     <Col span={12}>
                         <Form.Item name="cin" label="CIN / Registration Number">
-                            <Input />
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
                     <Col span={12}>
@@ -136,17 +200,25 @@ const SignInSignUp: React.FC = () => {
                     </Col>
 
                     <Col span={12}>
-                        <Form.Item name="employeeCount" label="Number of Employees">
-                            <Select>
-                                <Option value="1-10">1-10</Option>
-                                <Option value="11-50">11-50</Option>
-                                <Option value="51-200">51-200</Option>
-                                <Option value=">200">200+</Option>
+                        <Form.Item
+                            name="employeeCount"
+                            label="Number of Employees"
+                        >
+                            <Select
+                                placeholder="Select"
+                                allowClear
+                                style={{ margin: "10px" }}
+                            >
+                                <Select.Option value="1-10">1-10</Select.Option>
+                                <Select.Option value="11-50">11-50</Select.Option>
+                                <Select.Option value="51-200">51-200</Select.Option>
+                                <Select.Option value=">200">200+</Select.Option>
                             </Select>
                         </Form.Item>
                     </Col>
+
                 </Row>
-            )
+            ),
         },
         {
             title: "Business Address",
@@ -154,38 +226,38 @@ const SignInSignUp: React.FC = () => {
                 <Row gutter={16}>
                     <Col span={12}>
                         <Form.Item name="country" label="Country" rules={[{ required: true }]}>
-                            <Input />
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
                     <Col span={12}>
                         <Form.Item name="state" label="State / Province" rules={[{ required: true }]}>
-                            <Input />
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
 
                     <Col span={12}>
                         <Form.Item name="city" label="City" rules={[{ required: true }]}>
-                            <Input />
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
                     <Col span={12}>
                         <Form.Item name="address1" label="Address Line 1" rules={[{ required: true }]}>
-                            <Input />
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
 
                     <Col span={12}>
                         <Form.Item name="address2" label="Address Line 2">
-                            <Input />
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
                     <Col span={12}>
                         <Form.Item name="zip" label="Postal / ZIP Code" rules={[{ required: true }]}>
-                            <Input />
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
                 </Row>
-            )
+            ),
         },
         {
             title: "Authorized Representative",
@@ -193,7 +265,7 @@ const SignInSignUp: React.FC = () => {
                 <Row gutter={16}>
                     <Col span={12}>
                         <Form.Item name="name" label="Full Name" rules={[{ required: true }]}>
-                            <Input />
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
                     <Col span={12}>
@@ -206,21 +278,20 @@ const SignInSignUp: React.FC = () => {
                         </Form.Item>
                     </Col>
                     <Col span={12}>
-                        <Form.Item name="email" label="Official Email" rules={[{ required: true, type: 'email' }]}>
-                            <Input />
+                        <Form.Item name="email" label="Official Email" rules={[{ required: true, type: "email" }]}>
+                            <Input className="mb-10" />
                         </Form.Item>
                     </Col>
                     <Col span={12}>
                         <Form.Item name="mobile" label="Mobile Number" rules={[{ required: true }]}>
                             <PhoneInput
-                                country={'in'}
+                                country={"in"}
                                 value={form.getFieldValue("mobile")}
                                 inputStyle={{ width: "100%" }}
                                 specialLabel={""}
                                 onChange={(phone: string) => form.setFieldsValue({ mobile: `+${phone}` })}
                             />
                         </Form.Item>
-
                     </Col>
                     <Col span={12}>
                         <Form.Item
@@ -230,8 +301,9 @@ const SignInSignUp: React.FC = () => {
                                 {
                                     required: true,
                                     pattern: /^(?=.*[A-Z])(?=.*\d)(?=.*[^\w\s]).{8,}$/,
-                                    message: "Password must contain at least 1 uppercase, 1 digit, 1 special character, and be 8+ characters"
-                                }
+                                    message:
+                                        "Password must contain at least 1 uppercase, 1 digit, 1 special character, and be 8+ characters",
+                                },
                             ]}
                         >
                             <Input type="password" />
@@ -241,7 +313,7 @@ const SignInSignUp: React.FC = () => {
                         <Form.Item
                             name="confirmPassword"
                             label="Confirm Password"
-                            dependencies={['password']}
+                            dependencies={["password"]}
                             rules={[
                                 {
                                     required: true,
@@ -250,17 +322,16 @@ const SignInSignUp: React.FC = () => {
                                             return Promise.resolve();
                                         }
                                         return Promise.reject("Passwords do not match");
-                                    }
-                                }
+                                    },
+                                },
                             ]}
                         >
                             <Input type="password" />
                         </Form.Item>
                     </Col>
                 </Row>
-            )
-        }
-
+            ),
+        },
     ];
 
     const isProfileCompleted = (user: any) => {
@@ -277,14 +348,12 @@ const SignInSignUp: React.FC = () => {
     };
 
     const handleLogin = async (e: React.MouseEvent) => {
-        e.preventDefault(); // Prevent default form submission
-        
+        e.preventDefault();
+
         if (!termsAccepted) {
-            // This is technically unnecessary since the button is disabled, 
-            // but it's a good fail-safe.
             return notify.error("You must accept the Terms to log in.");
         }
-        
+
         try {
             validateEmail(email);
 
@@ -325,21 +394,17 @@ const SignInSignUp: React.FC = () => {
         window.scrollTo(0, 0);
     }, []);
 
-    // Function to handle opening the Terms Modal
     const openTermsModal = (e: React.MouseEvent) => {
-        e.preventDefault(); // Stop link navigation
+        e.preventDefault();
         setShowTermsModal(true);
     };
 
-    // Function to handle closing the Terms Modal (just closes it)
     const handleCloseTermsModal = () => {
         setShowTermsModal(false);
-    }
-
+    };
 
     return (
         <div className="signup-container">
-            {/* Terms and Conditions Modal */}
             <Modal
                 title="Terms & Conditions"
                 open={showTermsModal}
@@ -347,14 +412,14 @@ const SignInSignUp: React.FC = () => {
                 footer={[
                     <Button key="close" type="primary" onClick={handleCloseTermsModal}>
                         Close
-                    </Button>
+                    </Button>,
                 ]}
                 width={700}
             >
                 <TermsAndConditionsContent />
             </Modal>
-            
-            <div className={isSignUp ? 'signup-left signup-adjust' : 'signup-left signin-adjust'}>
+
+            <div className={isSignUp ? "signup-left signup-adjust" : "signup-left signin-adjust"}>
                 <div className="vector-image">
                     <img src="/images/auths/signin.png" alt="Mining Management Illustration" />
                 </div>
@@ -362,7 +427,8 @@ const SignInSignUp: React.FC = () => {
                 <div className="promo-text">
                     <h1>Mining Simplified, Productivity Amplified</h1>
                     <p>
-                        Manage your mining operations with confidence. Track activities, assign teams, and gain insights — all in one platform built for mining professionals.
+                        Manage your mining operations with confidence. Track activities, assign teams, and gain
+                        insights — all in one platform built for mining professionals.
                     </p>
                 </div>
 
@@ -379,33 +445,52 @@ const SignInSignUp: React.FC = () => {
                 </div>
             </div>
 
-
-            <div className={isSignUp ? 'signup-right signup-adjust' : 'signup-right signin-adjust'}>
+            <div className={isSignUp ? "signup-right signup-adjust" : "signup-right signin-adjust"}>
                 <div className="form-card">
-                    <h2>{isSignUp ? 'Sign up to get started' : 'Sign in to continue'}</h2>
+                    <h2>{isSignUp ? "Sign up to get started" : "Sign in to continue"}</h2>
+
                     {!isSignUp ? (
-                        <form onSubmit={(e) => e.preventDefault()}> {/* Use onSubmit on form for accessibility */}
-                            <input className="mb-20" type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-                            <input className="mb-20" type={showPassword ? "text" : "password"}
-                                placeholder="Password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)} required />
+                        <form onSubmit={(e) => e.preventDefault()}>
+                            <input
+                                className="mb-20"
+                                type="email"
+                                placeholder="Email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                            />
+                            <div className="password-field">
+  <input
+    className="mb-20"
+    type={showPassword ? "text" : "password"}
+    placeholder="Password"
+    value={password}
+    onChange={(e) => setPassword(e.target.value)}
+    required
+  />
+
+  <span
+    className="eye-toggle"
+    onClick={() => setShowPassword((p) => !p)}
+    role="button"
+    aria-label={showPassword ? "Hide password" : "Show password"}
+  >
+    {showPassword ? <EyeInvisibleOutlined /> : <EyeOutlined />}
+  </span>
+</div>
+
                             <div className="checkbox">
-                                <input 
-                                    type="checkbox" 
-                                    id="terms" 
+                                <input
+                                    type="checkbox"
+                                    id="terms"
                                     checked={termsAccepted}
-                                    onChange={(e) => setTermsAccepted(e.target.checked)} // Update termsAccepted state
+                                    onChange={(e) => setTermsAccepted(e.target.checked)}
                                 />
                                 <label htmlFor="terms">
-                                    I accept the <a href="#" onClick={openTermsModal}>Term</a> {/* Call openTermsModal on click */}
+                                    I accept the <a href="#" onClick={openTermsModal}>Term</a>
                                 </label>
                             </div>
-                            <button 
-                                className="submit" 
-                                onClick={handleLogin}
-                                disabled={!termsAccepted} // Disable button if terms not accepted
-                            >
+                            <button className="submit" onClick={handleLogin} disabled={!termsAccepted}>
                                 Login
                             </button>
                         </form>
@@ -419,8 +504,9 @@ const SignInSignUp: React.FC = () => {
                                     {steps.map((_, idx) => (
                                         <div
                                             key={idx}
-                                            className={`step-line ${idx === currentStep ? "active" : ""} ${idx < currentStep ? "completed" : ""}`}
-                                        ></div>
+                                            className={`step-line ${idx === currentStep ? "active" : ""} ${idx < currentStep ? "completed" : ""
+                                                }`}
+                                        />
                                     ))}
                                 </div>
                             </div>
@@ -428,7 +514,7 @@ const SignInSignUp: React.FC = () => {
                             <div className="form-section">
                                 <Form layout="vertical" form={form} onFinish={handleFinish}>
                                     {steps.map((step, idx) => (
-                                        <div key={idx} style={{ display: idx === currentStep ? 'block' : 'none' }}>
+                                        <div key={idx} style={{ display: idx === currentStep ? "block" : "none" }}>
                                             {step.content}
                                         </div>
                                     ))}
@@ -436,32 +522,43 @@ const SignInSignUp: React.FC = () => {
                                     <div className="form-actions">
                                         {currentStep > 0 && <Button onClick={handlePrev}>Prev</Button>}
                                         {currentStep < steps.length - 1 ? (
-                                            <Button type="primary" onClick={handleNext}>Next</Button>
+                                            <Button type="primary" onClick={handleNext}>
+                                                Next
+                                            </Button>
                                         ) : (
-                                            <Button type="primary" htmlType="submit">Submit</Button>
+                                            <Button type="primary" htmlType="submit">
+                                                Submit
+                                            </Button>
                                         )}
                                     </div>
                                 </Form>
-
                             </div>
                         </div>
                     )}
+
                     <div className="social-buttons">
-                        <Button className="google" icon={<GoogleOutlined size={20} />}>Sign In with Google</Button>
-                        <Button className="apple" icon={<AppleOutlined size={20} />}>Sign In with Apple</Button>
+                        <Button className="google" icon={<GoogleOutlined />}>
+                            Sign In with Google
+                        </Button>
+                        <Button className="apple" icon={<AppleOutlined />}>
+                            Sign In with Apple
+                        </Button>
                     </div>
+
                     <div className="switch-auth">
                         {isSignUp ? (
                             <p className="signin-link">
                                 Already have an account? <a onClick={() => setIsSignUp(false)}>Sign In</a>
                             </p>
-                        ) : (<p className="signin-link">
-                            New here? ? <a onClick={() => setIsSignUp(true)}>Sign up</a>
-                        </p>
+                        ) : (
+                            <p className="signin-link">
+                                New here? ? <a onClick={() => setIsSignUp(true)}>Sign up</a>
+                            </p>
                         )}
                     </div>
                 </div>
             </div>
+
             <ToastContainer />
         </div>
     );

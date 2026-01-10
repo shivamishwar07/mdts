@@ -570,7 +570,7 @@ const Home = () => {
             </div>
             <div className="brand-text">
               <p>MineSense</p>
-              <p>Mine Development Tracking</p>
+              <p>Mine Development Tracking System</p>
             </div>
           </div>
 

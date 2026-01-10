@@ -334,13 +334,13 @@ const Profile = () => {
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
                             {!formData.isTempPassword && (
                                 <div className="change-password-container">
                                     <a onClick={showModal}>Change Password</a>
                                 </div>
                             )}
+                            </div>
+
 
                             <div className="company-registration-form">
                                 <Form

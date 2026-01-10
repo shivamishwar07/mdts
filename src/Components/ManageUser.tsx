@@ -1,16 +1,12 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "../styles/user-management.css";
-
-import { useNavigate } from "react-router-dom";
-import { Button, Col, Form, Input, Modal, Row, Select, Switch, Table, Tooltip } from "antd";
+import { Button, Form, Input, Modal, Select, Switch, Table, Tooltip } from "antd";
 import { ExclamationCircleOutlined, UserAddOutlined } from "@ant-design/icons";
-
 import { getCurrentUser } from "../Utils/moduleStorage";
 import { db } from "../Utils/dataStorege.ts";
 import { ToastContainer } from "react-toastify";
 import { notify } from "../Utils/ToastNotify.tsx";
 import { v4 as uuidv4 } from "uuid";
-
 import "react-phone-input-2/lib/style.css";
 import PhoneInput from "react-phone-input-2";
 
@@ -39,6 +35,8 @@ interface User {
   password?: string;
   isTempPassword?: boolean;
   role?: string;
+  guiId?: string;
+  orgId?: string | null;
   assignedModules?: {
     moduleCode: string;
     moduleName: string;
@@ -58,20 +56,15 @@ interface ManageUserProps {
 }
 
 const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
-  const navigate = useNavigate();
-
   const [_modules, setModules] = useState<Module[]>([]);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-
   const [openAlertModal, setOpenAlertModal] = useState(false);
   const [openRACIModal, setOpenRACIModal] = useState(false);
-
-  const [isModalVisible, setIsModalVisible] = useState(false);
   const [isDeleteModalVisible, setIsDeleteModalVisible] = useState(false);
   const [addMemberModalVisible, setAddMemberModalVisible] = useState(false);
-
   const [users, setUsers] = useState<User[]>([]);
   const [currentUser, setCurrentUser] = useState<any>({});
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
 
   const [notificationSettings, setNotificationSettings] = useState<NotificationSettings>({
     email: true,
@@ -81,26 +74,9 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
 
   const [form] = Form.useForm();
 
-  // -------- helpers ----------
-  function getInitials(name?: string): string {
-    if (!name) return "";
-    const parts = name.trim().split(/\s+/);
-    return parts.length > 1
-      ? `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-      : parts[0][0]?.toUpperCase() || "";
-  }
-
   const handleViewUser = (record: User) => {
     setSelectedUser(record);
-    setIsModalVisible(true);
   };
-
-  const handleOk = () => {
-    setIsModalVisible(false);
-    if (selectedUser) navigate(`/view-user`, { state: { user: selectedUser } });
-  };
-
-  const handleCancelView = () => setIsModalVisible(false);
 
   const handleCloseModal = () => {
     setOpenAlertModal(false);
@@ -113,7 +89,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
 
       const values = await form.validateFields();
       const { employeeFullName, permissionProfile, emails, mobile, designation } = values;
-
+      const company = cu.orgId ? await db.getCompanyByGuiId(cu.orgId) : null;
       const existing = (await db.getUsers()).filter((u: any) => u.orgId == cu?.orgId);
       const emailExists = existing.some((u: any) => u.email === emails);
       if (emailExists) return notify.error("Email already registered");
@@ -154,6 +130,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
         orgId: cu.orgId || null,
         addedBy: cu.guiId,
         userType: "IND",
+        company: company?.name ?? "",
         ...companyDetails,
       };
 
@@ -188,7 +165,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       const updatedUser = { ...selected, role: newRole };
       await db.updateUsers(userId, updatedUser);
       notify.success("Role updated successfully.");
-
       setUsers((prev: any) => prev.map((u: any) => (u.id === userId ? { ...u, role: newRole } : u)));
     } catch (error) {
       console.error(error);
@@ -196,7 +172,11 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     }
   };
 
-  // -------- data load ----------
+  const openDeleteModal = (record: User) => {
+    setUserToDelete(record);
+    setIsDeleteModalVisible(true);
+  };
+
   useEffect(() => {
     const cu = getCurrentUser();
     setCurrentUser(cu);
@@ -268,25 +248,36 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
             ? record.mobile
             : "N/A",
     },
+    {
+      title: "Action",
+      key: "action",
+      align: "center",
+      width: 120,
+      render: (_: any, record: User) => (
+        <Tooltip title={currentUser?.id === record.id ? "You can't delete yourself" : "Remove user"}>
+          <Button danger size="small" disabled={currentUser?.id === record.id} onClick={() => openDeleteModal(record)}>
+            Delete
+          </Button>
+        </Tooltip>
+      ),
+    },
   ];
 
   return (
     <>
       <div className="page-container">
-        <div className="users-profile-top">
-          <div className="title-add-btn">
-            <div className="holiday-page-heading" style={{ marginLeft: 10 }}>
-              <div>
-                <p className="page-heading-title">{options?.title || "RACI, Alert & Notification"}</p>
-                <span className="pl-subtitle">Manage your org projects and ownership</span>
-              </div>
+        <div className="user-profile-heading">
+          <div className="user-profile-heading-inner">
+            <div>
+              <p className="page-heading-title">{options?.title || "RACI, Alert & Notification"}</p>
+              <span className="pl-subtitle">Manage your org projects and ownership</span>
             </div>
 
             {options?.isAddMember && (
               <Tooltip title="Add new member">
                 <Button
                   icon={<UserAddOutlined />}
-                  style={{ fontSize: 14, textTransform: "none"}}
+                  style={{ fontSize: 14, textTransform: "none" }}
                   size="small"
                   onClick={() => setAddMemberModalVisible(true)}
                   className="add-member-button bg-secondary add-doc-btn"
@@ -298,18 +289,21 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
           </div>
         </div>
 
-        <div className="user-profile-body">
-          <Table
-            columns={columns}
-            dataSource={dataSource}
-            bordered
-            pagination={{ pageSize: 10 }}
-            style={{ marginTop: 5 }}
-            rowClassName={(record: any) => (selectedUser?.id === record.id ? "selected-row-active" : "selected-row")}
-            onRow={(record: User) => ({
-              onDoubleClick: () => handleViewUser(record),
-            })}
-          />
+        <div className="user-profile-content">
+          <div className="user-profile-table-shell">
+            <Table
+              className="user-profile-table"
+              columns={columns}
+              dataSource={dataSource}
+              bordered
+              pagination={{ pageSize: 10 }}
+              scroll={{ x: "max-content", y: "calc(100vh - 300px)" }}
+              rowClassName={(record: any) => (selectedUser?.id === record.id ? "user-profile-selected-row" : "")}
+              onRow={(record: User) => ({
+                onDoubleClick: () => handleViewUser(record),
+              })}
+            />
+          </div>
         </div>
 
         <Modal
@@ -388,99 +382,6 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
               </table>
             </div>
           )}
-        </Modal>
-
-        <Modal
-          title=""
-          open={isModalVisible}
-          onOk={handleOk}
-          onCancel={handleCancelView}
-          centered
-          className="custom-user-modal"
-          width={800}
-          footer={null}
-        >
-          <div className="user-info-main">
-            <div className="profile-cover bg-secondary">
-              <div className="profile-item">
-                <span>{getInitials(selectedUser?.name)}</span>
-              </div>
-            </div>
-
-            <div className="user-details">
-              <Row gutter={[16, 16]} className="form-row" align="middle">
-                <Col span={6} style={{ textAlign: "left" }}>
-                  <label>Full Name</label>
-                </Col>
-                <Col span={18}>
-                  <Input disabled style={{ marginBottom: 10 }} value={selectedUser?.name} />
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 16]} className="form-row" align="middle">
-                <Col span={6} style={{ textAlign: "left" }}>
-                  <label>Company</label>
-                </Col>
-                <Col span={18}>
-                  <Input disabled style={{ marginBottom: 10 }} value={selectedUser?.company} />
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 16]} className="form-row" align="middle">
-                <Col span={6} style={{ textAlign: "left" }}>
-                  <label>Designation</label>
-                </Col>
-                <Col span={18}>
-                  <Input disabled style={{ marginBottom: 10 }} value={selectedUser?.designation} />
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 16]} className="form-row" align="middle">
-                <Col span={6} style={{ textAlign: "left" }}>
-                  <label>Role</label>
-                </Col>
-                <Col span={18}>
-                  <Input disabled style={{ marginBottom: 10 }} value={selectedUser?.role} />
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 16]} className="form-row" align="middle">
-                <Col span={6} style={{ textAlign: "left" }}>
-                  <label>Mobile</label>
-                </Col>
-                <Col span={18}>
-                  <Input disabled style={{ marginBottom: 10 }} value={selectedUser?.mobile} />
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 16]} className="form-row" align="middle">
-                <Col span={6} style={{ textAlign: "left" }}>
-                  <label>Email</label>
-                </Col>
-                <Col span={18}>
-                  <Input disabled style={{ marginBottom: 10 }} value={selectedUser?.email} />
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 16]} className="form-row" align="middle">
-                <Col span={6} style={{ textAlign: "left" }}>
-                  <label>WhatsApp</label>
-                </Col>
-                <Col span={18}>
-                  <Input disabled style={{ marginBottom: 10 }} value={selectedUser?.whatsapp} />
-                </Col>
-              </Row>
-
-              <Row gutter={[16, 16]} className="form-row" align="middle">
-                <Col span={6} style={{ textAlign: "left" }}>
-                  <label>Registration Date</label>
-                </Col>
-                <Col span={18}>
-                  <Input disabled style={{ marginBottom: 10 }} value={selectedUser?.registeredOn} />
-                </Col>
-              </Row>
-            </div>
-          </div>
         </Modal>
 
         <Modal
@@ -574,11 +475,44 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
         <Modal
           title="Confirm Delete"
           open={isDeleteModalVisible}
-          onOk={() => {
-            // TODO: implement delete logic
-            setIsDeleteModalVisible(false);
+          onOk={async () => {
+            try {
+              if (!userToDelete) return;
+              const cu = getCurrentUser();
+              if (typeof (db as any).deleteUsers === "function") {
+                await (db as any).deleteUsers(userToDelete.id);
+              } else if (typeof (db as any).removeUsers === "function") {
+                await (db as any).removeUsers(userToDelete.id);
+              } else if (typeof (db as any).deleteUser === "function") {
+                await (db as any).deleteUser(userToDelete.id);
+              } else {
+                throw new Error("Delete method not found in db");
+              }
+              if (cu.orgId) {
+                const company = await db.getCompanyByGuiId(cu.orgId);
+                if (company) {
+                  const updatedCompany = {
+                    ...company,
+                    userGuiIds: (company.userGuiIds || []).filter((id: string) => id !== (userToDelete as any).guiId),
+                  };
+                  await db.updateCompany(company.id, updatedCompany);
+                }
+              }
+              const allUsers = (await db.getUsers()).filter((u: any) => u.orgId == cu?.orgId);
+              setUsers(allUsers);
+              notify.success("User removed successfully");
+            } catch (e: any) {
+              console.error(e);
+              notify.error(e?.message || "Failed to remove user");
+            } finally {
+              setIsDeleteModalVisible(false);
+              setUserToDelete(null);
+            }
           }}
-          onCancel={() => setIsDeleteModalVisible(false)}
+          onCancel={() => {
+            setIsDeleteModalVisible(false);
+            setUserToDelete(null);
+          }}
           okText="Delete"
           cancelText="Cancel"
           okType="danger"

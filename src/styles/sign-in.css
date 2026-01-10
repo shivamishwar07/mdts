@@ -2,11 +2,14 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
   padding: 2rem;
   font-family: var(--font-base);
   background: var(--bg-main);
   color: var(--text-primary);
+}
+
+.mb-10 {
+  margin-bottom: 20px;
 }
 
 .signup-container .signup-left {
@@ -22,12 +25,10 @@
 }
 
 .signup-container .signin-adjust {
-  /* margin-top: 40px; */
   height: calc(100vh - 200px);
 }
 
 .signup-container .signup-adjust {
-  margin-top: 30px;
   height: calc(100vh - 30px);
 }
 
@@ -123,6 +124,7 @@
 
 .signup-container form input[type="email"],
 .signup-container form input[type="password"],
+input[type="text"],
 .signup-container .ant-input,
 .signup-container .ant-select-selector {
   width: 100%;
@@ -130,13 +132,14 @@
   border-radius: var(--radius-md);
   border: 1px solid var(--border);
   font-size: 1rem;
-  background-color: var(--bg-muted);
+  /* background-color: var(--bg-muted); */
   color: var(--text-primary);
   transition: border-color .2s ease, box-shadow .2s ease, background-color .2s ease;
 }
 
 .signup-container form input[type="email"]:focus,
 .signup-container form input[type="password"]:focus,
+input[type="text"]:focus,
 .signup-container .ant-input:focus,
 .signup-container .ant-select-selector:focus {
   border-color: rgba(31, 122, 99, .60);
@@ -258,7 +261,6 @@
 .signup-container .form-actions {
   display: flex;
   justify-content: space-between;
-  margin-top: 24px;
 }
 
 .signup-container .form-actions .ant-btn:last-child {
@@ -323,4 +325,28 @@
   .signup-container .signup-adjust {
     height: auto;
   }
+}
+.password-field {
+  position: relative;
+  width: 100%;
+}
+
+.password-field input {
+  padding-right: 44px;
+}
+
+.eye-toggle {
+  position: absolute;
+  right: 10px;
+  top: 37%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  color: var(--text-muted);
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+}
+
+.eye-toggle:hover {
+  color: var(--text-primary);
 }

@@ -41,6 +41,8 @@
   font-weight: 800;
   color: var(--text-primary);
   letter-spacing: 0.2px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
 }
 
 .tabs {
@@ -73,7 +75,7 @@
 }
 
 .what-we-do-section {
-  padding: 72px 20px;
+  padding: 52px 20px;
   background:
     radial-gradient(900px 500px at 10% 0%, rgba(16, 185, 129, 0.07), transparent 55%),
     radial-gradient(700px 420px at 95% 20%, rgba(2, 132, 199, 0.05), transparent 55%),
@@ -81,12 +83,11 @@
 }
 
 .content-wrapper {
-  max-width: 1160px;
+  max-width: 1360px;
   margin: 0 auto;
 }
 
 .section-header {
-  text-align: center;
   margin-bottom: 44px;
 }
 

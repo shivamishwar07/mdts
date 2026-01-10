@@ -95,15 +95,15 @@
 }
 
 .profile-cover {
-    border-radius: var(--radius-lg);
-    background: var(--color-accent-soft);
+    background: #ddd;
     padding: 12px;
     display: flex;
     align-items: center;
+    position: relative;
 }
 
 .change-password-container {
-    font-size: 14px;
+       font-size: 14px;
     font-weight: 900;
     margin-right: 20px;
     width: 100%;
@@ -111,6 +111,9 @@
     justify-content: flex-end;
     padding-top: 8px;
     padding-right: 25px;
+    position: absolute;
+    bottom: 8px;
+    right: -30px;
 }
 
 .change-password-container a {
@@ -136,7 +139,7 @@
 }
 
 .registration-height-without-warning {
-    height: calc(100vh - 345px);
+    height: calc(100vh - 310px);
     overflow: scroll;
 }
 
@@ -375,7 +378,7 @@
 }
 
 .registration-height-with-warning{
-    height: calc(100vh - 405px);
+    height: calc(100vh - 375px);
     overflow: scroll;
 }
 

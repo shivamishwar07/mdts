@@ -46,10 +46,10 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  background:
+  /* background:
     radial-gradient(900px 520px at 18% 20%, rgba(16, 185, 129, 0.22), transparent 58%),
     radial-gradient(800px 520px at 90% 30%, rgba(2, 132, 199, 0.18), transparent 60%),
-    linear-gradient(180deg, rgba(2, 6, 23, 0.25) 0%, rgba(2, 6, 23, 0.55) 62%, rgba(2, 6, 23, 0.72) 100%);
+    linear-gradient(180deg, rgba(2, 6, 23, 0.25) 0%, rgba(2, 6, 23, 0.55) 62%, rgba(2, 6, 23, 0.72) 100%); */
   opacity: 1;
   z-index: 2;
 }

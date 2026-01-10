@@ -39,7 +39,7 @@ const initialNavLinks: any[] = [
             { label: "Status Update", action: "/create/status-update", requiredPermission: "UPDATE_STATUS" },
             { label: "Non-working Days", action: "/create/non-working-days", requiredPermission: "SET_GLOBAL_HOLIDAY" },
             { label: "DPR Cost Builder", action: "/create/dpr-cost-builder", isNull: true, requiredPermission: "DPR_COST_BUILDER" },
-            { label: "Documents", action: "/document", requiredPermission: "VIEW_NAVBAR_MENUS"},
+            { label: "Documents", action: "/document", requiredPermission: "VIEW_NAVBAR_MENUS" },
             { label: "Cash-Flow Builder", action: "/create/cash-flow-builder", isNull: true, requiredPermission: "CASH_FLOW_BUILDER" },
             { label: "Delay Cost Calculator", action: "/create/delay-cost-calculator", isNull: true, requiredPermission: "DELAY_COST_CALCULATOR" },
             { label: "Activity Budget", action: "/budgets", requiredPermission: "VIEW_NAVBAR_MENUS" },
@@ -111,12 +111,12 @@ const Navbar: React.FC = () => {
         //         [parentLabel || foundTab.label]: foundTab.label,
         //     }));
         // }
-         if (foundTab) {
-    // ✅ replace, don’t merge
-    setSelectedDropdownKeys({ [parentLabel || foundTab.label]: foundTab.label });
-  } else {
-    setSelectedDropdownKeys({});
-  }
+        if (foundTab) {
+            // ✅ replace, don’t merge
+            setSelectedDropdownKeys({ [parentLabel || foundTab.label]: foundTab.label });
+        } else {
+            setSelectedDropdownKeys({});
+        }
     }, [location.pathname, navLinks]);
 
     const handleLogout = () => {
@@ -135,7 +135,7 @@ const Navbar: React.FC = () => {
         //     [menuLabel]: subItem.label,
         // }));
 
-          setSelectedDropdownKeys({ [menuLabel]: subItem.label });
+        setSelectedDropdownKeys({ [menuLabel]: subItem.label });
 
         if (subItem.option === "popup") {
             handlePopupOpen(subItem.name || "");
@@ -202,16 +202,14 @@ const Navbar: React.FC = () => {
                             />
                         </Link>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                        <div>
-                            <p>Mine Development</p>
-                            <p>Tracking System</p>
-                        </div>
+                    <div className="brand-text">
+                        <p>MineSense</p>
+                        <p>Mine Development Tracking System</p>
                     </div>
-                   {/* <div className="generic-input-wrapper">
+                    {/* <div className="generic-input-wrapper">
                         <input type="text" placeholder="Search mdts" />
                     </div> */}
-                   {/* <div className="search-bar-wrapper">
+                    {/* <div className="search-bar-wrapper">
                         <div className="spectacledcoder-search-bar">
                             <img className="search-icon" width="27" height="27" src="https://img.icons8.com/sf-black/500/000000/search.png" alt="search" />
                             <input type="text" name="search" placeholder="Search MDTS" className="spectacledcoder-search-input" />

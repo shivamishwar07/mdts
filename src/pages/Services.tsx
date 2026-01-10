@@ -95,7 +95,7 @@ export default function Services() {
 
     return (
         <div className="services-container">
-            <div className="hero-section">
+            {/* <div className="hero-section">
                 <img src="/banner2.jpg" alt="mining banner" className="hero-image" />
                 <motion.div
                     className="hero-text-overlay"
@@ -106,7 +106,7 @@ export default function Services() {
                 >
                     <h1 className="hero-heading">{displayedText}</h1>
                 </motion.div>
-            </div>
+            </div> */}
 
             <motion.div
                 className="intro-section"
