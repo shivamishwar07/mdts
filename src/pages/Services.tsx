@@ -58,7 +58,7 @@ export default function Services() {
     ];
 
     const [currentIndex, setCurrentIndex] = useState(0);
-    const [displayedText, setDisplayedText] = useState("");
+    const [_displayedText, setDisplayedText] = useState("");
 
     useEffect(() => {
         let text = slogans[currentIndex];
