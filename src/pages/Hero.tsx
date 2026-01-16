@@ -9,7 +9,7 @@ const Hero = () => {
     useEffect(() => {
         const interval = setInterval(() => {
             setCurrentIndex((prevIndex) => (prevIndex + 1) % images.length);
-        }, 80000);
+        }, 8000);
         return () => clearInterval(interval);
     }, [images.length]);
 
@@ -32,13 +32,10 @@ const Hero = () => {
                                             Plan • Execute • Govern — All in One View<span></span>
                                         </h4>
 
-                                        <h1 className="main-heading">Real-Time Control For</h1>
+                                        <h1 className="main-heading">Real-Time Control For Mine Projects</h1>
 
                                         <div className="third-line">
-                                            <button className="carousel-button px-5">Request Demo</button>
-
-                                            <h1 className="minus-heading">Mine Projects</h1>
-
+                                            {/* <button className="carousel-button px-5">Request Demo</button> */}
                                             <p className="least-text">
                                                 Unify development planning, field execution, and compliance with
                                                 decision-ready dashboards. Track geospatial progress, crews, equipment,
@@ -54,11 +51,9 @@ const Hero = () => {
                                             Visibility That Drives On-Time Delivery<span></span>
                                         </h4>
 
-                                        <h1 className="main-heading">From Exploration To</h1>
+                                        <h1 className="main-heading">From Exploration To Sustaining Ops</h1>
 
                                         <div className="third-line">
-                                            <h1 className="minus-heading">Sustaining Ops</h1>
-
                                             <p className="least-text">
                                                 Monitor activities and dependencies in real time, get smart alerts for
                                                 slippages and cost drift, and keep audit-ready governance trails—so every

@@ -959,6 +959,30 @@ export class DataStorage extends Dexie {
     return { liked: true };
   }
 
+  async getKnowledgePostsForUser(email: string) {
+  const e = String(email || "").toLowerCase();
+
+  const posts = await this.knowledgePosts.toArray();
+
+  const myLikes = await this.knowledgeReactions
+    .where("email")
+    .equals(e)
+    .and((r: any) => r.type === "like")
+    .toArray();
+
+  const likedSet = new Set(myLikes.map((r: any) => Number(r.postId)));
+
+  const enriched = posts.map((p: any) => ({
+    ...p,
+    myLiked: likedSet.has(Number(p.id)),
+  }));
+
+  return enriched.sort((a: any, b: any) => {
+    const ad = (a.lastActivityAt || a.createdAt || "");
+    const bd = (b.lastActivityAt || b.createdAt || "");
+    return bd.localeCompare(ad);
+  });
+}
 
 }
 

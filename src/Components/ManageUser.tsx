@@ -94,7 +94,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
       const emailExists = existing.some((u: any) => u.email === emails);
       if (emailExists) return notify.error("Email already registered");
 
-      const password = emails.slice(0, 6);
+      const password = 'Simpro@123';
       const guiId = uuidv4();
 
       let companyDetails: any = {};
@@ -212,7 +212,7 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
   );
 
   const columns: any[] = [
-    { title: "S.No", dataIndex: "serialNumber", key: "serialNumber", align: "center", width: 80 },
+    // { title: "S.No", dataIndex: "serialNumber", key: "serialNumber", align: "center", width: 80 },
     { title: "Name", dataIndex: "name", key: "name", align: "center" },
     { title: "Company", dataIndex: "company", key: "company", align: "center" },
     { title: "Designation", dataIndex: "designation", key: "designation", align: "center" },
@@ -236,18 +236,18 @@ const ManageUser: React.FC<ManageUserProps> = ({ options }) => {
     },
     { title: "Mobile", dataIndex: "mobile", key: "mobile", align: "center" },
     { title: "Email", dataIndex: "email", key: "email", align: "center" },
-    {
-      title: "WhatsApp",
-      dataIndex: "whatsapp",
-      key: "whatsapp",
-      align: "center",
-      render: (_: any, record: any) =>
-        record.whatsapp && record.whatsapp !== "N/A"
-          ? record.whatsapp
-          : record.mobile && record.mobile !== "N/A"
-            ? record.mobile
-            : "N/A",
-    },
+    // {
+    //   title: "WhatsApp",
+    //   dataIndex: "whatsapp",
+    //   key: "whatsapp",
+    //   align: "center",
+    //   render: (_: any, record: any) =>
+    //     record.whatsapp && record.whatsapp !== "N/A"
+    //       ? record.whatsapp
+    //       : record.mobile && record.mobile !== "N/A"
+    //         ? record.mobile
+    //         : "N/A",
+    // },
     {
       title: "Action",
       key: "action",

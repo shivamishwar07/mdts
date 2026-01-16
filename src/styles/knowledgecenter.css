@@ -1,5 +1,3 @@
-/* This file assumes your global :root palette + typography is already loaded */
-
 .kc-root {
     min-height: 100%;
     padding: 16px;
@@ -10,10 +8,10 @@
 
 .kc-header {
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: 16px;
-    padding: 14px 16px;
+    padding: 10px;
     border-radius: var(--radius-lg);
     border: 1px solid var(--border);
     background: var(--bg-surface);
@@ -51,7 +49,7 @@
 .kc-tab {
     border: 1px solid transparent;
     background: transparent;
-    padding: 10px 12px;
+    padding: 5px 12px;
     border-radius: var(--radius-md);
     font-weight: 600;
     font-size: var(--small);
@@ -100,7 +98,7 @@
 
 .kc-content {
     min-width: 0;
-    height: calc(100vh - 210px);
+    height: calc(100vh - 215px);
     overflow-y: auto;
 }
 
@@ -194,6 +192,11 @@
     display: flex;
     align-items: center;
     gap: 10px;
+}
+
+.ks-eng-btn.active {
+    border-color: #1677ff;
+    background: rgba(22, 119, 255, 0.08);
 }
 
 .kc-search-input {
@@ -356,7 +359,7 @@
 .ks-wrap {
     display: flex;
     flex-direction: column;
-    gap: 14px;
+    gap: 8px;
 }
 
 .ks-topbar {
@@ -679,15 +682,6 @@
     color: var(--text-secondary);
 }
 
-/* Modal */
-.ks-modal .ant-modal-content {
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    border: 1px solid var(--border);
-    height: calc(100vh - 110px);
-    overflow-y: auto;
-}
-
 .ks-modal .ant-modal-header {
     border-bottom: 1px solid var(--border);
 }
@@ -983,4 +977,49 @@
 .ks-comment-head-right {
     display: flex;
     gap: 10px;
+}
+
+.ks-eng-btn.reacted {
+    border-color: #1677ff;
+    background: rgba(22, 119, 255, 0.10);
+    color: #1677ff;
+    font-weight: 600;
+}
+
+.ks-eng-btn.reacted:hover {
+    border-color: #1677ff;
+    background: rgba(22, 119, 255, 0.16);
+}
+
+.ks-segment {
+    background: #f6f7fb;
+    padding: 4px;
+    border-radius: 12px;
+    box-shadow: 0 1px 0 rgba(16, 24, 40, 0.04);
+}
+
+.ks-seg-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+}
+
+.ks-seg-count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 22px;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: rgba(17, 24, 39, 0.08);
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.ks-socialproof {
+    margin-left: 8px;
+    color: rgba(17, 24, 39, 0.55);
+    font-weight: 500;
 }
